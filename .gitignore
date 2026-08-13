@@ -1,0 +1,28 @@
+# OS
+Thumbs.db
+Desktop.ini
+
+# Dart / Flutter
+webapp/.dart_tool/
+webapp/build/
+webapp/.flutter-plugins*
+webapp/.packages
+webapp/.firebase/
+
+# Node
+node_modules/
+worker/node_modules/
+scripts/node_modules/
+
+# Wrangler / Cloudflare local state
+worker/.wrangler/
+
+# Large data folders (too big for GitHub, stored in Cloudflare R2)
+Prépa/
+Prépa.zip
+
+# Friend upload script embeds R2 credentials - never commit
+scripts/friend-upload-python/
+
+# Misc
+*.log

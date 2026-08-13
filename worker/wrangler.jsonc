@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "iloveprepa-r2",
+  "main": "src/index.js",
+  "compatibility_date": "2025-06-01",
+  "r2_buckets": [
+    {
+      "binding": "iloveprepa",
+      "bucket_name": "iloveprepa"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "usage_kv",
+      "id": "bd862996f4d947c8a89a32e2032ad457"
+    }
+  ],
+  "triggers": {
+    "crons": ["0 * * * *"]
+  }
+}
