@@ -16,28 +16,6 @@ enum ResourceType {
   final String label;
 }
 
-/// Scope used by the search chips.
-enum SearchScope {
-  all('Tout'),
-  folders('Dossiers'),
-  files('Fichiers'),
-  cours('Cours'),
-  td('TD'),
-  tp('TP'),
-  examens('Examens');
-
-  const SearchScope(this.label);
-  final String label;
-
-  ResourceType? get type => switch (this) {
-    SearchScope.cours => ResourceType.cours,
-    SearchScope.td => ResourceType.td,
-    SearchScope.tp => ResourceType.tp,
-    SearchScope.examens => ResourceType.examens,
-    _ => null,
-  };
-}
-
 /// One entry in the search results — a folder or a file, with the complete
 /// hierarchical path it lives under.
 class SearchResult {
@@ -61,12 +39,14 @@ class SearchResult {
   String get pathLabel => path.join(' → ');
 }
 
-/// Normalises text for search: lowercase + strip accents.
+/// Normalises text for search: lowercase + strip accents so "é/è/ê/ë" all
+/// behave like "e", "à/â/ä" like "a", etc.
 String searchNorm(String input) {
-  const accents = 'àáâãäåçèéêëìíîïñòóôõöùúûüýÿ';
-  const plain = 'aaaaaaceeeeiiiinooooouuuuyy';
+  const accents = 'àáâãäåāăèéêëēėęìíîïīıòóôõöōøùúûüūçćčñńśšžżźýÿ';
+  const plain = 'aaaaaaaaeeeeeeeiiiiiiioooooooouuuuucccnnsszzzyy';
+  var text = input.toLowerCase().replaceAll('œ', 'oe').replaceAll('æ', 'ae');
   final buffer = StringBuffer();
-  for (final ch in input.toLowerCase().split('')) {
+  for (final ch in text.split('')) {
     final i = accents.indexOf(ch);
     buffer.write(i >= 0 ? plain[i] : ch);
   }
@@ -75,198 +55,98 @@ String searchNorm(String input) {
 
 /// Builds a searchable, navigable index over the flat R2 document list.
 ///
-/// The hierarchy is University → Year → Subject → Topic → Resource type →
-/// Semester → files. Because real keys vary in depth, each node is classified
-/// heuristically (year = top level, subject = second level, resource type and
-/// semester are detected from folder names). The tree itself always remains
-/// the single source of truth for navigation.
+/// The hierarchy (University → Year → Subject → Topic → Resource type →
+/// Semester → files) is rebuilt locally from the flat object keys, and the
+/// tree is the single source of truth for navigation.
 class LibraryIndex {
   LibraryIndex(this.documents) : root = buildLibraryTree(documents);
 
   final List<DocumentItem> documents;
   final LibraryFolder root;
 
-  final Map<String, _FileMeta> _fileMeta = {};
-  final Map<String, _FileMeta> _folderMeta = {};
-
-  // ── Classification helpers ──────────────────────────────────────────────
-
-  _FileMeta _metaForPath(List<String> segments) {
-    final year = segments.isNotEmpty ? segments.first : null;
-    final subject = segments.length > 1 ? segments[1] : null;
-    ResourceType? type;
-    String? typeFolder;
-    String? semester;
-
-    for (var i = 1; i < segments.length; i++) {
-      final seg = segments[i];
-      final t = resourceTypeForName(seg);
-      if (t != null) {
-        if (type == null) {
-          type = t;
-          typeFolder = seg;
-        }
-      }
-      if (isSemester(seg) && semester == null) semester = seg;
-    }
-
-    return _FileMeta(
-      year: year,
-      subject: subject,
-      semester: semester,
-      type: type,
-      typeFolder: typeFolder,
-    );
-  }
-
-  _FileMeta _metaForFile(DocumentItem doc) {
-    final segments = doc.name
-        .split('/')
-        .where((s) => s.trim().isNotEmpty)
-        .toList();
-    return _fileMeta[doc.name] ??= _metaForPath(segments);
-  }
-
-  _FileMeta _metaForFolder(List<String> segments) {
-    final key = segments.join('/');
-    return _folderMeta[key] ??= _metaForPath(segments);
-  }
-
-  // ── Filter options (populated from real data) ───────────────────────────
-
-  List<String> get years => _distinct(_collect((m) => m.year));
-  List<String> get subjects => _distinct(_collect((m) => m.subject));
-  List<String> get semesters => _distinct(_collect((m) => m.semester));
-  List<String> get types => _distinct(_collect((m) => m.type?.label));
-
-  List<String?> _collect(String? Function(_FileMeta) pick) {
-    final out = <String?>[];
-    for (final doc in documents) {
-      out.add(pick(_metaForFile(doc)));
-    }
-    return out;
-  }
-
-  List<String> _distinct(List<String?> values) {
-    final seen = <String>{};
-    final out = <String>[];
-    for (final v in values) {
-      if (v != null && seen.add(v)) out.add(v);
-    }
-    out.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-    return out;
-  }
-
-  // ── Search ──────────────────────────────────────────────────────────────
-
-  List<SearchResult> search(
-    String query, {
-    SearchScope scope = SearchScope.all,
-    String? year,
-    String? semester,
-    String? subject,
-    String? type,
-  }) {
+  /// Every folder and file whose name contains every typed word, ranked by
+  /// number of matches. Folders sort ahead of files at equal score.
+  List<SearchResult> search(String query) {
     final q = searchNorm(query.trim());
     if (q.isEmpty) return const [];
 
-    final wantFolders =
-        scope == SearchScope.all ||
-        scope == SearchScope.folders ||
-        scope.type != null;
-    final wantFiles =
-        scope == SearchScope.all ||
-        scope == SearchScope.files ||
-        scope.type != null;
+    // Any typed word can match a folder or a file name — like a real app.
+    final terms = q.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+    int matchScore(String haystack) {
+      var score = 0;
+      for (final term in terms) {
+        if (haystack.contains(term)) score++;
+      }
+      return score;
+    }
 
-    final results = <SearchResult>[];
+    final results = <_Scored<SearchResult>>[];
 
-    if (wantFolders) {
-      _walkFolder(root, const [], (folder, segments) {
-        final meta = _metaForFolder(segments);
-        if (!_matchesFilters(meta, scope, year, semester, subject, type)) {
-          return;
-        }
-        final haystack = _folderHaystack(folder, segments, meta);
-        if (haystack.contains(q)) {
-          results.add(
+    _walkFolder(root, const [], (folder, segments) {
+      final score = matchScore(searchNorm(folder.name));
+      if (score > 0) {
+        results.add(
+          _Scored(
+            score,
             SearchResult(
               title: folder.name,
               path: List.of(segments)..removeLast(),
               isFolder: true,
-              type: meta.type,
+              type: resourceTypeForName(folder.name),
             ),
-          );
-        }
-      });
-    }
+          ),
+        );
+      }
+    });
 
-    if (wantFiles) {
-      for (final doc in documents) {
-        final meta = _metaForFile(doc);
-        if (!_matchesFilters(meta, scope, year, semester, subject, type)) {
-          continue;
-        }
-        final haystack = _fileHaystack(doc, meta);
-        if (haystack.contains(q)) {
-          results.add(
+    for (final doc in documents) {
+      final segments = doc.name
+          .split('/')
+          .where((s) => s.trim().isNotEmpty)
+          .toList();
+      final score = matchScore(_fileHaystack(doc));
+      if (score > 0) {
+        results.add(
+          _Scored(
+            score,
             SearchResult(
               title: doc.displayName,
-              path:
-                  doc.name.split('/').where((s) => s.trim().isNotEmpty).toList()
-                    ..removeLast(),
+              path: List.of(segments)..removeLast(),
               document: doc,
               isFolder: false,
-              type: meta.type,
+              type: _typeForSegments(segments),
             ),
-          );
-        }
+          ),
+        );
       }
     }
 
     results.sort((a, b) {
-      if (a.isFolder != b.isFolder) return a.isFolder ? -1 : 1;
-      return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+      if (a.score != b.score) return b.score.compareTo(a.score);
+      if (a.value.isFolder != b.value.isFolder) {
+        return a.value.isFolder ? -1 : 1;
+      }
+      return a.value.title.toLowerCase().compareTo(b.value.title.toLowerCase());
     });
 
-    return results;
+    return [for (final r in results) r.value];
   }
 
-  bool _matchesFilters(
-    _FileMeta meta,
-    SearchScope scope,
-    String? year,
-    String? semester,
-    String? subject,
-    String? type,
-  ) {
-    if (scope.type != null && meta.type != scope.type) return false;
-    if (year != null && meta.year != year) return false;
-    if (semester != null && meta.semester != semester) return false;
-    if (subject != null && meta.subject != subject) return false;
-    if (type != null && meta.type?.label != type) return false;
-    return true;
-  }
-
-  String _fileHaystack(DocumentItem doc, _FileMeta meta) {
-    final name = searchNorm(doc.name);
+  String _fileHaystack(DocumentItem doc) {
+    final name = searchNorm(doc.fileName);
     final display = searchNorm(doc.displayName);
-    final type = searchNorm(meta.type?.label ?? '');
-    return '$display $name $type ${meta.year ?? ''} '
-        '${meta.subject ?? ''} ${meta.semester ?? ''}';
+    return '$display $name';
   }
+}
 
-  String _folderHaystack(
-    LibraryFolder folder,
-    List<String> segments,
-    _FileMeta meta,
-  ) {
-    final name = searchNorm(folder.name);
-    final path = searchNorm(segments.join('/'));
-    final type = searchNorm(meta.type?.label ?? '');
-    return '$name $path $type ${meta.year ?? ''} '
-        '${meta.subject ?? ''} ${meta.semester ?? ''}';
+/// Type of a file result, taken from the first ancestor folder whose name
+/// matches a known resource type ("Cours", "TD", "Examen"…).
+ResourceType? _typeForSegments(List<String> segments) {
+  for (var i = 1; i < segments.length; i++) {
+    final type = resourceTypeForName(segments[i]);
+    if (type != null) return type;
   }
+  return null;
 }
 
 void _walkFolder(
@@ -281,20 +161,11 @@ void _walkFolder(
   }
 }
 
-class _FileMeta {
-  _FileMeta({
-    this.year,
-    this.subject,
-    this.semester,
-    this.type,
-    this.typeFolder,
-  });
+class _Scored<T> {
+  const _Scored(this.score, this.value);
 
-  final String? year;
-  final String? subject;
-  final String? semester;
-  final ResourceType? type;
-  final String? typeFolder;
+  final int score;
+  final T value;
 }
 
 // ── Resource type detection ───────────────────────────────────────────────
@@ -345,12 +216,4 @@ ResourceType? resourceTypeForName(String folderName) {
   if (tokens.any(livres.contains)) return ResourceType.livres;
   if (tokens.any(etude.contains)) return ResourceType.etude;
   return null;
-}
-
-bool isSemester(String name) {
-  final n = searchNorm(name);
-  if (RegExp(r'^s[1-6]$').hasMatch(n)) return true;
-  return n.contains('semestre') ||
-      n.contains('semester') ||
-      n.contains('trimestre');
 }

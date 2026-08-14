@@ -21,6 +21,9 @@ worker/.wrangler/
 Prépa/
 Prépa.zip
 
+# Local backup copy of the project (fonts, images, old sources) - 2.3 GB, not for git
+/assets/
+
 # Friend upload script embeds R2 credentials - never commit
 scripts/friend-upload-python/
 

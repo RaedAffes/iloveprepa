@@ -38,7 +38,10 @@ dependencies:
   url_launcher: ^6.3.2
   google_fonts: ^8.2.1
   intl: ^0.20.3
+  shared_preferences: ^2.5.5
   firebase_core: ^4.13.0
+  cloud_firestore: ^6.8.0
+  web: ^1.1.1
   firebase_analytics: ^12.4.6
 dev_dependencies:
   flutter_test:
@@ -61,6 +64,18 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/folder.png
+    - assets/header.png
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf
+    - family: PlayfairDisplay
+      fonts:
+        - asset: assets/fonts/PlayfairDisplay-Variable.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -10,21 +10,34 @@ import '../core/theme/app_typography.dart';
 import '../models/document_item.dart';
 import '../models/library_folder.dart';
 import '../models/library_index.dart';
+import '../services/analytics_service.dart';
 import '../services/api_service.dart';
+import '../services/recent_store.dart';
+import '../services/stats_service.dart';
+import '../widgets/app_footer.dart';
 import '../widgets/breadcrumb_bar.dart';
+import '../widgets/document_viewer.dart';
+import '../widgets/folder_content_view.dart';
+import '../widgets/iloveprepa_brand.dart';
 import '../widgets/library_sidebar.dart';
-import '../widgets/recent_file_card.dart';
-import '../widgets/search_result_tile.dart';
+import '../widgets/notion_pdf_icon.dart';
 import '../widgets/skeleton_card.dart';
 import '../widgets/state_views.dart';
 
-/// Library home — hierarchical R2 folder tree on the left, a prominent
-/// search bar and the recently opened folders/files on the right.
+/// Library home — hierarchical R2 folder tree on the left (with the search
+/// field), and on the right either the recently opened files (home) or the
+/// contents of the folder currently open in the tree.
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key, this.api});
+  const DashboardScreen({super.key, this.api, this.stats, this.analytics});
 
   /// Test seam — defaults to the real [ApiService].
   final ApiService? api;
+
+  /// Test seam — defaults to the real [StatsService].
+  final StatsService? stats;
+
+  /// Test seam — defaults to the real [AnalyticsService].
+  final AnalyticsService? analytics;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -32,9 +45,18 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   static const double _maxContentWidth = 860;
+  static const double _headerHeight = 220;
+  static const int _maxRecents = 8;
 
   late final ApiService _api = widget.api ?? ApiService();
+  late final StatsService _stats = widget.stats ?? StatsService();
+  late final AnalyticsService _analytics =
+      widget.analytics ?? AnalyticsService();
   final _searchController = TextEditingController();
+
+  // Keeps the main content's scroll position and drives the footer's
+  // visibility-triggered count-up.
+  final ScrollController _contentScroll = ScrollController();
 
   late Future<List<DocumentItem>> _future;
   List<DocumentItem> _all = const [];
@@ -42,25 +64,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _query = '';
   String? _busy;
 
+  // Keeps the sidebar tree's scroll position across a search round-trip.
+  final ScrollController _treeScroll = ScrollController();
+
   // Sidebar tree expansion (keys are full folder paths).
   final Set<String> _expanded = {};
 
   // Currently open folder path, shown as a breadcrumb + highlighted.
   List<String> _currentPath = const [];
 
-  // Recently opened folders and files (most recent first, capped).
-  List<List<String>> _recentFolders = [];
-  List<DocumentItem> _recentFiles = [];
+  // Sidebar collapsed state on wide screens.
+  bool _sidebarCollapsed = false;
+
+  // Recently opened PDF files (most recent first, capped).
+  final List<_RecentEntry> _recents = [];
+
+  // Recents restored from persistent storage, resolved once the docs load.
+  List<RecentItem> _storedRecents = const [];
 
   @override
   void initState() {
     super.initState();
     _future = _api.fetchDocuments();
+    _restoreRecents();
+    _stats.incrementVisits();
+    _analytics.logAppOpen();
+    _analytics.logScreenView('dashboard');
+  }
+
+  Future<void> _restoreRecents() async {
+    final stored = await RecentStore.load();
+    if (!mounted || stored.isEmpty) return;
+    setState(() => _storedRecents = stored);
+    if (_index != null) {
+      final changed = _applyStoredRecents(_all);
+      if (changed) setState(() {});
+    }
+  }
+
+  Future<void> _persistRecents() async {
+    await RecentStore.save([
+      for (final e in _recents)
+        RecentItem(name: e.document.name, openedAt: e.openedAt),
+    ]);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _treeScroll.dispose();
+    _contentScroll.dispose();
     super.dispose();
   }
 
@@ -68,13 +121,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _all = const [];
       _index = null;
-      _recentFolders = [];
-      _recentFiles = [];
+      _recents.clear();
+      _storedRecents = const [];
       _currentPath = const [];
       _query = '';
       _searchController.clear();
       _future = _api.fetchDocuments();
     });
+    _restoreRecents();
   }
 
   void _prepare(List<DocumentItem> docs) {
@@ -85,11 +139,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
       changed = _expanded.add(name) || changed;
     }
     _index = index;
+    changed = _applyStoredRecents(docs) || changed;
     if (changed && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() {});
       });
     }
+  }
+
+  /// Resolves persisted recents against the fetched docs, dropping entries
+  /// whose file no longer exists. Returns true if any were added.
+  bool _applyStoredRecents(List<DocumentItem> docs) {
+    if (_storedRecents.isEmpty || _recents.length >= _maxRecents) return false;
+    final byName = {for (final d in docs) d.name: d};
+    final added = <_RecentEntry>[];
+    for (final stored in _storedRecents) {
+      if (_recents.length + added.length >= _maxRecents) break;
+      final doc = byName[stored.name];
+      if (doc == null || !doc.isPdf) continue;
+      final segments = doc.name.split('/');
+      final location = segments.length > 1
+          ? segments.take(segments.length - 1).join(' / ')
+          : 'Racine';
+      added.add(
+        _RecentEntry(
+          title: doc.displayName,
+          location: location,
+          document: doc,
+          openedAt: stored.openedAt,
+        ),
+      );
+    }
+    if (added.isEmpty) return false;
+    _recents.addAll(added);
+    return true;
   }
 
   void _syncExpanded(List<String> path) {
@@ -98,15 +181,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  void _toggleSidebar() {
+    setState(() => _sidebarCollapsed = !_sidebarCollapsed);
+  }
+
   void _openFolder(List<String> path) {
     _syncExpanded(path);
+    _analytics.logFolderOpen(path.isEmpty ? 'root' : path.join(' / '));
     setState(() {
       _currentPath = List.of(path);
       _query = '';
       _searchController.clear();
-      _recentFolders.removeWhere((p) => _sameList(p, path));
-      _recentFolders.insert(0, List.of(path));
-      if (_recentFolders.length > 4) _recentFolders = _recentFolders.sublist(0, 4);
     });
   }
 
@@ -125,23 +210,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  Future<void> _open(DocumentItem item, {required bool download}) async {
+  /// Opens [item] in the in-page viewer. Downloads go through [_download].
+  Future<void> _open(DocumentItem item) async {
+    await showDocumentViewer(
+      context: context,
+      url: _api.viewUri(item).toString(),
+    );
+    _markOpened(item);
+    if (item.isPdf) _analytics.logDocumentView(item.name);
+  }
+
+  /// Downloads [item] to disk (opens the download URL in a new tab).
+  Future<void> _download(DocumentItem item) async {
     if (_busy != null) return;
     setState(() => _busy = item.name);
     try {
-      final uri = download ? _api.downloadUri(item) : _api.viewUri(item);
-      final launched = await launchUrl(uri, webOnlyWindowName: '_blank');
-      if (launched) {
-        setState(() {
-          _recentFiles.removeWhere((d) => d.name == item.name);
-          _recentFiles.insert(0, item);
-          if (_recentFiles.length > 4) _recentFiles = _recentFiles.sublist(0, 4);
-        });
-      } else if (mounted) {
+      final launched = await launchUrl(
+        _api.downloadUri(item),
+        webOnlyWindowName: '_blank',
+      );
+      if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Impossible d'ouvrir le document.")),
+          const SnackBar(content: Text('Impossible de télécharger le document.')),
         );
       }
+      _markOpened(item);
+      if (item.isPdf) _analytics.logDocumentDownload(item.name);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -156,41 +250,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  /// Adds an opened PDF to the recents list and bumps the download metric.
+  void _markOpened(DocumentItem item) {
+    if (!item.isPdf || !mounted) return;
+    setState(() {
+      final segments = item.name.split('/');
+      final location = segments.length > 1
+          ? segments.take(segments.length - 1).join(' / ')
+          : 'Racine';
+      _recents.removeWhere((e) => e.document.name == item.name);
+      _recents.insert(
+        0,
+        _RecentEntry(
+          title: item.displayName,
+          location: location,
+          document: item,
+          openedAt: DateTime.now(),
+        ),
+      );
+      if (_recents.length > _maxRecents) {
+        _recents.removeRange(_maxRecents, _recents.length);
+      }
+    });
+    _persistRecents();
+    _stats.incrementDownloads();
+  }
+
   LibraryFolder get _root => _index?.root ?? buildLibraryTree(_all);
 
   @override
   Widget build(BuildContext context) {
-    final sidebar = LibrarySidebar(
-      root: _root,
-      currentPath: _currentPath,
-      expanded: _expanded,
-      onToggle: _toggleNode,
-      onOpenFolder: _openFolder,
-      onOpenFile: (doc) => _open(doc, download: false),
-      totalDocuments: _root.totalDocuments,
-    );
-
     return Scaffold(
-      drawer: Drawer(width: 292, child: sidebar),
+      drawer: Drawer(
+        width: 292,
+        child: _buildSidebar(
+          onMenu: () => Navigator.of(context).maybePop(),
+        ),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 960;
             return Row(
               children: [
-                if (wide)
-                  SizedBox(width: 292, child: sidebar)
+                if (wide && !_sidebarCollapsed)
+                  SizedBox(width: 292, child: _buildSidebar(onMenu: _toggleSidebar))
                 else
                   const SizedBox.shrink(),
                 Expanded(
                   child: Column(
                     children: [
                       _TopBar(
-                        showMenu: !wide,
+                        wide: wide,
+                        collapsed: _sidebarCollapsed,
+                        showMenu: !wide || _sidebarCollapsed,
                         currentPath: _currentPath,
+                        onMenu: wide
+                            ? _toggleSidebar
+                            : () => Scaffold.of(context).openDrawer(),
                         onHome: _goHome,
                         onNavigate: _openFolder,
-                        onRefresh: _reload,
                       ),
                       Expanded(child: _buildContent()),
                     ],
@@ -204,112 +323,147 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildSidebar({VoidCallback? onMenu}) {
+    final index = _index;
+    final searching = _query.trim().isNotEmpty && index != null;
+    return LibrarySidebar(
+      root: _root,
+      currentPath: _currentPath,
+      expanded: _expanded,
+      onToggle: _toggleNode,
+      onOpenFolder: _openFolder,
+      onOpenFile: _open,
+      searchController: _searchController,
+      onSearchChanged: (value) => setState(() => _query = value),
+      searchQuery: searching ? _query : '',
+      searchResults: searching ? index.search(_query) : const [],
+      treeScrollController: _treeScroll,
+      onMenu: onMenu,
+    );
+  }
+
   Widget _buildContent() {
     return FutureBuilder<List<DocumentItem>>(
       future: _future,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting &&
-            !snapshot.hasData) {
-          return const _LibrarySkeleton();
-        }
-        if (snapshot.hasError) {
-          return ErrorView(onRetry: _reload);
-        }
+        // Header + footer render immediately; only the recents area waits.
+        final loading =
+            snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData;
+        final error = snapshot.hasError;
         final docs = snapshot.data ?? const <DocumentItem>[];
-        _all = docs;
-        _prepare(docs);
-        if (docs.isEmpty) return EmptyView(onRefresh: _reload);
-        return _buildBody();
+        if (!loading && !error) {
+          _all = docs;
+          _prepare(docs);
+        }
+        return _buildBody(
+          loading: loading,
+          error: error,
+          docs: docs,
+          onReload: _reload,
+        );
       },
     );
   }
 
-  Widget _buildBody() {
-    final index = _index;
-    if (_query.trim().isNotEmpty && index != null) {
-      return _buildSearchResults(index);
-    }
-    return _scrollable(
-      children: [
-        _SearchInput(
-          controller: _searchController,
-          onChanged: (value) => setState(() => _query = value),
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        _RecentSection(
-          folders: _recentFolders,
-          files: _recentFiles,
-          onOpenFolder: _openFolder,
-          onOpenFile: (doc) => _open(doc, download: false),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchResults(LibraryIndex index) {
-    final results = index.search(_query);
-
-    return _scrollable(
-      children: [
-        const _Eyebrow('Recherche'),
-        const SizedBox(height: AppSpacing.lg),
-        if (results.isEmpty)
-          NoResultsView(query: _query)
-        else
-          for (final result in results)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: SearchResultTile(
-                result: result,
-                busy: _busy == result.document?.name,
-                onOpenFolder: () => _openFolder(
-                  result.path.isEmpty
-                      ? [result.title]
-                      : [...result.path, result.title],
+  Widget _buildBody({
+    required bool loading,
+    required bool error,
+    required List<DocumentItem> docs,
+    required VoidCallback onReload,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final minContent = constraints.maxHeight - _headerHeight;
+        return _scrollable(
+          children: [
+            const _Header(),
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: _maxContentWidth,
+                  minHeight: minContent > 0 ? minContent : 0,
                 ),
-                onView: () => _open(result.document!, download: false),
-                onDownload: () => _open(result.document!, download: true),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    24,
+                    AppSpacing.giant,
+                    24,
+                    AppSpacing.huge,
+                  ),
+                  child: Builder(builder: (context) {
+                    if (loading) {
+                      return const _RecentsSkeleton();
+                    }
+                    if (error) {
+                      return ErrorView(onRetry: onReload);
+                    }
+                    if (docs.isEmpty) {
+                      return EmptyView(onRefresh: onReload);
+                    }
+                    if (_currentPath.isEmpty) {
+                      return _RecentSection(
+                        entries: _recents,
+                        onOpenFile: _open,
+                      );
+                    }
+                    final folder = _root.descend(_currentPath);
+                    if (folder == null) {
+                      return EmptyView(onRefresh: onReload);
+                    }
+                    return FolderContentView(
+                      folder: folder,
+                      busy: _busy,
+                      onView: _open,
+                      onDownload: _download,
+                    );
+                  }),
+                ),
               ),
             ),
-      ],
+            AppFooter(
+              documents: docs.length,
+              countersStream: _stats.watch(),
+              scrollController: _contentScroll,
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _scrollable({required List<Widget> children}) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 48),
-          children: children,
-        ),
-      ),
+    return ListView(
+      key: const ValueKey('mainScroll'),
+      controller: _contentScroll,
+      padding: EdgeInsets.zero,
+      children: children,
     );
   }
 }
 
-bool _sameList(List<String> a, List<String> b) {
-  if (a.length != b.length) return false;
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
-  }
-  return true;
-}
-
 class _TopBar extends StatelessWidget {
   const _TopBar({
+    required this.wide,
+    required this.collapsed,
     required this.showMenu,
     required this.currentPath,
+    required this.onMenu,
     required this.onHome,
     required this.onNavigate,
-    required this.onRefresh,
   });
 
+  final bool wide;
+  final bool collapsed;
+
+  /// Whether the hamburger button should be rendered (hidden when the
+  /// sidebar already shows one on wide expanded layouts).
   final bool showMenu;
+
   final List<String> currentPath;
+  final VoidCallback onMenu;
   final VoidCallback onHome;
   final void Function(List<String> path) onNavigate;
-  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -324,8 +478,12 @@ class _TopBar extends StatelessWidget {
         children: [
           if (showMenu) ...[
             IconButton(
-              onPressed: () => Scaffold.of(context).openDrawer(),
-              tooltip: 'Menu',
+              onPressed: onMenu,
+              tooltip: wide
+                  ? (collapsed
+                        ? 'Afficher la barre latérale'
+                        : 'Masquer la barre latérale')
+                  : 'Menu',
               icon: const Icon(Icons.menu_rounded, size: 20),
               color: AppColors.secondary,
               hoverColor: AppColors.hover,
@@ -335,273 +493,271 @@ class _TopBar extends StatelessWidget {
               visualDensity: VisualDensity.compact,
             ),
             const SizedBox(width: AppSpacing.sm),
+            const IloveprepaBrand(fontSize: 20, iconSize: 18),
+            const SizedBox(width: AppSpacing.lg),
           ],
           Expanded(
             child: currentPath.isEmpty
-                ? Text('Bibliothèque', style: AppTypography.label())
+                ? const SizedBox.shrink()
                 : BreadcrumbBar(
                     segments: currentPath,
                     onTap: (index) =>
                         index == -1 ? onHome() : onNavigate(currentPath.take(index + 1).toList()),
                   ),
           ),
-          IconButton(
-            onPressed: onRefresh,
-            tooltip: 'Actualiser la bibliothèque',
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            color: AppColors.secondary,
-            hoverColor: AppColors.hover,
-            splashRadius: 18,
-            padding: const EdgeInsets.all(6),
-            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-            visualDensity: VisualDensity.compact,
-          ),
         ],
       ),
     );
   }
 }
 
-class _Eyebrow extends StatelessWidget {
-  const _Eyebrow(this.label);
-
-  final String label;
+class _Header extends StatelessWidget {
+  const _Header();
 
   @override
   Widget build(BuildContext context) {
-    return Text(label, style: AppTypography.eyebrow());
-  }
-}
-
-class _LibrarySkeleton extends StatelessWidget {
-  const _LibrarySkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 860),
-        child: ListView.separated(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 48),
-          itemCount: 5,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (_, _) => const SkeletonCard(),
-        ),
-      ),
+    return Image.asset(
+      'assets/header.png',
+      width: double.infinity,
+      height: 220,
+      fit: BoxFit.cover,
     );
   }
 }
 
-class _SearchInput extends StatefulWidget {
-  const _SearchInput({required this.controller, required this.onChanged});
-
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  @override
-  State<_SearchInput> createState() => _SearchInputState();
-}
-
-class _SearchInputState extends State<_SearchInput> {
-  final FocusNode _focus = FocusNode();
-  bool _hovered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focus.addListener(_sync);
-  }
-
-  @override
-  void dispose() {
-    _focus.removeListener(_sync);
-    _focus.dispose();
-    super.dispose();
-  }
-
-  void _sync() {
-    if (mounted) setState(() {});
-  }
+class _RecentsSkeleton extends StatelessWidget {
+  const _RecentsSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    final focused = _focus.hasFocus;
-    final borderColor = focused
-        ? AppColors.darkCharcoal.withValues(alpha: 0.35)
-        : _hovered
-            ? AppColors.secondary.withValues(alpha: 0.35)
-            : AppColors.border;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: AppMotion.normal,
-        curve: AppMotion.easeOut,
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: AppRadius.searchR,
-          border: Border.all(color: borderColor, width: 1),
-          boxShadow: _hovered || focused ? AppShadows.xs : null,
-        ),
-        child: TextField(
-          controller: widget.controller,
-          focusNode: _focus,
-          onChanged: widget.onChanged,
-          onSubmitted: widget.onChanged,
-          style: AppTypography.body(AppColors.darkCharcoal)
-              .copyWith(fontSize: 15),
-          decoration: InputDecoration(
-            hintText: 'Rechercher une matière, un dossier ou un document…',
-            hintStyle:
-                AppTypography.body(AppColors.muted).copyWith(fontSize: 15),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              size: 21,
-              color: AppColors.secondary,
-            ),
-            suffixIcon: widget.controller.text.isEmpty
-                ? null
-                : IconButton(
-                    onPressed: () {
-                      widget.controller.clear();
-                      widget.onChanged('');
-                    },
-                    tooltip: 'Effacer',
-                    icon: const Icon(Icons.close_rounded, size: 18),
-                    color: AppColors.secondary,
-                  ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 16,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RecentSection extends StatelessWidget {
-  const _RecentSection({
-    required this.folders,
-    required this.files,
-    required this.onOpenFolder,
-    required this.onOpenFile,
-  });
-
-  final List<List<String>> folders;
-  final List<DocumentItem> files;
-  final void Function(List<String> path) onOpenFolder;
-  final void Function(DocumentItem doc) onOpenFile;
-
-  @override
-  Widget build(BuildContext context) {
-    if (folders.isEmpty && files.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _Eyebrow('Récents'),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            'Les dossiers et documents que vous ouvrez apparaîtront ici.',
-            style: AppTypography.body(AppColors.muted),
-          ),
-        ],
-      );
-    }
-
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _Eyebrow('Récents'),
-        const SizedBox(height: AppSpacing.sm),
-        SizedBox(
-          height: 150,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: folders.length + files.length,
-            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
-            itemBuilder: (context, index) {
-              if (index < folders.length) {
-                final path = folders[index];
-                return _RecentFolderCard(
-                  name: path.last,
-                  location: path.length > 1 ? path.take(path.length - 1).join(' / ') : 'Racine',
-                  onTap: () => onOpenFolder(path),
-                );
-              }
-              final doc = files[index - folders.length];
-              return RecentFileCard(
-                document: doc,
-                onTap: () => onOpenFile(doc),
-              );
-            },
-          ),
-        ),
+        for (var i = 0; i < 3; i++) ...[
+          const SkeletonCard(),
+          if (i < 2) const SizedBox(height: 10),
+        ],
       ],
     );
   }
 }
 
-class _RecentFolderCard extends StatelessWidget {
-  const _RecentFolderCard({
-    required this.name,
+class _RecentEntry {
+  const _RecentEntry({
+    required this.title,
     required this.location,
-    required this.onTap,
+    required this.document,
+    required this.openedAt,
   });
 
-  final String name;
+  final String title;
   final String location;
-  final VoidCallback onTap;
+  final DocumentItem document;
+  final DateTime openedAt;
+}
+
+class _RecentSection extends StatelessWidget {
+  const _RecentSection({
+    required this.entries,
+    required this.onOpenFile,
+  });
+
+  final List<_RecentEntry> entries;
+  final void Function(DocumentItem doc) onOpenFile;
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.sidebar,
+        borderRadius: AppRadius.cardR,
+        border: Border.all(color: AppColors.border, width: 1),
+        boxShadow: AppShadows.xs,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _RecentHeader(count: entries.length),
+          const Divider(height: 1, thickness: 1, color: AppColors.border),
+          if (entries.isEmpty)
+            const _EmptyRecent()
+          else
+            for (final entry in entries)
+              _RecentRow(
+                entry: entry,
+                isLast: identical(entry, entries.last),
+                onTap: () => onOpenFile(entry.document),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentHeader extends StatelessWidget {
+  const _RecentHeader({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Récents',
+            style: AppTypography.tileTitle(AppColors.darkCharcoal),
+          ),
+          const Spacer(),
+          if (count > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.hover,
+                borderRadius: BorderRadius.circular(AppRadius.chip),
+              ),
+              child: Text(
+                '$count',
+                style: AppTypography.metadata(AppColors.muted).copyWith(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyRecent extends StatelessWidget {
+  const _EmptyRecent();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.xxxl,
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.hover,
+              borderRadius: AppRadius.cardSmallR,
+            ),
+            child: const Icon(
+              Icons.history_rounded,
+              size: 26,
+              color: AppColors.muted,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'Aucun fichier récent',
+            style: AppTypography.label(AppColors.darkCharcoal),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Les fichiers PDF que vous ouvrez apparaîtront ici.',
+            textAlign: TextAlign.center,
+            style: AppTypography.metadata(AppColors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentRow extends StatefulWidget {
+  const _RecentRow({
+    required this.entry,
+    required this.isLast,
+    required this.onTap,
+  });
+
+  final _RecentEntry entry;
+  final bool isLast;
+  final VoidCallback onTap;
+
+  @override
+  State<_RecentRow> createState() => _RecentRowState();
+}
+
+class _RecentRowState extends State<_RecentRow> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = widget.entry;
     return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 168,
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: AppRadius.cardSmallR,
-            border: Border.all(color: AppColors.border, width: 1),
-            boxShadow: AppShadows.xs,
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: AppMotion.normal,
+          curve: AppMotion.easeOut,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          decoration: BoxDecoration(
+            color: _hovered ? AppColors.hover : AppColors.sidebar,
+            border: Border(
+              bottom: widget.isLast
+                  ? BorderSide.none
+                  : const BorderSide(color: AppColors.border, width: 1),
+            ),
+          ),
+          child: Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.accentSoft,
-                  borderRadius: AppRadius.iconR,
-                ),
-                child: const Icon(
-                  Icons.folder_rounded,
-                  size: 20,
-                  color: AppColors.accentDark,
+              const NotionPdfIcon(size: 34),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.title,
+                      style: AppTypography.metadata(AppColors.darkCharcoal)
+                          .copyWith(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${entry.location} · ${_timeAgo(entry.openedAt)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.metadata(AppColors.muted).copyWith(
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.metadata(AppColors.darkCharcoal)
-                    .copyWith(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-              const Spacer(),
-              Text(
-                location,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.metadata(AppColors.muted)
-                    .copyWith(fontSize: 11),
+              const SizedBox(width: AppSpacing.sm),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: AppColors.muted,
               ),
             ],
           ),
@@ -609,4 +765,15 @@ class _RecentFolderCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _timeAgo(DateTime time) {
+  final diff = DateTime.now().difference(time);
+  if (diff.inMinutes < 1) return "À l'instant";
+  if (diff.inMinutes < 60) return 'il y a ${diff.inMinutes} min';
+  if (diff.inHours < 24) return 'il y a ${diff.inHours} h';
+  if (diff.inDays == 1) return 'Hier';
+  if (diff.inDays < 7) return 'il y a ${diff.inDays} jours';
+  if (diff.inDays < 30) return 'il y a ${diff.inDays ~/ 7} sem.';
+  return 'il y a ${diff.inDays ~/ 30} mois';
 }

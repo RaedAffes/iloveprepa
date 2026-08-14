@@ -3,15 +3,23 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_motion.dart';
 import '../core/theme/app_radius.dart';
+import '../core/theme/app_spacing.dart';
 import '../core/theme/app_typography.dart';
 import '../models/document_item.dart';
 import '../models/library_folder.dart';
+import '../models/library_index.dart';
+import 'iloveprepa_brand.dart';
+import 'notion_folder_icon.dart';
+import 'search_input.dart';
 
 /// Left panel with the expandable/collapsible hierarchy tree.
 ///
-/// Every parent folder gets a ▶ / ▼ caret; files only appear once their
-/// parent is expanded. The currently open folder is highlighted in green,
-/// its ancestors are shown bold so "where am I?" is always answerable.
+/// The tree shows folders only — every parent folder gets a ▶ / ▼ caret and
+/// files are never listed here. Clicking the folder that holds the documents
+/// opens them in the main content area. The currently open folder is
+/// highlighted, its ancestors shown bold so "where am I?" is always
+/// answerable. While a search is active, the tree is replaced by the
+/// matching results (folders and files).
 class LibrarySidebar extends StatelessWidget {
   const LibrarySidebar({
     super.key,
@@ -21,7 +29,12 @@ class LibrarySidebar extends StatelessWidget {
     required this.onToggle,
     required this.onOpenFolder,
     required this.onOpenFile,
-    required this.totalDocuments,
+    required this.searchController,
+    required this.onSearchChanged,
+    this.searchQuery = '',
+    this.searchResults = const [],
+    this.treeScrollController,
+    this.onMenu,
   });
 
   final LibraryFolder root;
@@ -30,17 +43,32 @@ class LibrarySidebar extends StatelessWidget {
   final void Function(List<String> path) onToggle;
   final void Function(List<String> path) onOpenFolder;
   final void Function(DocumentItem doc) onOpenFile;
-  final int totalDocuments;
+  final TextEditingController searchController;
+  final ValueChanged<String> onSearchChanged;
+
+  /// Active search text (non-empty switches the panel to results mode).
+  final String searchQuery;
+
+  /// Search matches to display while [searchQuery] is non-empty.
+  final List<SearchResult> searchResults;
+
+  /// Keeps the tree's scroll position while search results are shown, so the
+  /// tree layout survives a search round-trip.
+  final ScrollController? treeScrollController;
+
+  /// Toggles the sidebar (wide screens) or closes the drawer (narrow).
+  final VoidCallback? onMenu;
 
   @override
   Widget build(BuildContext context) {
     final subjects = root.children.values.toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final searching = searchQuery.trim().isNotEmpty;
 
     return Container(
       width: 292,
       decoration: const BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.sidebar,
         border: Border(right: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: Column(
@@ -51,34 +79,207 @@ class LibrarySidebar extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Bibliothèque', style: AppTypography.sectionTitle()),
-                const SizedBox(height: 2),
-                Text(
-                  '$totalDocuments ${totalDocuments == 1 ? 'document' : 'documents'}',
-                  style: AppTypography.metadata(),
+                Row(
+                  children: [
+                    if (onMenu != null) ...[
+                      IconButton(
+                        onPressed: onMenu,
+                        tooltip: 'Masquer la barre latérale',
+                        icon: const Icon(
+                          Icons.menu_rounded,
+                          size: 20,
+                          color: AppColors.secondary,
+                        ),
+                        hoverColor: AppColors.hover,
+                        splashRadius: 18,
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints.tightFor(
+                          width: 32,
+                          height: 32,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                    ],
+                    Expanded(
+                      child: IloveprepaBrand(
+                        fontSize: 26,
+                        iconSize: 24,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            child: SearchInput(
+              controller: searchController,
+              onChanged: onSearchChanged,
+              compact: true,
+            ),
+          ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 24),
-              children: [
-                for (final subject in subjects)
-                  _Branch(
-                    folder: subject,
-                    path: [subject.name],
-                    currentPath: currentPath,
-                    expanded: expanded,
-                    onToggle: onToggle,
+            child: searching
+                ? _SearchResultsList(
+                    results: searchResults,
                     onOpenFolder: onOpenFolder,
                     onOpenFile: onOpenFile,
+                  )
+                : ListView(
+                    controller: treeScrollController,
+                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 24),
+                    children: [
+                      for (final subject in subjects)
+                        _Branch(
+                          folder: subject,
+                          path: [subject.name],
+                          currentPath: currentPath,
+                          expanded: expanded,
+                          onToggle: onToggle,
+                          onOpenFolder: onOpenFolder,
+                        ),
+                    ],
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchResultsList extends StatelessWidget {
+  const _SearchResultsList({
+    required this.results,
+    required this.onOpenFolder,
+    required this.onOpenFile,
+  });
+
+  final List<SearchResult> results;
+  final void Function(List<String> path) onOpenFolder;
+  final void Function(DocumentItem doc) onOpenFile;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(10, 4, 10, 24),
+      children: [
+        if (results.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 16, 10, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Résultats',
+                  style: AppTypography.label(AppColors.darkCharcoal),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Aucun résultat trouvé.',
+                  style: AppTypography.metadata(AppColors.muted),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
+            child: Row(
+              children: [
+                Text(
+                  'Résultats',
+                  style: AppTypography.label(AppColors.darkCharcoal),
+                ),
+                const Spacer(),
+                Text(
+                  '${results.length}',
+                  style: AppTypography.metadata(AppColors.muted),
+                ),
               ],
             ),
           ),
+          for (final result in results)
+            _ResultRow(
+              result: result,
+              depth: result.path.length,
+              onTap: () => result.isFolder
+                  ? onOpenFolder([...result.path, result.title])
+                  : onOpenFile(result.document!),
+            ),
         ],
+      ],
+    );
+  }
+}
+
+class _ResultRow extends StatelessWidget {
+  const _ResultRow({
+    required this.result,
+    required this.depth,
+    required this.onTap,
+  });
+
+  final SearchResult result;
+
+  /// Number of ancestor folders — controls the row's left indent so results
+  /// read as a hierarchy (folders and files nest under their parents).
+  final int depth;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(left: depth * 18.0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppRadius.navR,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: result.isFolder
+                      ? const NotionFolderIcon(size: 20)
+                      : const Icon(
+                          Icons.description_outlined,
+                          size: 16,
+                          color: AppColors.muted,
+                        ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        result.title,
+                        style: AppTypography.metadata(
+                          AppColors.darkCharcoal,
+                        ).copyWith(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        result.pathLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.metadata(
+                          AppColors.muted,
+                        ).copyWith(fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -92,7 +293,6 @@ class _Branch extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.onOpenFolder,
-    required this.onOpenFile,
   });
 
   final LibraryFolder folder;
@@ -101,13 +301,13 @@ class _Branch extends StatelessWidget {
   final Set<String> expanded;
   final void Function(List<String> path) onToggle;
   final void Function(List<String> path) onOpenFolder;
-  final void Function(DocumentItem doc) onOpenFile;
 
   String get pathKey => path.join('/');
 
   @override
   Widget build(BuildContext context) {
     final hasChildren = folder.children.isNotEmpty;
+    final isExpandable = hasChildren;
     final isExpanded = expanded.contains(pathKey);
     final isActive = _samePath(path, currentPath);
     final isAncestor = !isActive && _isPrefix(path, currentPath);
@@ -119,14 +319,11 @@ class _Branch extends StatelessWidget {
           depth: path.length - 1,
           isActive: isActive,
           isAncestor: isAncestor,
-          leading: hasChildren
+          leading: isExpandable
               ? _Caret(expanded: isExpanded, onTap: () => onToggle(path))
               : const SizedBox(width: 20),
-          icon: isActive || isAncestor
-              ? Icons.folder_rounded
-              : Icons.folder_outlined,
+          icon: const NotionFolderIcon(size: 20),
           label: folder.name,
-          iconColor: isActive ? AppColors.greenDark : AppColors.accentDark,
           textColor: isActive
               ? AppColors.greenDark
               : isAncestor
@@ -137,7 +334,7 @@ class _Branch extends StatelessWidget {
               : FontWeight.w400,
           onTap: () => onOpenFolder(path),
         ),
-        if (hasChildren && isExpanded) ...[
+        if (isExpandable && isExpanded)
           for (final child
               in folder.children.values.toList()..sort(
                 (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
@@ -149,27 +346,7 @@ class _Branch extends StatelessWidget {
               expanded: expanded,
               onToggle: onToggle,
               onOpenFolder: onOpenFolder,
-              onOpenFile: onOpenFile,
             ),
-          for (final doc
-              in List<DocumentItem>.from(folder.files)..sort(
-                (a, b) => a.displayName.toLowerCase().compareTo(
-                  b.displayName.toLowerCase(),
-                ),
-              ))
-            _TreeRow(
-              depth: path.length,
-              isActive: false,
-              isAncestor: false,
-              leading: const SizedBox(width: 20),
-              icon: Icons.description_outlined,
-              label: doc.displayName,
-              iconColor: AppColors.muted,
-              textColor: AppColors.secondary,
-              fontWeight: FontWeight.w400,
-              onTap: () => onOpenFile(doc),
-            ),
-        ],
       ],
     );
   }
@@ -183,7 +360,6 @@ class _TreeRow extends StatelessWidget {
     required this.leading,
     required this.icon,
     required this.label,
-    required this.iconColor,
     required this.textColor,
     required this.fontWeight,
     required this.onTap,
@@ -193,9 +369,8 @@ class _TreeRow extends StatelessWidget {
   final bool isActive;
   final bool isAncestor;
   final Widget leading;
-  final IconData icon;
+  final Widget icon;
   final String label;
-  final Color iconColor;
   final Color textColor;
   final FontWeight fontWeight;
   final VoidCallback onTap;
@@ -225,13 +400,11 @@ class _TreeRow extends StatelessWidget {
               children: [
                 leading,
                 const SizedBox(width: 2),
-                Icon(icon, size: 16, color: iconColor),
+                icon,
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.metadata(
                       textColor,
                     ).copyWith(fontWeight: fontWeight, fontSize: 13),

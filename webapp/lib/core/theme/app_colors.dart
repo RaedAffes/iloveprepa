@@ -7,26 +7,31 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Main background
+  // Main background (Notion workspace)
   static const background = Color(0xFFFFFFFF);
-  // Sidebar
-  static const sidebar = Color(0xFFFAFAFA);
+  // Sidebar (Notion sidebar tone)
+  static const sidebar = Color(0xFFF7F7F5);
   // Secondary surfaces
   static const surfaceSecondary = Color(0xFFF7F7F5);
-  // Hover / selected surface
-  static const hover = Color(0xFFF1F1EF);
+  // Hover / selected surface (Notion hover tone)
+  static const hover = Color(0xFFEFEFEE);
 
-  // Ink / primary text
-  static const darkCharcoal = Color(0xFF252525);
-  static const secondary = Color(0xFF787878);
-  static const muted = Color(0xFFA0A0A0);
+  // Ink / primary text (Notion ink)
+  static const darkCharcoal = Color(0xFF37352F);
+  static const secondary = Color(0xFF787774);
+  static const muted = Color(0xFF9B9A97);
 
   // Borders
-  static const border = Color(0xFFE8E8E6);
+  static const border = Color(0xFFE9E9E7);
 
-  // Soft accent colors (very subtle pastels)
-  static const accentGreen = Color(0xFF7BC983);
-  static const accentGreenSoft = Color(0xFFE8F8F0);
+  // Google Drive style folder yellow
+  static const folderYellow = Color(0xFFFFD24D);
+  static const folderYellowDark = Color(0xFFE8A71B);
+  static const folderYellowSoft = Color(0xFFFFF5D1);
+
+  // Primary accent — Notion grey family (replaces the former green accent).
+  static const accentGreen = Color(0xFF787774);
+  static const accentGreenSoft = Color(0xFFF1F1EF);
   static const accentCoral = Color(0xFFF7B2A9);
   static const accentCoralSoft = Color(0xFFFDF0F3);
   static const accentYellow = Color(0xFFFDE9A3);
@@ -36,7 +41,7 @@ class AppColors {
   static const accentPurple = Color(0xFFE0E7FF);
   static const accentPurpleSoft = Color(0xFFF8F4FA);
 
-  // Deeper pastel tones for glyphs sitting on the pale fills above.
+  // Deeper tones for glyphs sitting on the pale fills above.
   static const accentCoralDark = Color(0xFFB4482F);
   static const accentYellowDark = Color(0xFF9A7410);
   static const accentBlueDark = Color(0xFF2F6F9E);
@@ -63,16 +68,16 @@ class AppColors {
   /// Primary ink for headings.
   static const ink = darkCharcoal;
 
-  /// Primary accent (soft green) — focus rings, active chips, highlights.
+  /// Primary accent (Notion grey) — focus rings, active chips, highlights.
   static const accent = accentGreen;
 
   /// Pale accent fill for icon tiles and selected rows.
   static const accentSoft = accentGreenSoft;
 
-  /// Deeper accent for icon glyphs sitting on pale fills.
-  static const accentDark = Color(0xFF2F7A3E);
+  /// Deeper accent for icon glyphs sitting on pale fills (Notion ink).
+  static const accentDark = Color(0xFF37352F);
 
-  // Green family (aliases kept for the library widgets).
+  // Grey family (aliases kept for the library widgets).
   static const greenDark = accentDark;
   static const greenSoft = accentGreenSoft;
 }

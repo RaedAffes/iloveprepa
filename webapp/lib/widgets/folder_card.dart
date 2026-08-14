@@ -7,6 +7,7 @@ import '../core/theme/app_spacing.dart';
 import '../core/theme/app_typography.dart';
 import '../models/library_folder.dart';
 import 'hover_lift.dart';
+import 'notion_folder_icon.dart';
 
 /// A simple folder box: folder icon, name, chevron. Tapping opens it.
 class FolderCard extends StatelessWidget {
@@ -36,14 +37,10 @@ class FolderCard extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: AppColors.accentSoft,
+                color: AppColors.folderYellowSoft,
                 borderRadius: AppRadius.iconR,
               ),
-              child: const Icon(
-                Icons.folder_outlined,
-                size: 20,
-                color: AppColors.accentDark,
-              ),
+              child: const NotionFolderIcon(size: 30),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(

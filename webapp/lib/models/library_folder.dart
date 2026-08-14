@@ -39,6 +39,18 @@ class LibraryFolder {
   }
 
   LibraryFolder? child(String name) => children[name];
+
+  /// Walks the tree down to the folder at [path] (relative to this node),
+  /// or returns null if any segment is missing.
+  LibraryFolder? descend(List<String> path) {
+    var node = this;
+    for (final segment in path) {
+      final next = node.children[segment];
+      if (next == null) return null;
+      node = next;
+    }
+    return node;
+  }
 }
 
 /// Builds the full library tree from the flat list returned by the R2 worker.

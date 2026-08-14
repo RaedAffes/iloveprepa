@@ -8,6 +8,7 @@ import '../core/theme/app_typography.dart';
 import '../models/library_index.dart';
 import 'file_mark.dart';
 import 'hover_lift.dart';
+import 'notion_folder_icon.dart';
 
 /// A single search result. Folders open the folder; files offer Voir and
 /// Télécharger actions. Every result always shows its complete path so the
@@ -52,14 +53,10 @@ class SearchResultTile extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: AppColors.accentSoft,
+            color: AppColors.folderYellowSoft,
             borderRadius: AppRadius.iconR,
           ),
-          child: const Icon(
-            Icons.folder_rounded,
-            size: 20,
-            color: AppColors.accentDark,
-          ),
+          child: const NotionFolderIcon(size: 30),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(child: _body()),

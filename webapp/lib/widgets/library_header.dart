@@ -107,18 +107,10 @@ class _Brand extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: AppColors.ink,
-            borderRadius: BorderRadius.circular(AppRadius.nav),
-          ),
-          child: const Icon(
-            Icons.school_rounded,
-            size: 17,
-            color: AppColors.white,
-          ),
+        const Icon(
+          Icons.favorite_rounded,
+          size: 28,
+          color: Colors.red,
         ),
         const SizedBox(width: AppSpacing.md),
         Flexible(
