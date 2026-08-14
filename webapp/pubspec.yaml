@@ -36,7 +36,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.6.0
   url_launcher: ^6.3.2
-  google_fonts: ^8.2.1
   intl: ^0.20.3
   shared_preferences: ^2.5.5
   firebase_core: ^4.13.0
@@ -68,6 +67,15 @@ flutter:
   assets:
     - assets/folder.png
     - assets/header.png
+    - assets/main.png
+    - assets/main2.png
+    - assets/main3.png
+    - assets/don.png
+    - assets/scroll_anim.png
+    - assets/cours.png
+    - assets/td.png
+    - assets/devoir.png
+    - assets/examen.png
 
   fonts:
     - family: Inter

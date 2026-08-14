@@ -7,12 +7,24 @@ import '../core/theme/app_spacing.dart';
 import '../core/theme/app_typography.dart';
 import '../models/document_item.dart';
 import '../models/library_folder.dart';
-import 'file_mark.dart';
+import 'landing/landing_colors.dart' as landing;
 
-/// The main-page file browser: when the open folder is the last in the tree
-/// (it has no subfolders), its documents are listed as rows with View /
-/// Download actions — like a real file app. Folders that only contain
-/// subfolders show nothing, since navigation happens in the tree.
+/// Soft blue fill used for chips in the file browser.
+const Color _blueSoft = Color(0xFFE8EDFA);
+
+/// Light blue tint applied to a file row on hover.
+const Color _rowHover = Color(0xFFF2F5FD);
+
+/// Near-black ink for titles, numbers and icons.
+const Color _ink = Color(0xFF1B1B1B);
+
+/// Muted grey for secondary text.
+const Color _greyMuted = Color(0xFF6B7280);
+
+/// The main-page file browser: the open folder's documents are listed as
+/// numbered, professional rows with View / Download actions — like a real file
+/// app. Folders that only contain subfolders show nothing, since navigation
+/// happens in the tree.
 class FolderContentView extends StatelessWidget {
   const FolderContentView({
     super.key,
@@ -32,46 +44,39 @@ class FolderContentView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLeaf = folder.children.isEmpty;
-    if (!isLeaf) return const SizedBox.shrink();
-
     final files = List<DocumentItem>.from(folder.files)
       ..sort((a, b) => a.displayName.toLowerCase().compareTo(
             b.displayName.toLowerCase(),
           ));
+
+    if (files.isEmpty) {
+      if (folder.children.isEmpty) return const _EmptyFolder();
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: AppSpacing.xl),
         _SectionHeader(
-          icon: Icons.description_outlined,
           label: 'Documents',
           count: files.length,
         ),
         const SizedBox(height: AppSpacing.md),
-        if (files.isEmpty)
-          const _EmptyFolder()
-        else
-          _DocumentsWindow(
-            files: files,
-            busy: busy,
-            onView: onView,
-            onDownload: onDownload,
-          ),
+        _DocumentsWindow(
+          files: files,
+          busy: busy,
+          onView: onView,
+          onDownload: onDownload,
+        ),
       ],
     );
   }
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.icon,
-    required this.label,
-    required this.count,
-  });
+  const _SectionHeader({required this.label, required this.count});
 
-  final IconData icon;
   final String label;
   final int count;
 
@@ -79,27 +84,26 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 17, color: AppColors.secondary),
-        const SizedBox(width: AppSpacing.sm),
         Text(
           label,
-          style: AppTypography.label(AppColors.darkCharcoal),
+          style: AppTypography.sectionTitle(_ink),
         ),
         const SizedBox(width: AppSpacing.sm),
         Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: 1,
+            horizontal: AppSpacing.sm + 2,
+            vertical: 2,
           ),
           decoration: BoxDecoration(
-            color: AppColors.hover,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.chip),
+            border: Border.all(color: const Color(0xFFD1D5DB), width: 1),
           ),
           child: Text(
             '$count',
-            style: AppTypography.metadata(AppColors.muted).copyWith(
+            style: AppTypography.metadata(_ink).copyWith(
               fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -129,25 +133,25 @@ class _EmptyFolder extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: AppColors.hover,
+              color: _blueSoft,
               borderRadius: AppRadius.cardSmallR,
             ),
             child: const Icon(
               Icons.folder_open_outlined,
               size: 26,
-              color: AppColors.muted,
+              color: landing.AppColors.accentBlue,
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
             'Ce dossier est vide',
-            style: AppTypography.label(AppColors.darkCharcoal),
+            style: AppTypography.label(_ink),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Aucun dossier ou document ici pour le moment.',
             textAlign: TextAlign.center,
-            style: AppTypography.metadata(AppColors.muted),
+            style: AppTypography.metadata(_greyMuted),
           ),
         ],
       ),
@@ -155,9 +159,8 @@ class _EmptyFolder extends StatelessWidget {
   }
 }
 
-/// A file-manager style window: a bordered panel whose rows list the files
-/// directly inside the open folder, with their size and View / Download
-/// actions.
+/// A file-manager style window: a bordered panel with a flat blue header and
+/// numbered rows listing the files with View / Download actions.
 class _DocumentsWindow extends StatelessWidget {
   const _DocumentsWindow({
     required this.files,
@@ -205,23 +208,22 @@ class _WindowHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.sm,
-        AppSpacing.lg,
-        AppSpacing.sm,
+    const style = TextStyle(
+      color: Colors.white,
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.8,
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: 11,
       ),
-      child: Row(
+      color: landing.AppColors.midBlue,
+      child: const Row(
         children: [
-          Text(
-            'Nom',
-            style: AppTypography.metadata(AppColors.muted).copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.6,
-            ),
-          ),
+          Expanded(child: Text('NOM', style: style)),
         ],
       ),
     );
@@ -253,11 +255,11 @@ class _FileRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: busy ? null : onView,
-        hoverColor: AppColors.hover,
+        hoverColor: _rowHover,
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
+            vertical: 10,
           ),
           decoration: BoxDecoration(
             border: Border(
@@ -278,7 +280,7 @@ class _FileRow extends StatelessWidget {
                           onPressed: busy ? null : onView,
                           tooltip: 'Voir',
                           icon: const Icon(Icons.visibility_outlined, size: 18),
-                          color: AppColors.secondary,
+                          color: _ink,
                         ),
                         IconButton(
                           onPressed: busy ? null : onDownload,
@@ -289,11 +291,11 @@ class _FileRow extends StatelessWidget {
                                   height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: AppColors.secondary,
+                                    color: landing.AppColors.orange,
                                   ),
                                 )
                               : const Icon(Icons.download_rounded, size: 18),
-                          color: AppColors.secondary,
+                          color: landing.AppColors.orange,
                         ),
                       ],
                     )
@@ -302,19 +304,28 @@ class _FileRow extends StatelessWidget {
                       children: [
                         OutlinedButton.icon(
                           onPressed: busy ? null : onView,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _ink,
+                            backgroundColor: Colors.white,
+                            side: const BorderSide(color: _ink, width: 1.2),
+                          ),
                           icon: const Icon(Icons.visibility_outlined, size: 16),
                           label: const Text('Voir'),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         FilledButton.icon(
                           onPressed: busy ? null : onDownload,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: landing.AppColors.orange,
+                            foregroundColor: _ink,
+                          ),
                           icon: busy
                               ? const SizedBox(
                                   width: 14,
                                   height: 14,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: AppColors.white,
+                                    color: _ink,
                                   ),
                                 )
                               : const Icon(Icons.download_rounded, size: 16),
@@ -325,34 +336,29 @@ class _FileRow extends StatelessWidget {
 
               return Row(
                 children: [
-                  FileMark(
-                    isPdf: doc.isPdf,
-                    extension: doc.extension,
-                    size: 38,
-                  ),
-                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           doc.displayName,
-                          style: AppTypography.metadata(
-                            AppColors.darkCharcoal,
-                          ).copyWith(
-                            fontWeight: FontWeight.w600,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.label(_ink).copyWith(
+                            fontWeight: FontWeight.w700,
                             fontSize: 13.5,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           typeLabel,
-                          style: AppTypography.metadata(AppColors.muted)
+                          style: AppTypography.metadata(_greyMuted)
                               .copyWith(fontSize: 11.5),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: AppSpacing.sm),
                   actions,
                 ],
               );

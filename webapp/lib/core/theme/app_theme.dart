@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 import 'app_typography.dart';
@@ -93,12 +92,12 @@ class AppTheme {
           textStyle: AppTypography.body(AppColors.darkCharcoal),
         ),
       ),
-      textTheme: GoogleFonts.interTextTheme(),
+      textTheme: ThemeData().textTheme.apply(fontFamily: 'Inter'),
     );
 
     // Override specific text styles for the workspace aesthetic
     return theme.copyWith(
-      textTheme: GoogleFonts.interTextTheme(theme.textTheme).copyWith(
+      textTheme: theme.textTheme.copyWith(
         // Display/headline styles
         displayLarge: theme.textTheme.displayLarge!.copyWith(
           fontWeight: FontWeight.w600,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../core/theme/app_colors.dart';
 import '../core/theme/app_motion.dart';
 import '../core/theme/app_radius.dart';
 import '../core/theme/app_spacing.dart';
@@ -9,17 +8,20 @@ import '../models/document_item.dart';
 import '../models/library_folder.dart';
 import '../models/library_index.dart';
 import 'iloveprepa_brand.dart';
+import 'landing/landing_colors.dart' as landing;
 import 'notion_folder_icon.dart';
+import 'notion_pdf_icon.dart';
 import 'search_input.dart';
 
 /// Left panel with the expandable/collapsible hierarchy tree.
 ///
-/// The tree shows folders only — every parent folder gets a ▶ / ▼ caret and
-/// files are never listed here. Clicking the folder that holds the documents
-/// opens them in the main content area. The currently open folder is
-/// highlighted, its ancestors shown bold so "where am I?" is always
-/// answerable. While a search is active, the tree is replaced by the
-/// matching results (folders and files).
+/// Folders get a ▶ / ▼ caret and, once expanded, their documents are listed
+/// beneath them as file rows. Clicking a folder or a file opens it in the main
+/// content area. The currently open folder is highlighted, its ancestors shown
+/// bold so "where am I?" is always answerable. While a search is active, the
+/// tree is replaced by the matching results: the ancestor folders of every hit
+/// keep the hierarchy readable, but only the folders and files that actually
+/// match are shown.
 class LibrarySidebar extends StatelessWidget {
   const LibrarySidebar({
     super.key,
@@ -35,6 +37,7 @@ class LibrarySidebar extends StatelessWidget {
     this.searchResults = const [],
     this.treeScrollController,
     this.onMenu,
+    this.onBrandTap,
   });
 
   final LibraryFolder root;
@@ -59,6 +62,9 @@ class LibrarySidebar extends StatelessWidget {
   /// Toggles the sidebar (wide screens) or closes the drawer (narrow).
   final VoidCallback? onMenu;
 
+  /// Returns to the landing page when the brand mark is tapped.
+  final VoidCallback? onBrandTap;
+
   @override
   Widget build(BuildContext context) {
     final subjects = root.children.values.toList()
@@ -66,10 +72,12 @@ class LibrarySidebar extends StatelessWidget {
     final searching = searchQuery.trim().isNotEmpty;
 
     return Container(
-      width: 292,
+      width: 320,
       decoration: const BoxDecoration(
-        color: AppColors.sidebar,
-        border: Border(right: BorderSide(color: AppColors.border, width: 1)),
+        color: landing.AppColors.midBlue,
+        border: Border(
+          right: BorderSide(color: Color(0x33FFFFFF), width: 1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -88,9 +96,9 @@ class LibrarySidebar extends StatelessWidget {
                         icon: const Icon(
                           Icons.menu_rounded,
                           size: 20,
-                          color: AppColors.secondary,
+                          color: Colors.white,
                         ),
-                        hoverColor: AppColors.hover,
+                        hoverColor: Colors.white12,
                         splashRadius: 18,
                         padding: const EdgeInsets.all(6),
                         constraints: const BoxConstraints.tightFor(
@@ -105,6 +113,8 @@ class LibrarySidebar extends StatelessWidget {
                       child: IloveprepaBrand(
                         fontSize: 26,
                         iconSize: 24,
+                        color: Colors.white,
+                        onTap: onBrandTap,
                       ),
                     ),
                   ],
@@ -112,7 +122,7 @@ class LibrarySidebar extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1),
+          const Divider(height: 1, color: Color(0x33FFFFFF)),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
             child: SearchInput(
@@ -132,6 +142,21 @@ class LibrarySidebar extends StatelessWidget {
                     controller: treeScrollController,
                     padding: const EdgeInsets.fromLTRB(10, 10, 10, 24),
                     children: [
+                      for (final file in root.files)
+                        _TreeRow(
+                          depth: 0,
+                          isActive: false,
+                          isAncestor: false,
+                          leading: const SizedBox(width: 20),
+                          icon: const NotionPdfIcon(
+                            size: 15,
+                            color: Colors.white70,
+                          ),
+                          label: file.fileName,
+                          textColor: Colors.white70,
+                          fontWeight: FontWeight.w400,
+                          onTap: () => onOpenFile(file),
+                        ),
                       for (final subject in subjects)
                         _Branch(
                           folder: subject,
@@ -140,6 +165,7 @@ class LibrarySidebar extends StatelessWidget {
                           expanded: expanded,
                           onToggle: onToggle,
                           onOpenFolder: onOpenFolder,
+                          onOpenFile: onOpenFile,
                         ),
                     ],
                   ),
@@ -163,69 +189,170 @@ class _SearchResultsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final roots = _buildSearchTree(results);
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(10, 4, 10, 24),
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
+          child: Row(
+            children: [
+              Text(
+                'Résultats',
+                style: AppTypography.label(Colors.white),
+              ),
+              const Spacer(),
+              Text(
+                '${results.length}',
+                style: AppTypography.metadata(Colors.white70),
+              ),
+            ],
+          ),
+        ),
         if (results.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(10, 16, 10, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Résultats',
-                  style: AppTypography.label(AppColors.darkCharcoal),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Aucun résultat trouvé.',
-                  style: AppTypography.metadata(AppColors.muted),
-                ),
-              ],
+            child: Text(
+              'Aucun résultat trouvé.',
+              style: AppTypography.metadata(Colors.white70),
             ),
           )
-        else ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
+        else
+          for (final node in roots) ..._searchRows(node, 0),
+      ],
+    );
+  }
+
+  /// Flattens a search hit's matches into tree rows: each ancestor folder of a
+  /// hit is shown as a folder row (so the path stays readable), and only the
+  /// folders/files that actually matched are listed beneath — never the full
+  /// contents of a folder.
+  List<Widget> _searchRows(_SearchNode node, int depth) => [
+        _SearchFolderRow(
+          name: node.name,
+          depth: depth,
+          isMatch: node.isMatch,
+          onTap: () => onOpenFolder(node.path),
+        ),
+        for (final child in node.children.values.toList()
+          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase())))
+          ..._searchRows(child, depth + 1),
+        for (final file in node.files)
+          _SearchFileRow(
+            title: file.title,
+            depth: depth + 1,
+            onTap: () => onOpenFile(file.document!),
+          ),
+      ];
+}
+
+/// Rebuilds the flat [SearchResult] list into a minimal tree: matched folders
+/// and files keep their ancestor folders so the hierarchy of the real tree is
+/// preserved, but sibling folders/files that don't match are dropped.
+List<_SearchNode> _buildSearchTree(List<SearchResult> results) {
+  final root = _SearchNode('', const []);
+  for (final result in results) {
+    final node = result.isFolder
+        ? root.ensure([...result.path, result.title])
+        : root.ensure(result.path);
+    if (result.isFolder) {
+      node.match = result;
+    } else {
+      node.files.add(result);
+    }
+  }
+  return [
+    for (final child in root.children.values) child,
+  ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+}
+
+/// One folder in the filtered search tree.
+class _SearchNode {
+  _SearchNode(this.name, this.path);
+
+  final String name;
+
+  /// Full folder path — the node's own name included.
+  final List<String> path;
+
+  final Map<String, _SearchNode> children = {};
+  final List<SearchResult> files = [];
+
+  /// Set when the folder name itself matches the query.
+  SearchResult? match;
+
+  bool get isMatch => match != null;
+
+  _SearchNode ensure(List<String> segments) {
+    var node = this;
+    for (final segment in segments) {
+      node = node.children.putIfAbsent(
+        segment,
+        () => _SearchNode(segment, [...node.path, segment]),
+      );
+    }
+    return node;
+  }
+}
+
+class _SearchFolderRow extends StatelessWidget {
+  const _SearchFolderRow({
+    required this.name,
+    required this.depth,
+    required this.isMatch,
+    required this.onTap,
+  });
+
+  final String name;
+  final int depth;
+  final bool isMatch;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(left: depth * 18.0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppRadius.navR,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             child: Row(
               children: [
-                Text(
-                  'Résultats',
-                  style: AppTypography.label(AppColors.darkCharcoal),
-                ),
-                const Spacer(),
-                Text(
-                  '${results.length}',
-                  style: AppTypography.metadata(AppColors.muted),
+                const SizedBox(width: 20),
+                const NotionFolderIcon(size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    name,
+                    style: AppTypography.metadata(
+                      isMatch ? Colors.white : Colors.white70,
+                    ).copyWith(
+                      fontWeight: isMatch ? FontWeight.w600 : FontWeight.w400,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          for (final result in results)
-            _ResultRow(
-              result: result,
-              depth: result.path.length,
-              onTap: () => result.isFolder
-                  ? onOpenFolder([...result.path, result.title])
-                  : onOpenFile(result.document!),
-            ),
-        ],
-      ],
+        ),
+      ),
     );
   }
 }
 
-class _ResultRow extends StatelessWidget {
-  const _ResultRow({
-    required this.result,
+class _SearchFileRow extends StatelessWidget {
+  const _SearchFileRow({
+    required this.title,
     required this.depth,
     required this.onTap,
   });
 
-  final SearchResult result;
-
-  /// Number of ancestor folders — controls the row's left indent so results
-  /// read as a hierarchy (folders and files nest under their parents).
+  final String title;
   final int depth;
   final VoidCallback onTap;
 
@@ -242,38 +369,20 @@ class _ResultRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             child: Row(
               children: [
-                SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: result.isFolder
-                      ? const NotionFolderIcon(size: 20)
-                      : const Icon(
-                          Icons.description_outlined,
-                          size: 16,
-                          color: AppColors.muted,
-                        ),
+                const SizedBox(width: 20),
+                const Icon(
+                  Icons.description_outlined,
+                  size: 16,
+                  color: Colors.white70,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        result.title,
-                        style: AppTypography.metadata(
-                          AppColors.darkCharcoal,
-                        ).copyWith(fontWeight: FontWeight.w600, fontSize: 13),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        result.pathLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.metadata(
-                          AppColors.muted,
-                        ).copyWith(fontSize: 11),
-                      ),
-                    ],
+                  child: Text(
+                    title,
+                    style: AppTypography.metadata(Colors.white).copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -293,6 +402,7 @@ class _Branch extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.onOpenFolder,
+    required this.onOpenFile,
   });
 
   final LibraryFolder folder;
@@ -301,13 +411,15 @@ class _Branch extends StatelessWidget {
   final Set<String> expanded;
   final void Function(List<String> path) onToggle;
   final void Function(List<String> path) onOpenFolder;
+  final void Function(DocumentItem doc) onOpenFile;
 
   String get pathKey => path.join('/');
 
   @override
   Widget build(BuildContext context) {
     final hasChildren = folder.children.isNotEmpty;
-    final isExpandable = hasChildren;
+    final hasFiles = folder.files.isNotEmpty;
+    final isExpandable = hasChildren || hasFiles;
     final isExpanded = expanded.contains(pathKey);
     final isActive = _samePath(path, currentPath);
     final isAncestor = !isActive && _isPrefix(path, currentPath);
@@ -320,15 +432,18 @@ class _Branch extends StatelessWidget {
           isActive: isActive,
           isAncestor: isAncestor,
           leading: isExpandable
-              ? _Caret(expanded: isExpanded, onTap: () => onToggle(path))
+              ? _Caret(
+                  expanded: isExpanded,
+                  onTap: () => onToggle(path),
+                )
               : const SizedBox(width: 20),
           icon: const NotionFolderIcon(size: 20),
           label: folder.name,
           textColor: isActive
-              ? AppColors.greenDark
+              ? Colors.white
               : isAncestor
-              ? AppColors.ink
-              : AppColors.secondary,
+              ? Colors.white
+              : Colors.white70,
           fontWeight: isActive || isAncestor
               ? FontWeight.w600
               : FontWeight.w400,
@@ -346,6 +461,20 @@ class _Branch extends StatelessWidget {
               expanded: expanded,
               onToggle: onToggle,
               onOpenFolder: onOpenFolder,
+              onOpenFile: onOpenFile,
+            ),
+        if (isExpanded && folder.files.isNotEmpty)
+          for (final file in folder.files)
+            _TreeRow(
+              depth: path.length,
+              isActive: false,
+              isAncestor: false,
+              leading: const SizedBox(width: 20),
+              icon: const NotionPdfIcon(size: 15, color: Colors.white70),
+              label: file.fileName,
+              textColor: Colors.white70,
+              fontWeight: FontWeight.w400,
+              onTap: () => onOpenFile(file),
             ),
       ],
     );
@@ -390,9 +519,9 @@ class _TreeRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
               color: isActive
-                  ? AppColors.greenSoft
+                  ? landing.AppColors.orange
                   : isAncestor
-                  ? AppColors.surfaceMuted.withValues(alpha: 0.6)
+                  ? Colors.white.withValues(alpha: 0.12)
                   : Colors.transparent,
               borderRadius: AppRadius.navR,
             ),
@@ -442,7 +571,7 @@ class _Caret extends StatelessWidget {
           curve: AppMotion.easeOut,
           child: const Icon(
             Icons.chevron_right_rounded,
-            color: AppColors.secondary,
+            color: Colors.white70,
           ),
         ),
       ),

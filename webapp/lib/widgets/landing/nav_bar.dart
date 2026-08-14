@@ -1,87 +1,109 @@
 import 'package:flutter/material.dart';
 
+import '../iloveprepa_brand.dart';
 import 'landing_colors.dart';
 
 class LandingNavBar extends StatelessWidget {
   final bool isWide;
-  const LandingNavBar({super.key, required this.isWide});
+  final ValueChanged<String> onNavigate;
+  const LandingNavBar({super.key, required this.isWide, required this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Row(
-          children: const [
-            Icon(Icons.emoji_events, color: AppColors.orange, size: 26),
-            SizedBox(width: 10),
-            Text(
-              'Company Logo',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+        const IloveprepaBrand(
+          fontSize: 26,
+          iconSize: 24,
+          color: Colors.white,
         ),
         const Spacer(),
         if (isWide)
           Row(
             children: [
-              NavLink('Home'),
+              NavPill('À propos', onTap: () => onNavigate('about')),
               const SizedBox(width: 12),
-              NavPill('About'),
+              NavPill('Faire un don', onTap: () => onNavigate('donate')),
               const SizedBox(width: 12),
-              NavLink('Help'),
-              const SizedBox(width: 12),
-              NavLink('Info'),
+              NavPill('Contact', onTap: () => onNavigate('contact')),
             ],
           )
         else
-          const Icon(Icons.menu, color: Colors.white),
+          _MenuButton(onNavigate: onNavigate),
       ],
     );
   }
 }
 
-class NavLink extends StatelessWidget {
-  final String label;
-  const NavLink(this.label, {super.key});
+class _MenuButton extends StatelessWidget {
+  const _MenuButton({required this.onNavigate});
+
+  final ValueChanged<String> onNavigate;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-        ),
+    return PopupMenuButton<String>(
+      tooltip: 'Menu',
+      icon: const Icon(
+        Icons.menu,
+        color: Colors.white,
+        size: 28,
       ),
+      color: Colors.white,
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      position: PopupMenuPosition.under,
+      offset: const Offset(0, 8),
+      onSelected: onNavigate,
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: 'about',
+          child: Center(child: NavPill('À propos')),
+        ),
+        PopupMenuItem(
+          value: 'donate',
+          child: Center(child: NavPill('Faire un don')),
+        ),
+        PopupMenuItem(
+          value: 'contact',
+          child: Center(child: NavPill('Contact')),
+        ),
+      ],
     );
   }
 }
 
 class NavPill extends StatelessWidget {
   final String label;
-  const NavPill(this.label, {super.key});
+  final Color backgroundColor;
+  final Color textColor;
+  final VoidCallback? onTap;
+
+  const NavPill(
+    this.label, {
+    super.key,
+    this.backgroundColor = AppColors.orange,
+    this.textColor = Colors.white,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.orange,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

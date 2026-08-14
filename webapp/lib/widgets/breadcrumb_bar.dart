@@ -9,19 +9,30 @@ import '../core/theme/app_typography.dart';
 /// [segments] is the current folder path; tapping any entry navigates back.
 /// Tapping "Accueil" passes `-1` to [onTap].
 class BreadcrumbBar extends StatelessWidget {
-  const BreadcrumbBar({super.key, required this.segments, required this.onTap});
+  const BreadcrumbBar({
+    super.key,
+    required this.segments,
+    required this.onTap,
+    this.onDark = false,
+  });
 
   final List<String> segments;
   final void Function(int index) onTap;
 
+  /// Renders the trail in light tones (for use on dark blue surfaces).
+  final bool onDark;
+
   @override
   Widget build(BuildContext context) {
+    final Color separators = onDark
+        ? const Color(0x99FFFFFF)
+        : AppColors.muted;
     final items = <Widget>[
       _crumb('Accueil', index: -1),
       for (var i = 0; i < segments.length; i++) ...[
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Text('›', style: AppTypography.metadata(AppColors.muted)),
+          child: Text('›', style: AppTypography.metadata(separators)),
         ),
         _crumb(segments[i], index: i),
       ],
@@ -38,7 +49,9 @@ class BreadcrumbBar extends StatelessWidget {
 
   Widget _crumb(String label, {required int index}) {
     final isLast = index == segments.length - 1;
-    final Color color = isLast ? AppColors.greenDark : AppColors.accentDark;
+    final Color color = onDark
+        ? (isLast ? Colors.white : Colors.white70)
+        : (isLast ? AppColors.greenDark : AppColors.accentDark);
     final FontWeight weight = isLast ? FontWeight.w700 : FontWeight.w600;
     return InkWell(
       onTap: () => onTap(index),

@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Iloveprepa — a calm study library served from Cloudflare R2.">
+  <meta name="description" content="IlovePrepa">
 
   <!-- Google Analytics (GA4) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-5DTE2FZR8E"></script>
@@ -32,49 +32,114 @@
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="iloveprepa">
+  <meta name="apple-mobile-web-app-title" content="IlovePrepa">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Iloveprepa — Study Library</title>
+  <title>IlovePrepa</title>
   <link rel="manifest" href="manifest.json">
+
   <style>
     html, body {
       height: 100%;
       margin: 0;
-      background: linear-gradient(135deg, #FAF7F0 0%, #F1ECDF 100%);
+      background: #F4F6FB;
     }
-    #loading {
+
+    /* Reuse the app's own bundled fonts so the preview is pixel-identical. */
+    @font-face {
+      font-family: 'PlayfairDisplay';
+      font-display: swap;
+      src: url('assets/assets/fonts/PlayfairDisplay-Variable.ttf') format('truetype');
+    }
+    @font-face {
+      font-family: 'Inter';
+      font-display: swap;
+      src: url('assets/assets/fonts/Inter-Variable.ttf') format('truetype');
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /*
+      Static first paint — an exact replica of the Flutter launch splash
+      (mid-blue background, brand wordmark and spinner), painted in HTML/CSS
+      the moment the document loads. It is replaced by the real splash with a
+      soft fade as soon as Flutter's first frame is on screen, so the user
+      never sees the landing page before its content is ready.
+    */
+    #boot-preview {
       position: fixed;
+      inset: 0;
+      z-index: 2;
+      overflow: hidden;
+      background: #1B3FA0;
+      transition: opacity 0.4s ease;
+    }
+    #boot-preview.boot-hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .boot-splash {
+      position: absolute;
       inset: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 16px;
-      font-family: 'Segoe UI', sans-serif;
-      color: #41604F;
+      gap: 28px;
     }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #E7EEE8;
-      border-top-color: #5B7C6B;
+    .boot-brand {
+      font-family: 'PlayfairDisplay', Georgia, serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+    .boot-brand .heart {
+      color: #F44336;
+      font-size: 36px;
+    }
+    .boot-spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid rgba(255, 255, 255, 0.25);
+      border-top-color: #F5A623;
       border-radius: 50%;
-      animation: spin 0.9s linear infinite;
+      animation: boot-spin 0.8s linear infinite;
     }
-    @keyframes spin {
+    @keyframes boot-spin {
       to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <div id="loading">
-    <div class="spinner"></div>
-    <div>Loading documents...</div>
+  <div id="boot-preview" aria-hidden="true">
+    <div class="boot-splash">
+      <div class="boot-brand">I<span class="heart">♥</span>Prepa</div>
+      <div class="boot-spinner"></div>
+    </div>
   </div>
+  <script>
+    // Hand the page over to Flutter with a soft fade the instant its first
+    // frame is on screen. A long fallback timer guarantees the preview can
+    // never trap the page.
+    (function () {
+      function hidePreview() {
+        var el = document.getElementById('boot-preview');
+        if (el && !el.classList.contains('boot-hide')) {
+          el.classList.add('boot-hide');
+          setTimeout(function () { el.remove(); }, 500);
+        }
+      }
+      document.addEventListener('flutter-first-frame', hidePreview, { once: true });
+      window.addEventListener('flutter-first-frame', hidePreview, { once: true });
+      setTimeout(hidePreview, 15000);
+    })();
+  </script>
   <!--
   <!--
     You can customize the "flutter_bootstrap.js" script.

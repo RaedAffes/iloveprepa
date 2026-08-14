@@ -4,28 +4,34 @@ import 'landing_colors.dart';
 
 class HeroText extends StatelessWidget {
   final VoidCallback onLibraryPressed;
-  const HeroText({super.key, required this.onLibraryPressed});
+  final bool isCompact;
+  const HeroText({
+    super.key,
+    required this.onLibraryPressed,
+    this.isCompact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final titleSize = isCompact ? 26.0 : 42.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
-          'ONLINE',
+        Text(
+          'EN LIGNE',
           style: TextStyle(
-            fontSize: 42,
+            fontSize: titleSize,
             fontWeight: FontWeight.w300,
             color: Colors.white,
             letterSpacing: 2,
             height: 1.1,
           ),
         ),
-        const Text(
-          'LIBRARY',
+        Text(
+          'BIBLIOTHÈQUE',
           style: TextStyle(
-            fontSize: 42,
+            fontSize: titleSize,
             fontWeight: FontWeight.w800,
             color: Colors.white,
             letterSpacing: 2,
@@ -39,7 +45,7 @@ class HeroText extends StatelessWidget {
           color: AppColors.orange,
         ),
         const Text(
-          'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor.',
+          'Tous vos cours, devoirs et examens,\norganisés par matière et par niveau,\ndans un accès simple et sécurisé.',
           style: TextStyle(
             color: AppColors.mutedWhite,
             fontSize: 14,
@@ -59,7 +65,7 @@ class HeroText extends StatelessWidget {
             elevation: 0,
           ),
           child: const Text(
-            'Library',
+            'Bibliothèque',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),

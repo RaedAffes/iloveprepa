@@ -7,12 +7,14 @@ import '../models/document_item.dart';
 class ApiService {
   static const String apiBase = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8787',
+    defaultValue: 'https://iloveprepa-r2.ilovepreparatoire.workers.dev',
   );
 
   Future<List<DocumentItem>> fetchDocuments() async {
     final uri = Uri.parse('$apiBase/api/files');
-    final response = await http.get(uri).timeout(const Duration(seconds: 20));
+    final response = await http
+        .get(uri)
+        .timeout(const Duration(seconds: 10));
     if (response.statusCode != 200) {
       throw ApiException(
         'Le serveur a répondu avec le code ${response.statusCode}',

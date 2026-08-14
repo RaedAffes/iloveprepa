@@ -1,11 +1,11 @@
 {
-    "name": "iloveprepa",
-    "short_name": "iloveprepa",
+    "name": "IlovePrepa",
+    "short_name": "IlovePrepa",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Iloveprepa",
+    "background_color": "#1B3FA0",
+    "theme_color": "#1B3FA0",
+    "description": "IlovePrepa",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

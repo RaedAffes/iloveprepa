@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/theme/app_colors.dart';
-import '../core/theme/app_motion.dart';
 import '../core/theme/app_radius.dart';
 import '../core/theme/app_shadows.dart';
 import '../core/theme/app_spacing.dart';
@@ -12,15 +11,14 @@ import '../models/library_folder.dart';
 import '../models/library_index.dart';
 import '../services/analytics_service.dart';
 import '../services/api_service.dart';
-import '../services/recent_store.dart';
 import '../services/stats_service.dart';
 import '../widgets/app_footer.dart';
 import '../widgets/breadcrumb_bar.dart';
 import '../widgets/document_viewer.dart';
 import '../widgets/folder_content_view.dart';
 import '../widgets/iloveprepa_brand.dart';
+import '../widgets/landing/landing_colors.dart' as landing;
 import '../widgets/library_sidebar.dart';
-import '../widgets/notion_pdf_icon.dart';
 import '../widgets/skeleton_card.dart';
 import '../widgets/state_views.dart';
 
@@ -46,7 +44,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   static const double _maxContentWidth = 860;
   static const double _headerHeight = 220;
-  static const int _maxRecents = 8;
 
   late final ApiService _api = widget.api ?? ApiService();
   late final StatsService _stats = widget.stats ?? StatsService();
@@ -73,40 +70,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Currently open folder path, shown as a breadcrumb + highlighted.
   List<String> _currentPath = const [];
 
+  // Path of the last folder whose documents are shown on the main page. Kept
+  // so the documents persist while browsing intermediate folders that have no
+  // files of their own (they stay until another folder with files is opened).
+  List<String>? _shownDocumentsPath;
+
   // Sidebar collapsed state on wide screens.
   bool _sidebarCollapsed = false;
-
-  // Recently opened PDF files (most recent first, capped).
-  final List<_RecentEntry> _recents = [];
-
-  // Recents restored from persistent storage, resolved once the docs load.
-  List<RecentItem> _storedRecents = const [];
 
   @override
   void initState() {
     super.initState();
     _future = _api.fetchDocuments();
-    _restoreRecents();
-    _stats.incrementVisits();
     _analytics.logAppOpen();
     _analytics.logScreenView('dashboard');
-  }
-
-  Future<void> _restoreRecents() async {
-    final stored = await RecentStore.load();
-    if (!mounted || stored.isEmpty) return;
-    setState(() => _storedRecents = stored);
-    if (_index != null) {
-      final changed = _applyStoredRecents(_all);
-      if (changed) setState(() {});
-    }
-  }
-
-  Future<void> _persistRecents() async {
-    await RecentStore.save([
-      for (final e in _recents)
-        RecentItem(name: e.document.name, openedAt: e.openedAt),
-    ]);
   }
 
   @override
@@ -121,64 +98,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _all = const [];
       _index = null;
-      _recents.clear();
-      _storedRecents = const [];
       _currentPath = const [];
       _query = '';
       _searchController.clear();
       _future = _api.fetchDocuments();
     });
-    _restoreRecents();
   }
 
   void _prepare(List<DocumentItem> docs) {
     if (_index != null) return;
-    final index = LibraryIndex(docs);
-    var changed = false;
-    for (final name in index.root.children.keys) {
-      changed = _expanded.add(name) || changed;
-    }
-    _index = index;
-    changed = _applyStoredRecents(docs) || changed;
-    if (changed && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() {});
-      });
-    }
-  }
-
-  /// Resolves persisted recents against the fetched docs, dropping entries
-  /// whose file no longer exists. Returns true if any were added.
-  bool _applyStoredRecents(List<DocumentItem> docs) {
-    if (_storedRecents.isEmpty || _recents.length >= _maxRecents) return false;
-    final byName = {for (final d in docs) d.name: d};
-    final added = <_RecentEntry>[];
-    for (final stored in _storedRecents) {
-      if (_recents.length + added.length >= _maxRecents) break;
-      final doc = byName[stored.name];
-      if (doc == null || !doc.isPdf) continue;
-      final segments = doc.name.split('/');
-      final location = segments.length > 1
-          ? segments.take(segments.length - 1).join(' / ')
-          : 'Racine';
-      added.add(
-        _RecentEntry(
-          title: doc.displayName,
-          location: location,
-          document: doc,
-          openedAt: stored.openedAt,
-        ),
-      );
-    }
-    if (added.isEmpty) return false;
-    _recents.addAll(added);
-    return true;
-  }
-
-  void _syncExpanded(List<String> path) {
-    for (var i = 1; i <= path.length; i++) {
-      _expanded.add(path.take(i).join('/'));
-    }
+    _index = LibraryIndex(docs);
+    // Rebuild the sidebar now that the tree is ready. All folders start
+    // collapsed: nothing is expanded until the user opens a folder.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   void _toggleSidebar() {
@@ -186,21 +120,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openFolder(List<String> path) {
-    _syncExpanded(path);
     _analytics.logFolderOpen(path.isEmpty ? 'root' : path.join(' / '));
     setState(() {
       _currentPath = List.of(path);
+      _expanded
+        ..clear()
+        ..addAll(_ancestors(path));
+      final folder = _root.descend(path);
+      if (folder != null && folder.files.isNotEmpty) {
+        _shownDocumentsPath = List.of(path);
+      }
       _query = '';
       _searchController.clear();
     });
   }
 
+  /// Every ancestor prefix of [path] (the path itself included), used to
+  /// expand exactly the branch that leads to the opened folder.
+  List<String> _ancestors(List<String> path) => [
+    for (var i = 1; i <= path.length; i++) path.take(i).join('/'),
+  ];
+
   void _goHome() {
     setState(() {
       _currentPath = const [];
+      _shownDocumentsPath = null;
       _query = '';
       _searchController.clear();
     });
+  }
+
+  /// Returns to the marketing landing page (the route underneath the library).
+  /// Closes any open drawer along the way.
+  void _goToLanding() {
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   void _toggleNode(List<String> path) {
@@ -250,29 +203,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// Adds an opened PDF to the recents list and bumps the download metric.
+  /// Bumps the download metric when a document is opened or downloaded.
   void _markOpened(DocumentItem item) {
     if (!item.isPdf || !mounted) return;
-    setState(() {
-      final segments = item.name.split('/');
-      final location = segments.length > 1
-          ? segments.take(segments.length - 1).join(' / ')
-          : 'Racine';
-      _recents.removeWhere((e) => e.document.name == item.name);
-      _recents.insert(
-        0,
-        _RecentEntry(
-          title: item.displayName,
-          location: location,
-          document: item,
-          openedAt: DateTime.now(),
-        ),
-      );
-      if (_recents.length > _maxRecents) {
-        _recents.removeRange(_maxRecents, _recents.length);
-      }
-    });
-    _persistRecents();
     _stats.incrementDownloads();
   }
 
@@ -282,7 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: Drawer(
-        width: 292,
+        width: 320,
         child: _buildSidebar(
           onMenu: () => Navigator.of(context).maybePop(),
         ),
@@ -294,25 +227,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
             return Row(
               children: [
                 if (wide && !_sidebarCollapsed)
-                  SizedBox(width: 292, child: _buildSidebar(onMenu: _toggleSidebar))
+                  SizedBox(width: 320, child: _buildSidebar(onMenu: _toggleSidebar))
                 else
                   const SizedBox.shrink(),
                 Expanded(
-                  child: Column(
-                    children: [
-                      _TopBar(
-                        wide: wide,
-                        collapsed: _sidebarCollapsed,
-                        showMenu: !wide || _sidebarCollapsed,
-                        currentPath: _currentPath,
-                        onMenu: wide
-                            ? _toggleSidebar
-                            : () => Scaffold.of(context).openDrawer(),
-                        onHome: _goHome,
-                        onNavigate: _openFolder,
-                      ),
-                      Expanded(child: _buildContent()),
-                    ],
+                  child: Container(
+                    color: landing.AppColors.lightBg,
+                    child: Column(
+                      children: [
+                        _TopBar(
+                          wide: wide,
+                          collapsed: _sidebarCollapsed,
+                          showMenu: !wide || _sidebarCollapsed,
+                          currentPath: _currentPath,
+                          onMenu: wide
+                              ? _toggleSidebar
+                              : () => Scaffold.of(context).openDrawer(),
+                          onHome: _goHome,
+                          onNavigate: _openFolder,
+                          onBrandTap: _goToLanding,
+                        ),
+                        Expanded(child: _buildContent()),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -339,6 +276,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       searchResults: searching ? index.search(_query) : const [],
       treeScrollController: _treeScroll,
       onMenu: onMenu,
+      onBrandTap: _goToLanding,
     );
   }
 
@@ -350,9 +288,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final loading =
             snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData;
-        final error = snapshot.hasError;
+        final error = snapshot.hasError ? snapshot.error : null;
         final docs = snapshot.data ?? const <DocumentItem>[];
-        if (!loading && !error) {
+        if (!loading && error == null) {
           _all = docs;
           _prepare(docs);
         }
@@ -368,7 +306,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildBody({
     required bool loading,
-    required bool error,
+    required Object? error,
     required List<DocumentItem> docs,
     required VoidCallback onReload,
   }) {
@@ -393,23 +331,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   child: Builder(builder: (context) {
                     if (loading) {
-                      return const _RecentsSkeleton();
+                      return const _LoadingSkeleton();
                     }
-                    if (error) {
-                      return ErrorView(onRetry: onReload);
+                    if (error != null) {
+                      return ErrorView(
+                        onRetry: onReload,
+                        detail: _describeError(error),
+                        apiBase: ApiService.apiBase,
+                      );
                     }
                     if (docs.isEmpty) {
                       return EmptyView(onRefresh: onReload);
                     }
                     if (_currentPath.isEmpty) {
-                      return _RecentSection(
-                        entries: _recents,
-                        onOpenFile: _open,
-                      );
+                      final root = _root;
+                      if (root.files.isNotEmpty) {
+                        return FolderContentView(
+                          folder: root,
+                          busy: _busy,
+                          onView: _open,
+                          onDownload: _download,
+                        );
+                      }
+                      return const _LibraryOverview();
                     }
                     final folder = _root.descend(_currentPath);
                     if (folder == null) {
                       return EmptyView(onRefresh: onReload);
+                    }
+                    if (folder.files.isEmpty) {
+                      LibraryFolder? shown;
+                      final persisted = _shownDocumentsPath;
+                      if (persisted != null) {
+                        shown = _root.descend(persisted);
+                      }
+                      // With nothing persisted yet (e.g. coming from home), the
+                      // root files stay on screen instead of going blank.
+                      if (shown == null && _root.files.isNotEmpty) {
+                        shown = _root;
+                      }
+                      if (shown != null && shown.files.isNotEmpty) {
+                        return FolderContentView(
+                          folder: shown,
+                          busy: _busy,
+                          onView: _open,
+                          onDownload: _download,
+                        );
+                      }
+                      return FolderContentView(
+                        folder: folder,
+                        busy: _busy,
+                        onView: _open,
+                        onDownload: _download,
+                      );
                     }
                     return FolderContentView(
                       folder: folder,
@@ -440,6 +414,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: children,
     );
   }
+
+  String _describeError(Object? error) {
+    if (error is ApiException) return '${error.message}\n\n$error';
+    final text = error.toString();
+    if (text.contains('TimeoutException')) {
+      return 'Le serveur a mis trop de temps à répondre.\n\n$text';
+    }
+    if (text.contains('SocketException') || text.contains('ClientException')) {
+      return 'Connexion au serveur impossible. Vérifiez le réseau.\n\n$text';
+    }
+    return text;
+  }
 }
 
 class _TopBar extends StatelessWidget {
@@ -451,6 +437,7 @@ class _TopBar extends StatelessWidget {
     required this.onMenu,
     required this.onHome,
     required this.onNavigate,
+    required this.onBrandTap,
   });
 
   final bool wide;
@@ -465,14 +452,17 @@ class _TopBar extends StatelessWidget {
   final VoidCallback onHome;
   final void Function(List<String> path) onNavigate;
 
+  /// Returns to the landing page when the brand mark is tapped.
+  final VoidCallback onBrandTap;
+
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       decoration: const BoxDecoration(
-        color: AppColors.white,
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+        color: landing.AppColors.midBlue,
+        border: Border(bottom: BorderSide(color: Color(0x33FFFFFF), width: 1)),
       ),
       child: Row(
         children: [
@@ -485,15 +475,20 @@ class _TopBar extends StatelessWidget {
                         : 'Masquer la barre latérale')
                   : 'Menu',
               icon: const Icon(Icons.menu_rounded, size: 20),
-              color: AppColors.secondary,
-              hoverColor: AppColors.hover,
+              color: Colors.white,
+              hoverColor: Colors.white12,
               splashRadius: 18,
               padding: const EdgeInsets.all(6),
               constraints: const BoxConstraints.tightFor(width: 32, height: 32),
               visualDensity: VisualDensity.compact,
             ),
             const SizedBox(width: AppSpacing.sm),
-            const IloveprepaBrand(fontSize: 20, iconSize: 18),
+            IloveprepaBrand(
+              fontSize: 20,
+              iconSize: 18,
+              color: Colors.white,
+              onTap: onBrandTap,
+            ),
             const SizedBox(width: AppSpacing.lg),
           ],
           Expanded(
@@ -501,6 +496,7 @@ class _TopBar extends StatelessWidget {
                 ? const SizedBox.shrink()
                 : BreadcrumbBar(
                     segments: currentPath,
+                    onDark: true,
                     onTap: (index) =>
                         index == -1 ? onHome() : onNavigate(currentPath.take(index + 1).toList()),
                   ),
@@ -525,8 +521,8 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _RecentsSkeleton extends StatelessWidget {
-  const _RecentsSkeleton();
+class _LoadingSkeleton extends StatelessWidget {
+  const _LoadingSkeleton();
 
   @override
   Widget build(BuildContext context) {
@@ -542,238 +538,228 @@ class _RecentsSkeleton extends StatelessWidget {
   }
 }
 
-class _RecentEntry {
-  const _RecentEntry({
-    required this.title,
-    required this.location,
-    required this.document,
-    required this.openedAt,
-  });
-
-  final String title;
-  final String location;
-  final DocumentItem document;
-  final DateTime openedAt;
-}
-
-class _RecentSection extends StatelessWidget {
-  const _RecentSection({
-    required this.entries,
-    required this.onOpenFile,
-  });
-
-  final List<_RecentEntry> entries;
-  final void Function(DocumentItem doc) onOpenFile;
+/// Branded home panel shown when the library has no files at its root:
+/// a blue gradient header plus orange/blue stat tiles (documents, folders,
+/// storage) so the landing page never feels empty.
+class _LibraryOverview extends StatelessWidget {
+  const _LibraryOverview();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.sidebar,
-        borderRadius: AppRadius.cardR,
-        border: Border.all(color: AppColors.border, width: 1),
-        boxShadow: AppShadows.xs,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _RecentHeader(count: entries.length),
-          const Divider(height: 1, thickness: 1, color: AppColors.border),
-          if (entries.isEmpty)
-            const _EmptyRecent()
-          else
-            for (final entry in entries)
-              _RecentRow(
-                entry: entry,
-                isLast: identical(entry, entries.last),
-                onTap: () => onOpenFile(entry.document),
-              ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecentHeader extends StatelessWidget {
-  const _RecentHeader({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
-      child: Row(
-        children: [
-          Text(
-            'Récents',
-            style: AppTypography.tileTitle(AppColors.darkCharcoal),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: AppSpacing.xl),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: AppRadius.cardR,
+            border: Border.all(color: AppColors.border, width: 1),
+            boxShadow: AppShadows.xs,
           ),
-          const Spacer(),
-          if (count > 0)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.hover,
-                borderRadius: BorderRadius.circular(AppRadius.chip),
-              ),
-              child: Text(
-                '$count',
-                style: AppTypography.metadata(AppColors.muted).copyWith(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                clipBehavior: Clip.hardEdge,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      landing.AppColors.midBlue,
+                      landing.AppColors.brightBlue,
+                      landing.AppColors.accentBlue,
+                    ],
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  AppSpacing.xl,
+                  AppSpacing.xl,
+                  AppSpacing.xl,
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: -40,
+                      top: -40,
+                      child: Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 120,
+                      bottom: -30,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: landing.AppColors.orange
+                              .withValues(alpha: 0.28),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: landing.AppColors.orange,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(
+                            Icons.folder_copy_outlined,
+                            size: 24,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Votre bibliothèque',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Retrouvez vos cours et vos documents.',
+                                style: TextStyle(
+                                  color: landing.AppColors.mutedWhite,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyRecent extends StatelessWidget {
-  const _EmptyRecent();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xl,
-        vertical: AppSpacing.xxxl,
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.hover,
-              borderRadius: AppRadius.cardSmallR,
-            ),
-            child: const Icon(
-              Icons.history_rounded,
-              size: 26,
-              color: AppColors.muted,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            'Aucun fichier récent',
-            style: AppTypography.label(AppColors.darkCharcoal),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Les fichiers PDF que vous ouvrez apparaîtront ici.',
-            textAlign: TextAlign.center,
-            style: AppTypography.metadata(AppColors.muted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecentRow extends StatefulWidget {
-  const _RecentRow({
-    required this.entry,
-    required this.isLast,
-    required this.onTap,
-  });
-
-  final _RecentEntry entry;
-  final bool isLast;
-  final VoidCallback onTap;
-
-  @override
-  State<_RecentRow> createState() => _RecentRowState();
-}
-
-class _RecentRowState extends State<_RecentRow> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final entry = widget.entry;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: AppMotion.normal,
-          curve: AppMotion.easeOut,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
-          decoration: BoxDecoration(
-            color: _hovered ? AppColors.hover : AppColors.sidebar,
-            border: Border(
-              bottom: widget.isLast
-                  ? BorderSide.none
-                  : const BorderSide(color: AppColors.border, width: 1),
-            ),
-          ),
-          child: Row(
-            children: [
-              const NotionPdfIcon(size: 34),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                ),
+                child: Row(
                   children: [
-                    Text(
-                      entry.title,
-                      style: AppTypography.metadata(AppColors.darkCharcoal)
-                          .copyWith(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    Expanded(
+                      child: _OverviewTile(
+                        color: landing.AppColors.orange,
+                        icon: Icons.description_outlined,
+                        label: 'Documents',
+                      ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${entry.location} · ${_timeAgo(entry.openedAt)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.metadata(AppColors.muted).copyWith(
-                        fontSize: 11.5,
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: _OverviewTile(
+                        color: landing.AppColors.accentBlue,
+                        icon: Icons.folder_outlined,
+                        label: 'Dossiers',
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: _OverviewTile(
+                        color: landing.AppColors.midBlue,
+                        icon: Icons.cloud_outlined,
+                        label: 'Stockage',
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              const Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: AppColors.muted,
+              const Divider(height: 1, thickness: 1, color: AppColors.border),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 17,
+                      color: landing.AppColors.accentBlue,
+                    ),
+                    SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        'Naviguez dans vos dossiers depuis la barre latérale à gauche.',
+                        style: TextStyle(
+                          color: landing.AppColors.midBlue,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _OverviewTile extends StatelessWidget {
+  const _OverviewTile({
+    required this.color,
+    required this.icon,
+    required this.label,
+  });
+
+  final Color color;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.lg,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: AppRadius.cardSmallR,
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 22, color: color),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: AppTypography.metadata(color).copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-String _timeAgo(DateTime time) {
-  final diff = DateTime.now().difference(time);
-  if (diff.inMinutes < 1) return "À l'instant";
-  if (diff.inMinutes < 60) return 'il y a ${diff.inMinutes} min';
-  if (diff.inHours < 24) return 'il y a ${diff.inHours} h';
-  if (diff.inDays == 1) return 'Hier';
-  if (diff.inDays < 7) return 'il y a ${diff.inDays} jours';
-  if (diff.inDays < 30) return 'il y a ${diff.inDays ~/ 7} sem.';
-  return 'il y a ${diff.inDays ~/ 30} mois';
-}

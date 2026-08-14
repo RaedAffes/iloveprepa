@@ -83,27 +83,82 @@ class _AppFooterState extends State<AppFooter> {
         return Container(
           key: _boxKey,
           width: double.infinity,
-          color: AppColors.darkCharcoal,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF000000),
+                Color(0xFF121212),
+              ],
+            ),
+          ),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
-            vertical: AppSpacing.giant,
+            vertical: 96,
           ),
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 160,
-            runSpacing: AppSpacing.xl,
+          child: Stack(
             children: [
-              _Metric(
-                label: 'Visites',
-                number: _AnimatedNumber(value: counters.visits, run: _run),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 160,
+                runSpacing: AppSpacing.xl,
+                children: [
+                  _Metric(
+                    label: 'Visites',
+                    number: _AnimatedNumber(value: counters.visits, run: _run),
+                  ),
+                  _Metric(
+                    label: 'Documents',
+                    number: _AnimatedNumber(value: widget.documents, run: _run),
+                  ),
+                  _Metric(
+                    label: 'Téléchargements',
+                    number: _AnimatedNumber(
+                      value: counters.downloads,
+                      run: _run,
+                    ),
+                  ),
+                ],
               ),
-              _Metric(
-                label: 'Documents',
-                number: _AnimatedNumber(value: widget.documents, run: _run),
-              ),
-              _Metric(
-                label: 'Téléchargements',
-                number: _AnimatedNumber(value: counters.downloads, run: _run),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Made With',
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.favorite,
+                          color: AppColors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'by: Raed Affes (Ensi) & Edam Mnif (Supcom)',
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
