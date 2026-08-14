@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'firebase_options.dart';
-import 'screens/dashboard_screen.dart';
+import 'screens/landing_page.dart';
 import 'services/analytics_service.dart';
 import 'services/stats_service.dart';
 import 'theme/app_theme.dart';
@@ -51,7 +51,7 @@ class IloveprepaApp extends StatelessWidget {
       title: 'IlovePrepa',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: DashboardScreen(stats: stats, analytics: analytics),
+      home: LandingPage(stats: stats, analytics: analytics),
     );
   }
 }

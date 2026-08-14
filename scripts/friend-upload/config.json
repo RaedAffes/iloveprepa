@@ -1,7 +1,0 @@
-{
-  "endpoint": "https://c25c65f56685d96c672891ab8ca85e46.r2.cloudflarestorage.com",
-  "accessKeyId": "PUT_ACCESS_KEY_HERE",
-  "secretAccessKey": "PUT_SECRET_KEY_HERE",
-  "bucket": "iloveprepa",
-  "folder": "C:\\Mes Fichiers"
-}
