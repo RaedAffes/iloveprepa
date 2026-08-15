@@ -8,7 +8,7 @@ import 'document_item.dart';
 /// remains untouched — only the presentation changes.
 class LibraryFolder {
   LibraryFolder({required this.name});
-
+ 
   final String name;
   final Map<String, LibraryFolder> children = {};
   final List<DocumentItem> files = [];
