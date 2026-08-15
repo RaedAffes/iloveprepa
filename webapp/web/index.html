@@ -18,6 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="IlovePrepa">
 
   <!-- Google Analytics (GA4) -->
@@ -40,6 +41,12 @@
 
   <title>IlovePrepa</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Preload the brand font so the boot preview renders it directly and the
+       text never swaps to the Georgia fallback (which can look like the brand
+       changes size). -->
+  <link rel="preload" href="assets/assets/fonts/PlayfairDisplay-Variable.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="assets/assets/fonts/Inter-Variable.ttf" as="font" type="font/ttf" crossorigin>
 
   <style>
     html, body {

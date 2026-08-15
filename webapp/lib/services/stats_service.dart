@@ -1,68 +1,63 @@
 import 'dart:async';
+import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:http/http.dart' as http;
+
+import '../firebase_options.dart';
 
 /// Global live counters backed by a single Firestore document
 /// (`stats/counters`), shared by every visitor.
 ///
 /// `visits` increments on every app load, `downloads` each time a document is
-/// opened. [watch] keeps listeners (the footer) in sync in real time. Writes
-/// are atomic (`FieldValue.increment`) and failures are swallowed so the app
-/// keeps working even if Firestore is unreachable. [ready] lets the service
-/// wait for Firebase boot so the very first visit still reaches the shared
-/// counters instead of being dropped during the init race.
+/// opened. [watch] keeps listeners (the footer) in sync by polling. Writes are
+/// atomic (`FieldValue.increment` via the REST API) and failures are swallowed
+/// so the app keeps working even if Firestore is unreachable.
+///
+/// This talks to Firestore's REST API directly instead of the Firebase JS SDK:
+/// the SDK is loaded at runtime from Google's CDN and silently no-ops whenever
+/// it cannot boot (blocked CDN, slow network), which made the counters appear
+/// dead even though the backend rules were correct. Plain HTTPS requests work
+/// everywhere the app can reach the internet.
 class StatsService {
-  StatsService({Future<void>? ready})
-      : _ready = ready ?? Future<void>.value(),
-        _test = false;
+  StatsService() : _test = false;
 
-  /// Test seam — no Firebase dependency, everything is a no-op / empty.
-  StatsService.forTest() : _ready = null, _test = true;
+  /// Test seam — no network, everything is a no-op / empty.
+  StatsService.forTest() : _test = true;
 
   static const String countersPath = 'stats/counters';
 
-  final Future<void>? _ready;
+  static const String _baseUrl =
+      'https://firestore.googleapis.com/v1/projects/iprepa/databases/(default)/documents';
+
   final bool _test;
 
-  /// Resolves lazily so the app works before or without Firebase: whenever no
-  /// app is initialized yet (or Firebase is unreachable) it returns null and
-  /// all counters become no-ops.
-  FirebaseFirestore? get _db {
-    if (_test) return null;
-    try {
-      if (Firebase.apps.isEmpty) return null;
-      return FirebaseFirestore.instance;
-    } catch (_) {
-      return null;
-    }
-  }
+  final http.Client _client = http.Client();
 
-  /// Waits (bounded) for Firebase to finish initialising before touching the
-  /// shared document, so no counter is lost during app startup.
-  Future<FirebaseFirestore?> _dbWhenReady() async {
-    if (_test) return null;
-    final ready = _ready;
-    if (ready != null) {
-      try {
-        await ready.timeout(const Duration(seconds: 8));
-      } catch (_) {
-        // Firebase unavailable — stats stay no-ops.
-      }
-    }
-    return _db;
-  }
+  String get _apiKey => DefaultFirebaseOptions.currentPlatform.apiKey;
 
-  /// Emits the current counters and any later change in real time.
+  /// Short resource name Firestore expects inside write/transform payloads
+  /// (the full URL form is rejected with a 400).
+  String get _docPath => 'projects/iprepa/databases/(default)/documents/$countersPath';
+
+  /// Full endpoint used for reads.
+  String get _countersDoc => '$_baseUrl/$countersPath';
+
+  Uri _docUri() => Uri.parse(_countersDoc).replace(queryParameters: {'key': _apiKey});
+
+  Uri _commitUri() =>
+      Uri.parse('$_baseUrl:commit').replace(queryParameters: {'key': _apiKey});
+
+  /// Emits the current counters and then keeps polling every 10 seconds so
+  /// the footer always shows fresh numbers.
   Stream<StatsCounters> watch() {
     if (_test) return Stream.value(StatsCounters.zero());
-    return Stream.fromFuture(_dbWhenReady()).asyncExpand((db) {
-      if (db == null) return Stream.value(StatsCounters.zero());
-      return db
-          .doc(countersPath)
-          .snapshots()
-          .map((snap) => StatsCounters.fromMap(snap.data() ?? const {}));
-    });
+    Stream<StatsCounters> poll() async* {
+      while (true) {
+        yield await _read();
+        await Future<void>.delayed(const Duration(seconds: 10));
+      }
+    }
+    return poll();
   }
 
   Future<void> incrementVisits() => _increment({'visits': 1});
@@ -70,19 +65,65 @@ class StatsService {
   Future<void> incrementDownloads() => _increment({'downloads': 1});
 
   Future<void> _increment(Map<String, int> fields) async {
-    final db = await _dbWhenReady();
-    if (db == null) return;
+    if (_test) return;
     try {
-      await db.doc(countersPath).set(
-        {
+      final transform = {
+        'document': _docPath,
+        'fieldTransforms': [
           for (final entry in fields.entries)
-            entry.key: FieldValue.increment(entry.value),
-        },
-        SetOptions(merge: true),
+            {
+              'fieldPath': entry.key,
+              'increment': {'integerValue': entry.value.toString()},
+            },
+        ],
+      };
+      await _client.post(
+        _commitUri(),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'writes': [
+            {'transform': transform},
+          ],
+        }),
       );
     } catch (_) {
       // Best-effort analytics; never break the app for a counter.
     }
+  }
+
+  Future<StatsCounters> _read() async {
+    if (_test) return StatsCounters.zero();
+    try {
+      final response = await _client.get(_docUri());
+      if (response.statusCode != 200) return StatsCounters.zero();
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return StatsCounters.fromMap(_fieldsToMap(data['fields']));
+    } catch (_) {
+      return StatsCounters.zero();
+    }
+  }
+
+  /// Converts a Firestore `fields` payload (e.g.
+  /// `{'visits': {'integerValue': '2'}}`) into a plain `{key: num}` map.
+  Map<String, dynamic> _fieldsToMap(Object? fields) {
+    final result = <String, dynamic>{};
+    if (fields is Map) {
+      for (final entry in fields.entries) {
+        final value = entry.value;
+        if (value is Map) {
+          final intValue = value['integerValue'];
+          if (intValue is String) {
+            result[entry.key as String] = int.tryParse(intValue) ?? 0;
+            continue;
+          }
+          final doubleValue = value['doubleValue'];
+          if (doubleValue is String) {
+            result[entry.key as String] = double.tryParse(doubleValue) ?? 0;
+          }
+        }
+      }
+    }
+    return result;
   }
 }
 
@@ -92,9 +133,9 @@ class StatsCounters {
   StatsCounters.zero() : this(visits: 0, downloads: 0);
 
   factory StatsCounters.fromMap(Map<String, dynamic> map) => StatsCounters(
-    visits: (map['visits'] as num?)?.toInt() ?? 0,
-    downloads: (map['downloads'] as num?)?.toInt() ?? 0,
-  );
+        visits: (map['visits'] as num?)?.toInt() ?? 0,
+        downloads: (map['downloads'] as num?)?.toInt() ?? 0,
+      );
 
   final int visits;
   final int downloads;

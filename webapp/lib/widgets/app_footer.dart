@@ -93,12 +93,11 @@ class _AppFooterState extends State<AppFooter> {
               ],
             ),
           ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: 96,
-          ),
-          child: Stack(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 88),
               Wrap(
                 alignment: WrapAlignment.center,
                 spacing: 160,
@@ -121,45 +120,48 @@ class _AppFooterState extends State<AppFooter> {
                   ),
                 ],
               ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Made With',
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+              const SizedBox(height: 88),
+              Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Made With',
+                            style: TextStyle(
+                              color: AppColors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Icon(
-                          Icons.favorite,
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.favorite,
+                            color: AppColors.white,
+                            size: 17,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'by: Raed Affes (Ensi) & Edam Mnif (Supcom)',
+                        style: TextStyle(
                           color: AppColors.white,
-                          size: 14,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
                         ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'by: Raed Affes (Ensi) & Edam Mnif (Supcom)',
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
             ],
           ),
         );

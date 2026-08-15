@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// Public counters (visits / downloads) written by the unauthenticated web app.
+// Everything else stays locked down.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /stats/counters {
+      allow read, write: if true;
+    }
+  }
+}

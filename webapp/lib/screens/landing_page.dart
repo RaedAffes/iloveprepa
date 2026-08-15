@@ -376,7 +376,7 @@ class _LibraryStrip extends StatefulWidget {
   static const _cards = <(String, String)>[
     ('assets/cours.png', 'Cours'),
     ('assets/td.png', 'TD'),
-    ('assets/devoir.png', 'Devoirs'),
+    ('assets/devoir.png', 'Ds'),
     ('assets/examen.png', 'Examens'),
   ];
 
@@ -843,7 +843,9 @@ class _Hero extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: CustomPaint(painter: WaveBackgroundPainter()),
+            child: CustomPaint(
+              painter: WaveBackgroundPainter(narrow: !isWide),
+            ),
           ),
           const Positioned(
             top: -40,
@@ -942,6 +944,7 @@ class _FixedHeader extends StatelessWidget {
                   ),
                   child: LandingNavBar(
                     isWide: isWide,
+                    scrolled: scrolled,
                     onNavigate: onNavigate,
                   ),
                 ),
@@ -976,7 +979,7 @@ class _AboutSection extends StatelessWidget {
         const _SectionTitle('La bibliothèque des prépas'),
         const SizedBox(height: 20),
         Text(
-          'IlovePrepa rassemble cours, TD, devoirs et examens des classes '
+          'IlovePrepa rassemble cours, TD, Ds et examens des classes '
           'préparatoires, classés par filière, matière et niveau. Retrouvez '
           'toute votre bibliothèque au même endroit, où que vous soyez, '
           'depuis votre ordinateur comme depuis votre téléphone.',

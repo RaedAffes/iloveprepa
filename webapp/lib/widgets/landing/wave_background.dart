@@ -6,6 +6,10 @@ import 'landing_colors.dart';
 /// a mid-blue wave on the left, a lighter accent wave on top, and a light
 /// panel on the right for the illustration side.
 class WaveBackgroundPainter extends CustomPainter {
+  const WaveBackgroundPainter({this.narrow = false});
+
+  final bool narrow;
+
   @override
   void paint(Canvas canvas, Size size) {
     // Base fill: deep navy across whole canvas
@@ -63,22 +67,43 @@ class WaveBackgroundPainter extends CustomPainter {
     canvas.drawPath(wave2, wave2Paint);
 
     // Right side stays as lightBg (page background) — draw a rounded
-    // near-white panel so content on the right sits on light ground
+    // near-white panel so content on the right sits on light ground.
+    // The panel is pushed well under the hero image so the illustration
+    // sits fully inside the white zone. On narrow screens it keeps the upper
+    // band around ~62% so the stacked hero copy always remains on navy, while
+    // the lower band widens toward the centered image.
     final rightPanel = Path();
-    rightPanel.moveTo(size.width, 0);
-    rightPanel.lineTo(size.width * 0.66, 0);
-    rightPanel.quadraticBezierTo(
-      size.width * 0.50,
-      size.height * 0.30,
-      size.width * 0.66,
-      size.height * 0.55,
-    );
-    rightPanel.quadraticBezierTo(
-      size.width * 0.82,
-      size.height * 0.80,
-      size.width * 0.62,
-      size.height,
-    );
+    if (narrow) {
+      rightPanel.moveTo(size.width, 0);
+      rightPanel.lineTo(size.width * 0.62, 0);
+      rightPanel.quadraticBezierTo(
+        size.width * 0.60,
+        size.height * 0.42,
+        size.width * 0.50,
+        size.height * 0.72,
+      );
+      rightPanel.quadraticBezierTo(
+        size.width * 0.46,
+        size.height * 0.92,
+        size.width * 0.52,
+        size.height,
+      );
+    } else {
+      rightPanel.moveTo(size.width, 0);
+      rightPanel.lineTo(size.width * 0.56, 0);
+      rightPanel.quadraticBezierTo(
+        size.width * 0.44,
+        size.height * 0.28,
+        size.width * 0.50,
+        size.height * 0.55,
+      );
+      rightPanel.quadraticBezierTo(
+        size.width * 0.62,
+        size.height * 0.80,
+        size.width * 0.50,
+        size.height,
+      );
+    }
     rightPanel.lineTo(size.width, size.height);
     rightPanel.close();
 
@@ -87,7 +112,9 @@ class WaveBackgroundPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant WaveBackgroundPainter oldDelegate) {
+    return oldDelegate.narrow != narrow;
+  }
 }
 
 class FaintCircle extends StatelessWidget {

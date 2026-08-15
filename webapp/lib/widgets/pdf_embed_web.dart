@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:web/web.dart' as web;
 
 import '../core/theme/app_colors.dart';
+import 'landing/landing_colors.dart' as landing;
 
 /// Embeds a PDF inside the page by rendering an <iframe> pointing at [url],
 /// letting the browser's native viewer show the document without leaving the
@@ -62,9 +63,18 @@ class _PdfEmbedState extends State<PdfEmbed> {
           valueListenable: _loading,
           builder: (context, loading, _) {
             if (!loading) return const SizedBox.shrink();
-            return const ColoredBox(
+            return ColoredBox(
               color: AppColors.surfaceSecondary,
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 4,
+                    color: landing.AppColors.orange,
+                  ),
+                ),
+              ),
             );
           },
         ),

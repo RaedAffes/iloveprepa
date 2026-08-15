@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -12,6 +13,7 @@ import '../models/library_index.dart';
 import '../services/analytics_service.dart';
 import '../services/api_service.dart';
 import '../services/stats_service.dart';
+import '../utils/web_download.dart';
 import '../widgets/app_footer.dart';
 import '../widgets/breadcrumb_bar.dart';
 import '../widgets/document_viewer.dart';
@@ -21,6 +23,20 @@ import '../widgets/landing/landing_colors.dart' as landing;
 import '../widgets/library_sidebar.dart';
 import '../widgets/skeleton_card.dart';
 import '../widgets/state_views.dart';
+
+/// Near-black ink for titles and the big welcome message.
+const Color _ink = Color(0xFF1B1B1B);
+
+/// Muted grey for secondary text.
+const Color _greyMuted = Color(0xFF6B7280);
+
+/// True when running in a mobile browser (phone/tablet). Desktop browsers
+/// keep the in-app iframe viewer; phones open the browser's native PDF viewer
+/// because iOS Safari cannot render PDFs inside iframes.
+bool get _isMobileWeb =>
+    kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android);
 
 /// Library home — hierarchical R2 folder tree on the left (with the search
 /// field), and on the right either the recently opened files (home) or the
@@ -43,7 +59,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   static const double _maxContentWidth = 860;
-  static const double _headerHeight = 220;
 
   late final ApiService _api = widget.api ?? ApiService();
   late final StatsService _stats = widget.stats ?? StatsService();
@@ -69,11 +84,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Currently open folder path, shown as a breadcrumb + highlighted.
   List<String> _currentPath = const [];
-
-  // Path of the last folder whose documents are shown on the main page. Kept
-  // so the documents persist while browsing intermediate folders that have no
-  // files of their own (they stay until another folder with files is opened).
-  List<String>? _shownDocumentsPath;
 
   // Sidebar collapsed state on wide screens.
   bool _sidebarCollapsed = false;
@@ -126,10 +136,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _expanded
         ..clear()
         ..addAll(_ancestors(path));
-      final folder = _root.descend(path);
-      if (folder != null && folder.files.isNotEmpty) {
-        _shownDocumentsPath = List.of(path);
-      }
       _query = '';
       _searchController.clear();
     });
@@ -144,7 +150,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _goHome() {
     setState(() {
       _currentPath = const [];
-      _shownDocumentsPath = null;
       _query = '';
       _searchController.clear();
     });
@@ -164,31 +169,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Opens [item] in the in-page viewer. Downloads go through [_download].
+  /// The download counter is bumped no matter what (even if the platform view
+  /// fails to build), so the metric is never lost to an exception.
   Future<void> _open(DocumentItem item) async {
-    await showDocumentViewer(
-      context: context,
-      url: _api.viewUri(item).toString(),
-    );
-    _markOpened(item);
-    if (item.isPdf) _analytics.logDocumentView(item.name);
+    try {
+      if (_isMobileWeb) {
+        // On phones the in-page <iframe> PDF viewer is unreliable (iOS Safari
+        // does not render PDFs inside iframes), so open the browser's native
+        // PDF viewer in a new tab instead. The app keeps its state when the
+        // user returns.
+        await launchUrl(
+          _api.viewUri(item),
+          webOnlyWindowName: '_blank',
+        );
+      } else {
+        await showDocumentViewer(
+          context: context,
+          url: _api.viewUri(item).toString(),
+        );
+      }
+    } finally {
+      _markOpened(item);
+      if (item.isPdf) _analytics.logDocumentView(item.name);
+    }
   }
 
-  /// Downloads [item] to disk (opens the download URL in a new tab).
+  /// Downloads [item] to disk. Uses a hidden-anchor click so no tab opens and
+  /// no popup blocker can ever interfere, on desktop or mobile.
   Future<void> _download(DocumentItem item) async {
     if (_busy != null) return;
     setState(() => _busy = item.name);
     try {
-      final launched = await launchUrl(
-        _api.downloadUri(item),
-        webOnlyWindowName: '_blank',
+      final ok = await triggerWebDownload(
+        _api.downloadUri(item).toString(),
       );
-      if (!launched && mounted) {
+      if (!ok && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Impossible de télécharger le document.')),
         );
       }
-      _markOpened(item);
-      if (item.isPdf) _analytics.logDocumentDownload(item.name);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -199,13 +218,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       }
     } finally {
+      _markOpened(item);
+      if (item.isPdf) _analytics.logDocumentDownload(item.name);
       if (mounted) setState(() => _busy = null);
     }
   }
 
   /// Bumps the download metric when a document is opened or downloaded.
   void _markOpened(DocumentItem item) {
-    if (!item.isPdf || !mounted) return;
     _stats.incrementDownloads();
   }
 
@@ -312,86 +332,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final minContent = constraints.maxHeight - _headerHeight;
+        // The page scrolls as one: header image first, then the content, and
+        // the stats footer at the bottom (revealed when scrolling down).
+        final headerHeight = _headerHeightFor(context);
+        final minContent = constraints.maxHeight - headerHeight;
         return _scrollable(
           children: [
-            const _Header(),
+            _Header(height: headerHeight),
             Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: _maxContentWidth,
                   minHeight: minContent > 0 ? minContent : 0,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    24,
-                    AppSpacing.giant,
-                    24,
-                    AppSpacing.huge,
-                  ),
-                  child: Builder(builder: (context) {
-                    if (loading) {
-                      return const _LoadingSkeleton();
-                    }
-                    if (error != null) {
-                      return ErrorView(
-                        onRetry: onReload,
-                        detail: _describeError(error),
-                        apiBase: ApiService.apiBase,
-                      );
-                    }
-                    if (docs.isEmpty) {
-                      return EmptyView(onRefresh: onReload);
-                    }
-                    if (_currentPath.isEmpty) {
-                      final root = _root;
-                      if (root.files.isNotEmpty) {
-                        return FolderContentView(
-                          folder: root,
-                          busy: _busy,
-                          onView: _open,
-                          onDownload: _download,
-                        );
-                      }
-                      return const _LibraryOverview();
-                    }
-                    final folder = _root.descend(_currentPath);
-                    if (folder == null) {
-                      return EmptyView(onRefresh: onReload);
-                    }
-                    if (folder.files.isEmpty) {
-                      LibraryFolder? shown;
-                      final persisted = _shownDocumentsPath;
-                      if (persisted != null) {
-                        shown = _root.descend(persisted);
-                      }
-                      // With nothing persisted yet (e.g. coming from home), the
-                      // root files stay on screen instead of going blank.
-                      if (shown == null && _root.files.isNotEmpty) {
-                        shown = _root;
-                      }
-                      if (shown != null && shown.files.isNotEmpty) {
-                        return FolderContentView(
-                          folder: shown,
-                          busy: _busy,
-                          onView: _open,
-                          onDownload: _download,
-                        );
-                      }
-                      return FolderContentView(
-                        folder: folder,
-                        busy: _busy,
-                        onView: _open,
-                        onDownload: _download,
-                      );
-                    }
-                    return FolderContentView(
-                      folder: folder,
-                      busy: _busy,
-                      onView: _open,
-                      onDownload: _download,
-                    );
-                  }),
+                child: _content(
+                  docs: docs,
+                  loading: loading,
+                  error: error,
+                  onReload: onReload,
                 ),
               ),
             ),
@@ -403,6 +361,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         );
       },
+    );
+  }
+
+  /// Header image height, slightly taller on big screens.
+  double _headerHeightFor(BuildContext context) =>
+      MediaQuery.sizeOf(context).height < 860 ? 170 : 280;
+
+  /// The main content that switches between loading / error / empty / welcome
+  /// / documents depending on the current state.
+  Widget _content({
+    required List<DocumentItem> docs,
+    required bool loading,
+    required Object? error,
+    required VoidCallback onReload,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        24,
+        AppSpacing.giant + AppSpacing.xxl,
+        24,
+        AppSpacing.huge,
+      ),
+      child: Builder(builder: (context) {
+        if (loading) {
+          return const _LoadingSkeleton();
+        }
+        if (error != null) {
+          return ErrorView(
+            onRetry: onReload,
+            detail: _describeError(error),
+            apiBase: ApiService.apiBase,
+          );
+        }
+        if (docs.isEmpty) {
+          return EmptyView(onRefresh: onReload);
+        }
+        if (_currentPath.isEmpty) {
+          return const _WelcomeMessage();
+        }
+        final folder = _root.descend(_currentPath);
+        if (folder == null) {
+          return EmptyView(onRefresh: onReload);
+        }
+        // Only folders that actually contain files show them. An intermediate
+        // folder (subfolders but no direct files) keeps the welcome message
+        // until a leaf folder is opened.
+        if (folder.files.isEmpty) {
+          return const _WelcomeMessage();
+        }
+        return FolderContentView(
+          folder: folder,
+          busy: _busy,
+          onView: _open,
+          onDownload: _download,
+        );
+      }),
     );
   }
 
@@ -508,14 +522,16 @@ class _TopBar extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header();
+  const _Header({required this.height});
+
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     return Image.asset(
       'assets/header.png',
       width: double.infinity,
-      height: 220,
+      height: height,
       fit: BoxFit.cover,
     );
   }
@@ -538,20 +554,23 @@ class _LoadingSkeleton extends StatelessWidget {
   }
 }
 
-/// Branded home panel shown when the library has no files at its root:
-/// a blue gradient header plus orange/blue stat tiles (documents, folders,
-/// storage) so the landing page never feels empty.
-class _LibraryOverview extends StatelessWidget {
-  const _LibraryOverview();
+/// Big, friendly call-to-action shown on first entry (no folder opened yet): a
+/// beautiful card telling the user to press the hamburger button to open the
+/// library. It stays until a folder is opened and its documents appear on the
+/// main page.
+class _WelcomeMessage extends StatelessWidget {
+  const _WelcomeMessage();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: AppSpacing.xl),
-        Container(
-          clipBehavior: Clip.antiAlias,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xxxl,
+            vertical: AppSpacing.giant,
+          ),
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: AppRadius.cardR,
@@ -559,205 +578,55 @@ class _LibraryOverview extends StatelessWidget {
             boxShadow: AppShadows.xs,
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                clipBehavior: Clip.hardEdge,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      landing.AppColors.midBlue,
-                      landing.AppColors.brightBlue,
-                      landing.AppColors.accentBlue,
-                    ],
+              Wrap(
+                alignment: WrapAlignment.center,
+                runAlignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                children: [
+                  const Text(
+                    'Appuyez sur le bouton',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _ink,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                      letterSpacing: -0.3,
+                    ),
                   ),
-                ),
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
-                  AppSpacing.xl,
-                  AppSpacing.xl,
-                  AppSpacing.xl,
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: -40,
-                      top: -40,
-                      child: Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
-                      ),
+                  const Icon(
+                    Icons.menu_rounded,
+                    size: 30,
+                    color: landing.AppColors.midBlue,
+                  ),
+                  const Text(
+                    'pour commencer',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _ink,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w300,
+                      height: 1.25,
+                      letterSpacing: -0.3,
                     ),
-                    Positioned(
-                      right: 120,
-                      bottom: -30,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: landing.AppColors.orange
-                              .withValues(alpha: 0.28),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: landing.AppColors.orange,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(
-                            Icons.folder_copy_outlined,
-                            size: 24,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Votre bibliothèque',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Retrouvez vos cours et vos documents.',
-                                style: TextStyle(
-                                  color: landing.AppColors.mutedWhite,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.xl,
-                  AppSpacing.lg,
-                  AppSpacing.xl,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _OverviewTile(
-                        color: landing.AppColors.orange,
-                        icon: Icons.description_outlined,
-                        label: 'Documents',
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: _OverviewTile(
-                        color: landing.AppColors.accentBlue,
-                        icon: Icons.folder_outlined,
-                        label: 'Dossiers',
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: _OverviewTile(
-                        color: landing.AppColors.midBlue,
-                        icon: Icons.cloud_outlined,
-                        label: 'Stockage',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1, thickness: 1, color: AppColors.border),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      size: 17,
-                      color: landing.AppColors.accentBlue,
-                    ),
-                    SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        'Naviguez dans vos dossiers depuis la barre latérale à gauche.',
-                        style: TextStyle(
-                          color: landing.AppColors.midBlue,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Ouvrez le menu pour parcourir vos cours, devoirs et examens.',
+                textAlign: TextAlign.center,
+                style: AppTypography.metadata(_greyMuted).copyWith(
+                  fontSize: 13.5,
+                  height: 1.5,
                 ),
               ),
             ],
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _OverviewTile extends StatelessWidget {
-  const _OverviewTile({
-    required this.color,
-    required this.icon,
-    required this.label,
-  });
-
-  final Color color;
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.lg,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: AppRadius.cardSmallR,
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 22, color: color),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: AppTypography.metadata(color).copyWith(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }

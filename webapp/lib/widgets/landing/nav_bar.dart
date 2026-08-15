@@ -5,8 +5,14 @@ import 'landing_colors.dart';
 
 class LandingNavBar extends StatelessWidget {
   final bool isWide;
+  final bool scrolled;
   final ValueChanged<String> onNavigate;
-  const LandingNavBar({super.key, required this.isWide, required this.onNavigate});
+  const LandingNavBar({
+    super.key,
+    required this.isWide,
+    this.scrolled = false,
+    required this.onNavigate,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,24 +35,25 @@ class LandingNavBar extends StatelessWidget {
             ],
           )
         else
-          _MenuButton(onNavigate: onNavigate),
+          _MenuButton(scrolled: scrolled, onNavigate: onNavigate),
       ],
     );
   }
 }
 
 class _MenuButton extends StatelessWidget {
-  const _MenuButton({required this.onNavigate});
+  const _MenuButton({required this.scrolled, required this.onNavigate});
 
+  final bool scrolled;
   final ValueChanged<String> onNavigate;
 
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       tooltip: 'Menu',
-      icon: const Icon(
+      icon: Icon(
         Icons.menu,
-        color: Colors.white,
+        color: scrolled ? Colors.white : AppColors.midBlue,
         size: 28,
       ),
       color: Colors.white,

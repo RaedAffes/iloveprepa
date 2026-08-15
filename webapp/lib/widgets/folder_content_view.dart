@@ -58,10 +58,7 @@ class FolderContentView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: AppSpacing.xl),
-        _SectionHeader(
-          label: 'Documents',
-          count: files.length,
-        ),
+        const _SectionHeader(label: 'Documents'),
         const SizedBox(height: AppSpacing.md),
         _DocumentsWindow(
           files: files,
@@ -75,39 +72,15 @@ class FolderContentView extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label, required this.count});
+  const _SectionHeader({required this.label});
 
   final String label;
-  final int count;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: AppTypography.sectionTitle(_ink),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm + 2,
-            vertical: 2,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.chip),
-            border: Border.all(color: const Color(0xFFD1D5DB), width: 1),
-          ),
-          child: Text(
-            '$count',
-            style: AppTypography.metadata(_ink).copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
+    return Text(
+      label,
+      style: AppTypography.sectionTitle(_ink),
     );
   }
 }

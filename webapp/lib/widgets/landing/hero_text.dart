@@ -19,20 +19,20 @@ class HeroText extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'EN LIGNE',
+          'BIBLIOTHÈQUE',
           style: TextStyle(
             fontSize: titleSize,
-            fontWeight: FontWeight.w300,
+            fontWeight: FontWeight.w800,
             color: Colors.white,
             letterSpacing: 2,
             height: 1.1,
           ),
         ),
         Text(
-          'BIBLIOTHÈQUE',
+          'EN LIGNE',
           style: TextStyle(
             fontSize: titleSize,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w300,
             color: Colors.white,
             letterSpacing: 2,
             height: 1.1,
@@ -45,7 +45,7 @@ class HeroText extends StatelessWidget {
           color: AppColors.orange,
         ),
         const Text(
-          'Tous vos cours, devoirs et examens,\norganisés par matière et par niveau,\ndans un accès simple et sécurisé.',
+          'Tous vos cours, Ds et examens,\norganisés par matière et par niveau,\ndans un accès simple et sécurisé.',
           style: TextStyle(
             color: AppColors.mutedWhite,
             fontSize: 14,

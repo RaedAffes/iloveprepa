@@ -95,8 +95,10 @@ void main() {
     );
     await tester.pump();
 
-    // Splash first: the landing page is not built yet.
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    // Splash first: the landing page is not built yet. The 44px spinner runs
+    // only in the HTML boot preview, so no spinner exists in the Flutter tree
+    // during the splash.
+    expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.text('BIBLIOTHÈQUE'), findsNothing);
 
     // Let the hero image actually finish decoding (real async), then advance
@@ -155,7 +157,7 @@ void main() {
 
     expect(find.text('Rechercher une matière, un dossier ou un document…'),
         findsOneWidget);
-    expect(find.text('Votre bibliothèque'), findsOneWidget);
+    expect(find.text('Appuyez sur le bouton'), findsOneWidget);
     expect(find.textContaining('Prepa'), findsWidgets);
 
     // All folders start collapsed: open the maths branch to reveal its
@@ -248,11 +250,12 @@ void main() {
     expect(find.byType(SearchResultTile), findsNothing);
     expect(find.text('Résultats'), findsOneWidget);
     expect(find.text('Algèbre'), findsWidgets);
-    expect(find.text('Votre bibliothèque'), findsOneWidget);
+    expect(find.text('Appuyez sur le bouton'), findsOneWidget);
   });
 
-  testWidgets('Footer shows the three live metrics when scrolled into view',
-      (tester) async {
+  testWidgets(
+      'Footer shows the three live metrics when scrolled into view '
+      '(short viewport falls back to scrolling)', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1280, 420));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(_app());
@@ -282,7 +285,17 @@ void main() {
     expect(find.text('Téléchargements'), findsOneWidget);
   });
 
-  testWidgets('Opening a folder shows its contents in the main content',
+  testWidgets('On a phone the welcome card is visible right away',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Appuyez sur le bouton'), findsOneWidget);
+  });
+
+  testWidgets('Intermediate folders keep the welcome message',
       (tester) async {
     await _pumpDashboard(tester);
 
@@ -312,7 +325,7 @@ void main() {
       findsNothing,
     );
     expect(find.text('DS 1'), findsNothing);
-    expect(find.text('Ce dossier contient des sous-dossiers'), findsNothing);
+    expect(find.text('Appuyez sur le bouton'), findsOneWidget);
     expect(find.text('Taille'), findsNothing);
     expect(
       find.descendant(
@@ -344,7 +357,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Ce dossier contient des sous-dossiers'), findsNothing);
+    expect(find.text('Appuyez sur le bouton'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(FolderContentView),
@@ -383,6 +396,7 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.text('Appuyez sur le bouton'), findsNothing);
     expect(
       find.descendant(
         of: find.byType(FolderContentView),
@@ -434,8 +448,7 @@ void main() {
     expect(sidebarText('Cours Algèbre.pdf'), findsNothing);
   });
 
-  testWidgets(
-      'Documents persist on the main page until another folder is opened',
+  testWidgets('Files appear only in the folder that contains them',
       (tester) async {
     await _pumpDashboard(tester);
 
@@ -455,17 +468,22 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(sidebarText('Cours'));
     await tester.pumpAndSettle();
+    expect(mainDocs('Cours Algèbre'), findsNothing);
+    expect(find.text('Appuyez sur le bouton'), findsOneWidget);
+
     await tester.tap(sidebarText('S1'));
     await tester.pumpAndSettle();
     expect(mainDocs('Cours Algèbre'), findsOneWidget);
+    expect(find.text('Appuyez sur le bouton'), findsNothing);
 
     await tester.tap(sidebarText('Cours'));
     await tester.pumpAndSettle();
-    expect(mainDocs('Cours Algèbre'), findsOneWidget);
+    expect(mainDocs('Cours Algèbre'), findsNothing);
+    expect(find.text('Appuyez sur le bouton'), findsOneWidget);
 
     await tester.tap(sidebarText('Algèbre'));
     await tester.pumpAndSettle();
-    expect(mainDocs('Cours Algèbre'), findsOneWidget);
+    expect(mainDocs('Cours Algèbre'), findsNothing);
 
     await tester.tap(sidebarText('2. Physique - Chimie'));
     await tester.pumpAndSettle();
@@ -479,7 +497,7 @@ void main() {
     expect(mainDocs('Mécanique'), findsOneWidget);
   });
 
-  testWidgets('Root files persist while browsing folders without files',
+  testWidgets('Intermediate folders keep the welcome message',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(1280, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -503,24 +521,29 @@ void main() {
           matching: find.textContaining(label),
         );
 
-    expect(mainDocs('2025.findings'), findsOneWidget);
+    // First entry: no folder opened yet, so the welcome message is shown
+    // instead of any documents.
+    expect(mainDocs('2025.findings'), findsNothing);
+    expect(find.text('Appuyez sur le bouton'), findsOneWidget);
 
     await tester.tap(sidebarText('1. Math'));
     await tester.pumpAndSettle();
-    expect(mainDocs('2025.findings'), findsOneWidget);
+    expect(mainDocs('2025.findings'), findsNothing);
+    expect(find.text('Appuyez sur le bouton'), findsOneWidget);
 
     await tester.tap(sidebarText('Algèbre'));
     await tester.pumpAndSettle();
-    expect(mainDocs('2025.findings'), findsOneWidget);
+    expect(mainDocs('2025.findings'), findsNothing);
 
     await tester.tap(sidebarText('Cours'));
     await tester.pumpAndSettle();
-    expect(mainDocs('2025.findings'), findsOneWidget);
+    expect(mainDocs('2025.findings'), findsNothing);
 
     await tester.tap(sidebarText('S1'));
     await tester.pumpAndSettle();
     expect(mainDocs('Cours Algèbre'), findsOneWidget);
     expect(mainDocs('2025.findings'), findsNothing);
+    expect(find.text('Appuyez sur le bouton'), findsNothing);
   });
 
   testWidgets('Viewing a document opens an in-page viewer', (tester) async {

@@ -20,7 +20,7 @@ void main() {
   final firebaseReady = _initFirebase();
   runApp(
     IloveprepaApp(
-      stats: StatsService(ready: firebaseReady),
+      stats: StatsService(),
       analytics: AnalyticsService(ready: firebaseReady),
       firebaseReady: firebaseReady,
     ),
@@ -88,16 +88,30 @@ class _LaunchGate extends StatefulWidget {
   State<_LaunchGate> createState() => _LaunchGateState();
 }
 
-class _LaunchGateState extends State<_LaunchGate> {
+class _LaunchGateState extends State<_LaunchGate>
+    with SingleTickerProviderStateMixin {
   static const Duration _minimum = Duration(milliseconds: 900);
+  static const Duration _fadeOut = Duration(milliseconds: 220);
   static const String _heroImage = 'assets/main.png';
 
-  bool _ready = false;
+  late final AnimationController _splashFade;
+  bool _showSplash = true;
 
   @override
   void initState() {
     super.initState();
+    _splashFade = AnimationController(
+      vsync: this,
+      duration: _fadeOut,
+      value: 1,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _prepare());
+  }
+
+  @override
+  void dispose() {
+    _splashFade.dispose();
+    super.dispose();
   }
 
   Future<void> _prepare() async {
@@ -106,46 +120,44 @@ class _LaunchGateState extends State<_LaunchGate> {
       precacheImage(const AssetImage(_heroImage), context),
       widget.firebaseReady ?? Future<void>.value(),
     ]);
-    if (mounted) setState(() => _ready = true);
+    if (!mounted) return;
+    // Fade the splash out completely before showing the landing page, so the
+    // brand and spinner are never visible at two sizes at once.
+    await _splashFade.forward(from: 1.0);
+    if (!mounted) return;
+    setState(() => _showSplash = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 350),
-      child: _ready
-          ? LandingPage(
-              key: const ValueKey('landing'),
-              stats: widget.stats,
-              analytics: widget.analytics,
-            )
-          : const _LaunchSplash(key: ValueKey('splash')),
+    if (!_showSplash) {
+      return LandingPage(
+        stats: widget.stats,
+        analytics: widget.analytics,
+      );
+    }
+    return FadeTransition(
+      opacity: _splashFade,
+      child: const _LaunchSplash(),
     );
   }
 }
 
 class _LaunchSplash extends StatelessWidget {
-  const _LaunchSplash({super.key});
+  const _LaunchSplash();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: landing.AppColors.midBlue,
       body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const IloveprepaBrand(fontSize: 40, iconSize: 36, color: Colors.white),
-            const SizedBox(height: 28),
-            const SizedBox(
-              width: 44,
-              height: 44,
-              child: CircularProgressIndicator(
-                strokeWidth: 4,
-                color: landing.AppColors.orange,
-              ),
-            ),
-          ],
+        // Brand only: the 44px spinner already runs in the HTML boot preview,
+        // so the Flutter splash never renders a second spinner and the boot
+        // path shows the spinner at a single size in a single place.
+        child: const IloveprepaBrand(
+          fontSize: 40,
+          iconSize: 36,
+          color: Colors.white,
         ),
       ),
     );
