@@ -1,6 +1,6 @@
 import 'document_item.dart';
 
-/// A folder node in the library tree.
+/// A folder node in the library tree. 
 ///
 /// The R2 worker returns a flat list of object keys (e.g.
 /// `Mathematics/Analyse/Chapter-1.pdf`). We rebuild the hierarchy locally
