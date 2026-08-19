@@ -7,21 +7,27 @@ class LandingNavBar extends StatelessWidget {
   final bool isWide;
   final bool scrolled;
   final ValueChanged<String> onNavigate;
+
+  /// Scrolls the page back to the top when the brand mark is tapped.
+  final VoidCallback? onHome;
+
   const LandingNavBar({
     super.key,
     required this.isWide,
     this.scrolled = false,
     required this.onNavigate,
+    this.onHome,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const IloveprepaBrand(
+        IloveprepaBrand(
           fontSize: 26,
           iconSize: 24,
           color: Colors.white,
+          onTap: onHome,
         ),
         const Spacer(),
         if (isWide)

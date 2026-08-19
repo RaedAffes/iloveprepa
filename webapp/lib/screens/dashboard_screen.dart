@@ -30,14 +30,6 @@ const Color _ink = Color(0xFF1B1B1B);
 /// Muted grey for secondary text.
 const Color _greyMuted = Color(0xFF6B7280);
 
-/// True when running in a mobile browser (phone/tablet). Desktop browsers
-/// keep the in-app iframe viewer; phones open the browser's native PDF viewer
-/// because iOS Safari cannot render PDFs inside iframes.
-bool get _isMobileWeb =>
-    kIsWeb &&
-    (defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.android);
-
 /// Library home — hierarchical R2 folder tree on the left (with the search
 /// field), and on the right either the recently opened files (home) or the
 /// contents of the folder currently open in the tree.
@@ -59,6 +51,13 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   static const double _maxContentWidth = 860;
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  /// True once the drawer has been auto-opened on first entry (narrow
+  /// screens). One-shot: the user can close it and it never pops open again
+  /// during the same visit.
+  bool _openedDrawerOnce = false;
 
   late final ApiService _api = widget.api ?? ApiService();
   late final StatsService _stats = widget.stats ?? StatsService();
@@ -163,21 +162,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _toggleNode(List<String> path) {
     final key = path.join('/');
+    final opening = !_expanded.contains(key);
     setState(() {
       if (!_expanded.remove(key)) _expanded.add(key);
+      // Expanding a folder also shows its documents in the main page, just
+      // like clicking the folder itself. Collapsing leaves the view alone.
+      if (opening) {
+        _currentPath = List.of(path);
+        _query = '';
+        _searchController.clear();
+      }
     });
   }
 
-  /// Opens [item] in the in-page viewer. Downloads go through [_download].
-  /// The download counter is bumped no matter what (even if the platform view
-  /// fails to build), so the metric is never lost to an exception.
+  /// True when running in a mobile browser (phone/tablet). Phones keep the
+  /// in-app viewer; desktop browsers open documents in a new browser tab.
+  bool get _isMobileWeb =>
+      kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android);
+
+  /// Opens [item]. On desktop web the browser's native PDF viewer opens in a
+  /// new tab, so users can view several documents side by side and the
+  /// library keeps its state when they come back. Phones and non-web builds
+  /// open a simple in-app viewer in the same page. Downloads go through
+  /// [_download]. The download counter is bumped no matter what (even if the
+  /// platform view fails to build), so the metric is never lost to an
+  /// exception.
   Future<void> _open(DocumentItem item) async {
     try {
-      if (_isMobileWeb) {
-        // On phones the in-page <iframe> PDF viewer is unreliable (iOS Safari
-        // does not render PDFs inside iframes), so open the browser's native
-        // PDF viewer in a new tab instead. The app keeps its state when the
-        // user returns.
+      if (kIsWeb && !_isMobileWeb) {
         await launchUrl(
           _api.viewUri(item),
           webOnlyWindowName: '_blank',
@@ -186,6 +200,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await showDocumentViewer(
           context: context,
           url: _api.viewUri(item).toString(),
+          downloadUrl: _api.downloadUri(item).toString(),
         );
       }
     } finally {
@@ -234,6 +249,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       drawer: Drawer(
         width: 320,
         child: _buildSidebar(
@@ -244,6 +260,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 960;
+            if (!wide && !_openedDrawerOnce) {
+              _openedDrawerOnce = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _scaffoldKey.currentState?.openDrawer();
+              });
+            }
             return Row(
               children: [
                 if (wide && !_sidebarCollapsed)

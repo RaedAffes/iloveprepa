@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -95,6 +98,20 @@ class _LandingPageState extends State<LandingPage> {
     }
   }
 
+  /// Scrolls the page back to the top — the brand mark acts as the home
+  /// button. Programmatic scrolling skips the library-strip hold.
+  void _scrollToTop() {
+    if (!_scroll.hasClients) return;
+    _autoScroll = true;
+    _scroll
+        .animateTo(
+          0,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
+        )
+        .whenComplete(() => _autoScroll = false);
+  }
+
   @override
   void dispose() {
     _scroll.removeListener(_onScroll);
@@ -136,15 +153,24 @@ class _LandingPageState extends State<LandingPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _Hero(
-                          height: isWide ? heroHeight : null,
-                          isWide: isWide,
-                          isCompact: isCompact,
-                          onLibraryPressed: () => _openLibrary(context),
+                        // Static sections are wrapped in RepaintBoundary so
+                        // scrolling only re-composites their cached raster
+                        // instead of re-painting gradients/images/shadows on
+                        // every frame. Only the strip (and the contact
+                        // parallax) actually change during scroll.
+                        RepaintBoundary(
+                          child: _Hero(
+                            height: isWide ? heroHeight : null,
+                            isWide: isWide,
+                            isCompact: isCompact,
+                            onLibraryPressed: () => _openLibrary(context),
+                          ),
                         ),
-                        _AboutSection(
-                          key: _aboutKey,
-                          isWide: isWide,
+                        RepaintBoundary(
+                          child: _AboutSection(
+                            key: _aboutKey,
+                            isWide: isWide,
+                          ),
                         ),
                         SizedBox(height: isWide ? 96 : 48),
                         _LibraryStrip(
@@ -152,23 +178,29 @@ class _LandingPageState extends State<LandingPage> {
                           autoScroll: () => _autoScroll,
                           hold: _stripHold,
                         ),
-                        _DonateSection(
-                          key: _donateKey,
-                          isWide: isWide,
+                        RepaintBoundary(
+                          child: _DonateSection(
+                            key: _donateKey,
+                            isWide: isWide,
+                          ),
                         ),
-                        _ContactSection(
-                          key: _contactKey,
-                          isWide: isWide,
+                        RepaintBoundary(
+                          child: _ContactSection(
+                            key: _contactKey,
+                            isWide: isWide,
+                          ),
                         ),
-                        FutureBuilder<List<DocumentItem>>(
-                          future: _documents,
-                          builder: (context, snapshot) {
-                            return AppFooter(
-                              documents: snapshot.data?.length ?? 0,
-                              countersStream: _stats.watch(),
-                              scrollController: _scroll,
-                            );
-                          },
+                        RepaintBoundary(
+                          child: FutureBuilder<List<DocumentItem>>(
+                            future: _documents,
+                            builder: (context, snapshot) {
+                              return AppFooter(
+                                documents: snapshot.data?.length ?? 0,
+                                countersStream: _stats.watch(),
+                                scrollController: _scroll,
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -177,7 +209,11 @@ class _LandingPageState extends State<LandingPage> {
                     top: 0,
                     left: 0,
                     right: 0,
-                    child: _FixedHeader(isWide: isWide, onNavigate: _navigate),
+                    child: _FixedHeader(
+                      isWide: isWide,
+                      onNavigate: _navigate,
+                      onHome: _scrollToTop,
+                    ),
                   ),
                 ],
               );
@@ -275,7 +311,10 @@ class _Parallax extends StatelessWidget {
           child: child,
         );
       },
-      child: child,
+      // The image never changes, so its raster is cached and the parallax
+      // only re-composites a layer instead of re-painting a 500KB+ image on
+      // every scroll frame.
+      child: RepaintBoundary(child: child),
     );
   }
 }
@@ -394,16 +433,27 @@ class _LibraryStrip extends StatefulWidget {
   State<_LibraryStrip> createState() => _LibraryStripState();
 }
 
-class _LibraryStripState extends State<_LibraryStrip> {
+class _LibraryStripState extends State<_LibraryStrip>
+    with SingleTickerProviderStateMixin {
   final GlobalKey _regionKey = GlobalKey();
   double _regionTop = 0;
   double _pinTop = 80;
   double _viewport = 800;
   double _stripHeight = 600;
 
+  /// Smoothed card progress. Raw scroll input moves the reveal in discrete
+  /// steps (one wheel notch per event), so instead of letting those jumps
+  /// drive the boxes directly, a per-frame ticker glides the displayed
+  /// progress toward the target at the display's refresh rate — the boxes
+  /// appear as one continuous, high-frequency animation.
+  late final Ticker _smoother;
+  Duration _lastTick = Duration.zero;
+  double _displayProgress = 0;
+
   @override
   void initState() {
     super.initState();
+    _smoother = createTicker(_onSmoothTick);
     widget.scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() {});
@@ -412,8 +462,49 @@ class _LibraryStripState extends State<_LibraryStrip> {
 
   @override
   void dispose() {
+    _smoother.dispose();
     widget.scrollController.removeListener(_onScroll);
     super.dispose();
+  }
+
+  void _onSmoothTick(Duration elapsed) {
+    if (!mounted) return;
+    final dt = (elapsed - _lastTick).inMicroseconds / 1e6;
+    _lastTick = elapsed;
+
+    double target;
+    if (widget.hold.holding || widget.hold.done) {
+      target = widget.hold.progress;
+    } else {
+      final box = _regionKey.currentContext?.findRenderObject();
+      final top = box is RenderBox && box.attached && box.hasSize
+          ? box.localToGlobal(Offset.zero).dy
+          : double.infinity;
+      target = top == double.infinity
+          ? _displayProgress
+          : _scrollProgressFor(top);
+    }
+    target = target.clamp(0.0, 1.0);
+
+    final diff = target - _displayProgress;
+    if (diff.abs() < 0.0005) {
+      if (_displayProgress != target) {
+        setState(() => _displayProgress = target);
+      }
+      _smoother.stop();
+      return;
+    }
+    // Frame-rate-independent exponential glide toward the target.
+    final f = 1 - math.pow(0.0001, dt).toDouble();
+    setState(() => _displayProgress += diff * f);
+  }
+
+  void _ensureSmoothing(double target) {
+    if (_smoother.isTicking || (_displayProgress - target).abs() < 0.0005) {
+      return;
+    }
+    _lastTick = Duration.zero;
+    _smoother.start();
   }
 
   /// Cascade progress when the strip is at document position [top].
@@ -501,7 +592,15 @@ class _LibraryStripState extends State<_LibraryStrip> {
       height: stripHeight,
       child: AnimatedBuilder(
         animation: Listenable.merge([notifier, widget.hold]),
-        builder: (context, _) {
+        // The background never changes; its raster is cached so the per-frame
+        // rebuild only re-composites the cached layer.
+        child: RepaintBoundary(
+          child: Image.asset(
+            'assets/scroll_anim.png',
+            fit: BoxFit.cover,
+          ),
+        ),
+        builder: (context, background) {
           final offset = notifier.value;
           // Re-measure every frame so the cascade stays in sync with the
           // scroll, even if the layout shifts while images/fonts load.
@@ -510,19 +609,33 @@ class _LibraryStripState extends State<_LibraryStrip> {
               liveBox is RenderBox && liveBox.attached && liveBox.hasSize
                   ? liveBox.localToGlobal(Offset.zero).dy
                   : _regionTop - offset;
+
+          // While the strip is far from the viewport there is nothing to show
+          // or animate, so skip building its subtree entirely (the section
+          // keeps its fixed height, so the layout never shifts).
+          final docTop = top + offset;
+          if (docTop > offset + _viewport * 2 ||
+              docTop + _stripHeight < offset - _viewport) {
+            _smoother.stop();
+            _displayProgress = 0;
+            return const SizedBox.expand();
+          }
+
           // While the page is held, scrolling feeds the boxes directly; before
           // that they follow the scroll position. Nothing appears by itself.
-          final progress = widget.hold.holding || widget.hold.done
+          // The raw value is only a target: a per-frame ticker glides the
+          // cards toward it, so the reveal is one smooth continuous animation
+          // at the display's refresh rate instead of per-notch jumps.
+          final target = widget.hold.holding || widget.hold.done
               ? widget.hold.progress.clamp(0.0, 1.0)
               : _scrollProgressFor(top);
+          _ensureSmoothing(target);
+          final progress = _displayProgress;
 
           return Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(
-                'assets/scroll_anim.png',
-                fit: BoxFit.cover,
-              ),
+              background!,
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: LayoutBuilder(
@@ -624,11 +737,16 @@ class _AnimatedCard extends StatelessWidget {
         transform:
             Matrix4.translationValues(dx, dy, 0)
               ..scaleByDouble(scale, scale, scale, 1),
-        child: _FeatureCard(
-          width: width,
-          height: height,
-          icon: icon,
-          title: title,
+        // The card itself is static; its gradient/shadows/image raster is
+        // cached so animating only re-composites (translate/scale/opacity)
+        // instead of re-painting blur shadows on every frame.
+        child: RepaintBoundary(
+          child: _FeatureCard(
+            width: width,
+            height: height,
+            icon: icon,
+            title: title,
+          ),
         ),
       ),
     );
@@ -900,12 +1018,19 @@ class _HeroImage extends StatelessWidget {
 /// with a soft shadow once the user scrolls, so it stays readable over any
 /// section.
 class _FixedHeader extends StatelessWidget {
-  const _FixedHeader({required this.isWide, required this.onNavigate});
+  const _FixedHeader({
+    required this.isWide,
+    required this.onNavigate,
+    required this.onHome,
+  });
 
   static const double _innerHeight = 64;
 
   final bool isWide;
   final ValueChanged<String> onNavigate;
+
+  /// Scrolls the page back to the top (the brand mark is the home button).
+  final VoidCallback onHome;
 
   /// Total height the header occupies, including the top system inset.
   static double contentHeight(BuildContext context) =>
@@ -946,6 +1071,7 @@ class _FixedHeader extends StatelessWidget {
                     isWide: isWide,
                     scrolled: scrolled,
                     onNavigate: onNavigate,
+                    onHome: onHome,
                   ),
                 ),
               ),

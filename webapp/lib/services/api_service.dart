@@ -34,7 +34,7 @@ class ApiService {
   }
 
   Uri viewUri(DocumentItem item) =>
-      Uri.parse('$apiBase/api/download?file=${Uri.encodeComponent(item.name)}');
+      Uri.parse('$apiBase/api/view/${Uri.encodeComponent(item.name)}');
 
   Uri downloadUri(DocumentItem item) => Uri.parse(
     '$apiBase/api/download?file=${Uri.encodeComponent(item.name)}&download=1',

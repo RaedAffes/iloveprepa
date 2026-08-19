@@ -19,7 +19,9 @@ import '../firebase_options.dart';
 /// dead even though the backend rules were correct. Plain HTTPS requests work
 /// everywhere the app can reach the internet.
 class StatsService {
-  StatsService() : _test = false;
+  StatsService() : _test = false {
+    _startPolling();
+  }
 
   /// Test seam — no network, everything is a no-op / empty.
   StatsService.forTest() : _test = true;
@@ -32,6 +34,16 @@ class StatsService {
   final bool _test;
 
   final http.Client _client = http.Client();
+
+  /// Broadcast counters stream fed by the poller. A broadcast stream is
+  /// required: the footer is rebuilt lazily by the page's scroll view, so its
+  /// listener can be cancelled and re-attached at any time (and the landing
+  /// page and the library can listen at the same time). A single-subscription
+  /// stream would throw "Stream has already been listened to" the moment a
+  /// listener is re-attached, which made the footer crash into a huge grey
+  /// error box.
+  final StreamController<StatsCounters> _counters =
+      StreamController<StatsCounters>.broadcast();
 
   String get _apiKey => DefaultFirebaseOptions.currentPlatform.apiKey;
 
@@ -47,17 +59,23 @@ class StatsService {
   Uri _commitUri() =>
       Uri.parse('$_baseUrl:commit').replace(queryParameters: {'key': _apiKey});
 
-  /// Emits the current counters and then keeps polling every 10 seconds so
-  /// the footer always shows fresh numbers.
-  Stream<StatsCounters> watch() {
-    if (_test) return Stream.value(StatsCounters.zero());
-    Stream<StatsCounters> poll() async* {
-      while (true) {
-        yield await _read();
-        await Future<void>.delayed(const Duration(seconds: 10));
-      }
+  /// Latest known counters for optimistic UI updates.
+  StatsCounters _last = StatsCounters.zero();
+
+  /// Emits the current counters and then keeps polling every 5 seconds so
+  /// the footer always shows fresh numbers. Every caller shares the same
+  /// stream, so the counters stay consistent across the whole app.
+  Stream<StatsCounters> watch() => _counters.stream;
+
+  /// Reads Firestore immediately, then re-reads every 5 seconds, pushing each
+  /// result to [_counters] for the app's whole lifetime. Errors are already
+  /// swallowed by [_read] so a failed read simply reuses the previous value.
+  void _startPolling() async {
+    while (!_counters.isClosed) {
+      _last = await _read();
+      _counters.add(_last);
+      await Future<void>.delayed(const Duration(seconds: 5));
     }
-    return poll();
   }
 
   Future<void> incrementVisits() => _increment({'visits': 1});
@@ -66,6 +84,18 @@ class StatsService {
 
   Future<void> _increment(Map<String, int> fields) async {
     if (_test) return;
+
+    // Optimistic update: push immediately so the UI reflects the change
+    // without waiting for the next poll cycle.
+    int v = _last.visits;
+    int d = _last.downloads;
+    for (final entry in fields.entries) {
+      if (entry.key == 'visits') v += entry.value;
+      if (entry.key == 'downloads') d += entry.value;
+    }
+    _last = StatsCounters(visits: v, downloads: d);
+    _counters.add(_last);
+
     try {
       final transform = {
         'document': _docPath,

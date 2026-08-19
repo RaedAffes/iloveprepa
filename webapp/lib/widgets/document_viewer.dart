@@ -11,6 +11,7 @@ import 'pdf_embed_platform.dart';
 Future<void> showDocumentViewer({
   required BuildContext context,
   required String url,
+  String? downloadUrl,
 }) {
   return showGeneralDialog<void>(
     context: context,
@@ -18,7 +19,8 @@ Future<void> showDocumentViewer({
     barrierLabel: 'Fermer l’aperçu',
     barrierColor: Colors.black.withValues(alpha: 0.35),
     transitionDuration: AppMotion.normal,
-    pageBuilder: (context, _, _) => _FullscreenViewer(url: url),
+    pageBuilder: (context, _, _) =>
+        _FullscreenViewer(url: url, downloadUrl: downloadUrl),
     transitionBuilder: (context, animation, _, child) {
       final curved = CurvedAnimation(
         parent: animation,
@@ -36,9 +38,10 @@ Future<void> showDocumentViewer({
 }
 
 class _FullscreenViewer extends StatelessWidget {
-  const _FullscreenViewer({required this.url});
+  const _FullscreenViewer({required this.url, this.downloadUrl});
 
   final String url;
+  final String? downloadUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +61,7 @@ class _FullscreenViewer extends StatelessWidget {
             Expanded(
               child: ColoredBox(
                 color: AppColors.surfaceSecondary,
-                child: PdfEmbed(url: url),
+                child: PdfEmbed(url: url, downloadUrl: downloadUrl),
               ),
             ),
           ],

@@ -315,8 +315,6 @@ class _FileRow extends StatelessWidget {
                       children: [
                         Text(
                           doc.displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: AppTypography.label(_ink).copyWith(
                             fontWeight: FontWeight.w700,
                             fontSize: 13.5,

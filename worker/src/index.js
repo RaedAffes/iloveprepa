@@ -60,6 +60,14 @@ export default {
         return json({ files }, 200);
       }
 
+      if (url.pathname.startsWith('/api/view/')) {
+        // Pretty view URL ending in the file name, so the browser tab shows
+        // the file name instead of the generic "download" segment.
+        const name = decodeURIComponent(url.pathname.slice('/api/view/'.length));
+        if (!name) return json({ error: 'Missing file parameter' }, 400);
+        return handleDownload(env, name, false);
+      }
+
       if (url.pathname === '/api/download') {
         const name = url.searchParams.get('file') || '';
         if (!name) return json({ error: 'Missing file parameter' }, 400);
@@ -246,6 +254,9 @@ async function handleDownload(env, name, forceDownload) {
   if (forceDownload) {
     headers.set('Content-Disposition',
       `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+  } else {
+    headers.set('Content-Disposition',
+      `inline; filename*=UTF-8''${encodeURIComponent(fileName)}`);
   }
   headers.set('Cache-Control', 'public, max-age=86400');
 

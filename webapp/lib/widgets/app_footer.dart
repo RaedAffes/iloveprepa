@@ -225,7 +225,7 @@ class _AnimatedNumberState extends State<_AnimatedNumber>
     _target = widget.value;
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 800),
     );
     _curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
     _controller.addListener(() => setState(() {}));

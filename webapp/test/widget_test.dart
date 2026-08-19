@@ -12,6 +12,7 @@ import 'package:iloveprepa/services/stats_service.dart';
 import 'package:iloveprepa/theme/app_theme.dart';
 import 'package:iloveprepa/widgets/app_footer.dart';
 import 'package:iloveprepa/widgets/folder_content_view.dart';
+import 'package:iloveprepa/widgets/iloveprepa_brand.dart';
 import 'package:iloveprepa/widgets/landing/nav_bar.dart';
 import 'package:iloveprepa/widgets/library_sidebar.dart';
 import 'package:iloveprepa/widgets/notion_folder_icon.dart';
@@ -57,6 +58,22 @@ class _RootFileTreeService extends ApiService {
   Future<List<DocumentItem>> fetchDocuments() async {
     return [
       for (final name in files) DocumentItem(name: name, sizeBytes: 204800),
+    ];
+  }
+}
+
+/// A single leaf folder packed with files, so the footer sits far below the
+/// first viewport and is only mounted when the user scrolls down to it (this
+/// is the scenario that used to make the footer crash into a grey page).
+class _ManyFilesApiService extends ApiService {
+  @override
+  Future<List<DocumentItem>> fetchDocuments() async {
+    return [
+      for (var i = 0; i < 30; i++)
+        DocumentItem(
+          name: '1. Math/Algèbre/Cours/S1/Cours $i.pdf',
+          sizeBytes: 204800,
+        ),
     ];
   }
 }
@@ -295,6 +312,35 @@ void main() {
     expect(find.text('Appuyez sur le bouton'), findsOneWidget);
   });
 
+  testWidgets('On a phone the sidebar opens on first entry', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    // The drawer is auto-opened on first entry: the sidebar is fully on
+    // screen (left edge at x=0), not hidden off-screen.
+    final sidebar = find.byType(LibrarySidebar);
+    expect(sidebar, findsOneWidget);
+    expect(tester.getTopLeft(sidebar).dx, closeTo(0, 1));
+
+    // Folders still start collapsed: no sub-folder is visible until tapped.
+    expect(
+      find.descendant(
+        of: find.byType(LibrarySidebar),
+        matching: find.text('Algèbre'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(LibrarySidebar),
+        matching: find.text('Analyse'),
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets('Intermediate folders keep the welcome message',
       (tester) async {
     await _pumpDashboard(tester);
@@ -414,6 +460,50 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Télécharger'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, 'Voir'), findsOneWidget);
 
+    expect(
+      find.descendant(
+        of: find.byType(LibrarySidebar),
+        matching: find.text('Cours Algèbre.pdf'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+      'Expanding a folder with its caret also shows its documents in the main page',
+      (tester) async {
+    await _pumpDashboard(tester);
+
+    // The caret lives in the same tree row as the folder label.
+    Finder caretOf(String label) => find.descendant(
+          of: find.ancestor(
+            of: find.descendant(
+              of: find.byType(LibrarySidebar),
+              matching: find.text(label),
+            ),
+            matching: find.byType(Row),
+          ).first,
+          matching: find.byIcon(Icons.chevron_right_rounded),
+        );
+
+    await tester.tap(caretOf('1. Math'));
+    await tester.pumpAndSettle();
+    expect(find.text('Algèbre'), findsOneWidget);
+
+    await tester.tap(caretOf('Algèbre'));
+    await tester.pumpAndSettle();
+    await tester.tap(caretOf('Cours'));
+    await tester.pumpAndSettle();
+    await tester.tap(caretOf('S1'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(FolderContentView),
+        matching: find.text('Cours Algèbre'),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.descendant(
         of: find.byType(LibrarySidebar),
@@ -721,5 +811,84 @@ void main() {
     }
     expect(released, isTrue,
         reason: 'page should resume scrolling once all boxes are shown');
+  });
+
+  testWidgets(
+      'Scrolling a long folder to the bottom renders the footer without an '
+      'endless grey page', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: DashboardScreen(
+          api: _ManyFilesApiService(),
+          stats: StatsService.forTest(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('1. Math'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Algèbre'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cours'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('S1'));
+    await tester.pumpAndSettle();
+
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('mainScroll')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppFooter), findsOneWidget);
+    expect(find.text('Visites'), findsOneWidget);
+    expect(find.text('Téléchargements'), findsOneWidget);
+    // The footer is real content now; the page must not have ballooned into
+    // the infinite grey scroll area the crash used to produce.
+    expect(position.maxScrollExtent, lessThan(10000));
+  });
+
+  testWidgets('Tapping the landing brand scrolls back to the top',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LandingPage(
+          stats: StatsService.forTest(),
+          analytics: AnalyticsService.forTest(),
+          api: _FakeApiService(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final position =
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(LandingNavBar),
+        matching: find.text('Faire un don'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(position.pixels, greaterThan(0));
+
+    await tester.tap(find.byType(IloveprepaBrand));
+    await tester.pumpAndSettle();
+
+    expect(position.pixels, 0);
   });
 }

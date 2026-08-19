@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 /// Non-web fallback used by widget tests — the real implementation embeds the
 /// PDF in an <iframe> on the web.
 class PdfEmbed extends StatelessWidget {
-  const PdfEmbed({super.key, required this.url});
+  const PdfEmbed({super.key, required this.url, this.downloadUrl});
 
   final String url;
+  final String? downloadUrl;
 
   @override
   Widget build(BuildContext context) {
