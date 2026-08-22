@@ -5,7 +5,7 @@ import 'document_item.dart';
 /// The R2 worker returns a flat list of object keys (e.g.
 /// `Mathematics/Analyse/Chapter-1.pdf`). We rebuild the hierarchy locally
 /// from those keys so the existing data flow (`ApiService.fetchDocuments`)
-/// remains untouched — only the presentation changes.
+/// remains untouched — only the presentation changes. 
 class LibraryFolder {
   LibraryFolder({required this.name});
 
