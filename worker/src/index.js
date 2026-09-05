@@ -407,7 +407,12 @@ async function refreshNameIndex(env, files) {
     const base = f.name.split('/').pop();
     if (base) (index[base] ??= []).push(f.name);
   }
-  await env.usage_kv.put(NAME_INDEX_KEY, JSON.stringify(index));
+  const json = JSON.stringify(index);
+  // KV writes are counted against the daily free quota, so only write when
+  // the index actually changed: identical content costs one read, no write.
+  const current = await env.usage_kv.get(NAME_INDEX_KEY);
+  if (current === json) return;
+  await env.usage_kv.put(NAME_INDEX_KEY, json);
 }
 
 async function resolveName(env, name) {
