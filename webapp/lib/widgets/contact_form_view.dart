@@ -123,22 +123,16 @@ class _ContactFormViewState extends State<ContactFormView> {
     return Container(
       color: const Color(0xFFF6F9FC),
       width: double.infinity,
-      height: double.infinity,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final wide = constraints.maxWidth >= 980;
-
-          Widget content;
-          if (_status == _Status.success) {
-            content = _buildSuccessCard(wide);
-          } else {
-            content = _buildFormCard(wide);
-          }
-
-          return Align(
-            alignment: Alignment.center,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+          final content = _status == _Status.success
+              ? _buildSuccessCard(wide)
+              : _buildFormCard(wide);
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+            child: Align(
+              alignment: Alignment.center,
               child: content,
             ),
           );
@@ -352,7 +346,12 @@ class _ContactFormViewState extends State<ContactFormView> {
                   ),
                   filled: true,
                   fillColor: const Color(0xFFF2F6F8),
-                  contentPadding: const EdgeInsets.fromLTRB(52, 16, 20, 16),
+                  contentPadding: EdgeInsets.fromLTRB(
+                    _messageRtl ? 20 : 52,
+                    16,
+                    _messageRtl ? 52 : 20,
+                    16,
+                  ),
                   enabledBorder: _round(),
                   focusedBorder: _round(),
                   errorBorder: _round(),

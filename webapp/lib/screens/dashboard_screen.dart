@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web/web.dart' as web;
 
@@ -114,6 +116,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _seedFromCache();
     _analytics.logAppOpen();
     _analytics.logScreenView('dashboard');
+    unawaited(_precacheContactIllustration());
+  }
+
+  /// Warms the SVG cache the Contact illustration uses so the artwork appears
+  /// instantly the first time the Contact form is opened — even if the user
+  /// never opened it before, the assets are fetched as soon as the app boots.
+  static const _contactArtAssets = [
+    'assets/illustrations/contact_art.svg',
+    'assets/illustrations/contact_envelope.svg',
+    'assets/illustrations/contact_star1.svg',
+    'assets/illustrations/contact_star2.svg',
+    'assets/illustrations/contact_star3.svg',
+    'assets/illustrations/contact_star4.svg',
+    'assets/illustrations/contact_star5.svg',
+    'assets/illustrations/contact_star6.svg',
+  ];
+
+  Future<void> _precacheContactIllustration() async {
+    try {
+      await Future.wait(_contactArtAssets.map(
+        (asset) => SvgAssetLoader(asset).loadBytes(null),
+      ));
+    } catch (_) {
+      // Preloading is a best-effort optimization; rendering handles failures.
+    }
   }
 
   /// Tells the boot splash (web/index.html) to fade out only once the library
@@ -207,6 +234,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.of(context).maybePop();
     }
+    _resetScroll();
     setState(() {
       _showContactForm = true;
       _contactEpoch++;
@@ -218,10 +246,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.of(context).maybePop();
     }
+    _resetScroll();
     setState(() {
       _showDon = true;
       _showContactForm = false;
     });
+  }
+
+  /// Returns the shared scroll to the top before switching pages, so every
+  /// page (library / contact / donate) always starts at its beginning.
+  void _resetScroll() {
+    if (_contentScroll.hasClients) {
+      _contentScroll.jumpTo(0);
+    }
   }
 
   void _closeContactForm() {
@@ -298,13 +335,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  /// Brand tap: leaves the contact / donation views and returns to the library
-  /// main page with the exact folder / navigation state the user had before
-  /// (nothing is reset). When those views are already closed this is a no-op.
+  /// Brand tap: resets the whole dashboard to its initial state, exactly like
+  /// reloading the page — root folder, cleared search, collapsed tree, contact
+  /// and donation views closed, sidebar expanded, scrolled to the top.
   void _goToLanding() {
     setState(() {
       _showContactForm = false;
       _showDon = false;
+      _currentPath = const [];
+      _query = '';
+      _searchController.clear();
+      _expanded.clear();
+      _lastFilesPath = null;
+      _sidebarCollapsed = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+        Navigator.of(context).maybePop();
+      }
+      if (_contentScroll.hasClients) {
+        _contentScroll.jumpTo(0);
+      }
     });
   }
 
@@ -499,9 +551,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       future: _future,
       builder: (context, snapshot) {
         if (_showContactForm) {
-          return ContactFormView(
-            key: ValueKey(_contactEpoch),
-            onBack: _closeContactForm,
+          return _viewPage(
+            child: ContactFormView(
+              key: ValueKey(_contactEpoch),
+              onBack: _closeContactForm,
+            ),
           );
         }
         if (_showDon) {
@@ -552,12 +606,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
-            AppFooter(
-              documents: docs.length,
-              countersStream: _stats.watch(),
-              scrollController: _contentScroll,
-              onFirstVisible: _stats.markFooterVisible,
-            ),
+            _buildAppFooter(),
           ],
         );
       },
@@ -619,6 +668,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }),
     );
   });
+  }
+
+  /// Renders a full-page view (contact / donate) without the shared stats
+  /// footer. The view fills the available height and scrolls if its content is
+  /// taller than the screen.
+  Widget _viewPage({required Widget child}) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return _scrollable(
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: child,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// The shared stats footer, used on the library page and at the bottom of
+  /// the contact / donate pages.
+  Widget _buildAppFooter() {
+    return AppFooter(
+      documents: _all.length,
+      countersStream: _stats.watch(),
+      scrollController: _contentScroll,
+      onFirstVisible: _stats.markFooterVisible,
+    );
   }
 
   Widget _scrollable({required List<Widget> children}) {

@@ -70,6 +70,11 @@ export default {
     try {
       if (url.pathname === '/api/files') {
         const files = await listFiles(env, ctx);
+        ctx.waitUntil(
+          refreshNameIndex(env, files).catch((err) =>
+            console.error('refreshNameIndex failed:', err),
+          ),
+        );
         return new Response(JSON.stringify({ files }), {
           status: 200,
           headers: {
@@ -83,10 +88,30 @@ export default {
 
       if (url.pathname.startsWith('/api/view/')) {
         // Pretty view URL ending in the file name, so the browser tab shows
-        // the file name instead of the generic "download" segment.
+        // the file name instead of the generic "download" segment. `?f=` is
+        // the exact R2 key, always sent by the app so duplicate names never
+        // collide. Without `?f=` the segment is resolved through the URL index
+        // when it is unambiguous.
+        const exact = url.searchParams.get('f') || '';
         const name = decodeURIComponent(url.pathname.slice('/api/view/'.length));
         if (!name) return json({ error: 'Missing file parameter' }, 400);
-        return handleDownload(env, name, false);
+        if (exact) return handleDownload(env, exact, false);
+        const resolved = await resolveName(env, name);
+        if (resolved.length === 0) {
+          // Index not built yet: treat the segment as the full key (legacy).
+          return handleDownload(env, name, false);
+        }
+        if (resolved.length === 1) {
+          return handleDownload(env, resolved[0], false);
+        }
+        return json(
+          {
+            error: 'Plusieurs fichiers portent ce nom. Utilisez le lien complet.',
+            name,
+            files: resolved,
+          },
+          409,
+        );
       }
 
       if (url.pathname === '/api/download') {
@@ -368,6 +393,34 @@ async function listFiles(env, ctx) {
   }
 
   return objects;
+}
+
+// Maps each file-name segment seen in the URL to every R2 key that ends with
+// it. Refreshed behind the scenes on every /api/files listing, so pretty view
+// URLs (/api/view/<nom>) can be resolved without a full bucket walk.
+const NAME_INDEX_KEY = 'names:index';
+
+async function refreshNameIndex(env, files) {
+  if (!env.usage_kv) return;
+  const index = {};
+  for (const f of files) {
+    const base = f.name.split('/').pop();
+    if (base) (index[base] ??= []).push(f.name);
+  }
+  await env.usage_kv.put(NAME_INDEX_KEY, JSON.stringify(index));
+}
+
+async function resolveName(env, name) {
+  if (!env.usage_kv) return [];
+  try {
+    const raw = await env.usage_kv.get(NAME_INDEX_KEY);
+    if (!raw) return [];
+    const index = JSON.parse(raw);
+    return Array.isArray(index[name]) ? index[name] : [];
+  } catch (err) {
+    console.error('resolveName failed:', err);
+    return [];
+  }
 }
 
 async function handleDownload(env, name, forceDownload) {

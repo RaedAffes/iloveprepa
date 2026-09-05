@@ -35,8 +35,16 @@ class ApiService {
     return files;
   }
 
-  Uri viewUri(DocumentItem item) =>
-      Uri.parse('$apiBase/api/view/${Uri.encodeComponent(item.name)}');
+  /// Short view URL ending in the file name (nice browser tab), with the exact
+  /// R2 key carried in `f` so identical file names never collide. The Worker
+  /// falls back to `f` when present, and to the URL index otherwise.
+  Uri viewUri(DocumentItem item) {
+    final base = item.name.split('/').last;
+    return Uri.parse(
+      '$apiBase/api/view/${Uri.encodeComponent(base)}'
+      '?f=${Uri.encodeComponent(item.name)}',
+    );
+  }
 
   Uri downloadUri(DocumentItem item) => Uri.parse(
     '$apiBase/api/download?file=${Uri.encodeComponent(item.name)}&download=1',
