@@ -3,21 +3,15 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../firebase_options.dart';
+import 'api_service.dart';
 
-/// Global live counters backed by a single Firestore document
-/// (`stats/counters`), shared by every visitor.
+/// Global live counters backed by Cloudflare D1 (via the worker API),
+/// shared by every visitor.
 ///
 /// `visits` increments on every app load, `downloads` each time a document is
 /// opened. [watch] keeps listeners (the footer) in sync by polling. Writes are
-/// atomic (`FieldValue.increment` via the REST API) and failures are swallowed
-/// so the app keeps working even if Firestore is unreachable.
-///
-/// This talks to Firestore's REST API directly instead of the Firebase JS SDK:
-/// the SDK is loaded at runtime from Google's CDN and silently no-ops whenever
-/// it cannot boot (blocked CDN, slow network), which made the counters appear
-/// dead even though the backend rules were correct. Plain HTTPS requests work
-/// everywhere the app can reach the internet.
+/// best-effort and failures are swallowed so the app keeps working even if the
+/// API is unreachable.
 class StatsService {
   StatsService() : _test = false {
     _startPolling();
@@ -26,10 +20,8 @@ class StatsService {
   /// Test seam — no network, everything is a no-op / empty.
   StatsService.forTest() : _test = true;
 
-  static const String countersPath = 'stats/counters';
-
-  static const String _baseUrl =
-      'https://firestore.googleapis.com/v1/projects/iprepa/databases/(default)/documents';
+  static const String _statsUrl = '${ApiService.apiBase}/api/stats';
+  static const String _incrementUrl = '${ApiService.apiBase}/api/stats/increment';
 
   final bool _test;
 
@@ -42,45 +34,70 @@ class StatsService {
   /// stream would throw "Stream has already been listened to" the moment a
   /// listener is re-attached, which made the footer crash into a huge grey
   /// error box.
-  final StreamController<StatsCounters> _counters =
-      StreamController<StatsCounters>.broadcast();
-
-  String get _apiKey => DefaultFirebaseOptions.currentPlatform.apiKey;
-
-  /// Short resource name Firestore expects inside write/transform payloads
-  /// (the full URL form is rejected with a 400).
-  String get _docPath => 'projects/iprepa/databases/(default)/documents/$countersPath';
-
-  /// Full endpoint used for reads.
-  String get _countersDoc => '$_baseUrl/$countersPath';
-
-  Uri _docUri() => Uri.parse(_countersDoc).replace(queryParameters: {'key': _apiKey});
-
-  Uri _commitUri() =>
-      Uri.parse('$_baseUrl:commit').replace(queryParameters: {'key': _apiKey});
+  late final StreamController<StatsCounters> _counters =
+      StreamController<StatsCounters>.broadcast(
+    onListen: () {
+      // A broadcast stream doesn't replay its last value, so give a new
+      // subscriber the latest one immediately instead of waiting for the next
+      // poll tick — this is what makes the counters appear right away when the
+      // footer first scrolls into view.
+      scheduleMicrotask(() {
+        if (!_counters.isClosed) _counters.add(_last);
+      });
+    },
+  );
 
   /// Latest known counters for optimistic UI updates.
   StatsCounters _last = StatsCounters.zero();
 
-  /// Emits the current counters and then keeps polling every 5 seconds so
+  /// Download count held back until the footer is shown. Because a visit (and
+  /// therefore the counters) should only advance once the user actually scrolls
+  /// to the footer, downloads made before that are queued here and flushed the
+  /// moment the footer first becomes visible.
+  int _pendingDownloads = 0;
+
+  /// Whether the footer has already become visible, so a visit is counted only
+  /// once per session.
+  bool _footerShown = false;
+
+  /// Emits the current counters and then keeps polling every 2 seconds so
   /// the footer always shows fresh numbers. Every caller shares the same
   /// stream, so the counters stay consistent across the whole app.
   Stream<StatsCounters> watch() => _counters.stream;
 
-  /// Reads Firestore immediately, then re-reads every 5 seconds, pushing each
-  /// result to [_counters] for the app's whole lifetime. Errors are already
-  /// swallowed by [_read] so a failed read simply reuses the previous value.
+  /// Reads the counters immediately, then re-reads every 2 seconds, pushing
+  /// each result to [_counters] for the app's whole lifetime. Errors are
+  /// already swallowed by [_read] so a failed read simply reuses the previous
+  /// value.
   void _startPolling() async {
     while (!_counters.isClosed) {
       _last = await _read();
       _counters.add(_last);
-      await Future<void>.delayed(const Duration(seconds: 5));
+      await Future<void>.delayed(const Duration(seconds: 2));
     }
   }
 
-  Future<void> incrementVisits() => _increment({'visits': 1});
+  /// Queues a download. It is not sent to the backend yet — it is flushed
+  /// together with the visit the first time the footer becomes visible, so a
+  /// download only counts if the user actually scrolled to the footer.
+  void queueDownload() {
+    if (_test) return;
+    _pendingDownloads++;
+  }
 
-  Future<void> incrementDownloads() => _increment({'downloads': 1});
+  /// Called once the footer first becomes visible on screen. Counts a visit and
+  /// flushes any downloads queued before the footer was shown.
+  void markFooterVisible() {
+    if (_test) return;
+    if (_footerShown) return;
+    _footerShown = true;
+    final fields = <String, int>{'visits': 1};
+    if (_pendingDownloads > 0) {
+      fields['downloads'] = _pendingDownloads;
+      _pendingDownloads = 0;
+    }
+    _increment(fields);
+  }
 
   Future<void> _increment(Map<String, int> fields) async {
     if (_test) return;
@@ -97,24 +114,10 @@ class StatsService {
     _counters.add(_last);
 
     try {
-      final transform = {
-        'document': _docPath,
-        'fieldTransforms': [
-          for (final entry in fields.entries)
-            {
-              'fieldPath': entry.key,
-              'increment': {'integerValue': entry.value.toString()},
-            },
-        ],
-      };
       await _client.post(
-        _commitUri(),
+        Uri.parse(_incrementUrl),
         headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'writes': [
-            {'transform': transform},
-          ],
-        }),
+        body: jsonEncode(fields),
       );
     } catch (_) {
       // Best-effort analytics; never break the app for a counter.
@@ -124,36 +127,18 @@ class StatsService {
   Future<StatsCounters> _read() async {
     if (_test) return StatsCounters.zero();
     try {
-      final response = await _client.get(_docUri());
+      final response = await _client
+          .get(Uri.parse(_statsUrl))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) return StatsCounters.zero();
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return StatsCounters.fromMap(_fieldsToMap(data['fields']));
+      return StatsCounters(
+        visits: (data['visits'] as num?)?.toInt() ?? 0,
+        downloads: (data['downloads'] as num?)?.toInt() ?? 0,
+      );
     } catch (_) {
       return StatsCounters.zero();
     }
-  }
-
-  /// Converts a Firestore `fields` payload (e.g.
-  /// `{'visits': {'integerValue': '2'}}`) into a plain `{key: num}` map.
-  Map<String, dynamic> _fieldsToMap(Object? fields) {
-    final result = <String, dynamic>{};
-    if (fields is Map) {
-      for (final entry in fields.entries) {
-        final value = entry.value;
-        if (value is Map) {
-          final intValue = value['integerValue'];
-          if (intValue is String) {
-            result[entry.key as String] = int.tryParse(intValue) ?? 0;
-            continue;
-          }
-          final doubleValue = value['doubleValue'];
-          if (doubleValue is String) {
-            result[entry.key as String] = double.tryParse(doubleValue) ?? 0;
-          }
-        }
-      }
-    }
-    return result;
   }
 }
 
@@ -161,11 +146,6 @@ class StatsCounters {
   const StatsCounters({required this.visits, required this.downloads});
 
   StatsCounters.zero() : this(visits: 0, downloads: 0);
-
-  factory StatsCounters.fromMap(Map<String, dynamic> map) => StatsCounters(
-        visits: (map['visits'] as num?)?.toInt() ?? 0,
-        downloads: (map['downloads'] as num?)?.toInt() ?? 0,
-      );
 
   final int visits;
   final int downloads;

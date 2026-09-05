@@ -15,6 +15,13 @@
       "id": "bd862996f4d947c8a89a32e2032ad457"
     }
   ],
+  "d1_databases": [
+    {
+      "binding": "iloveprepa_db",
+      "database_name": "iloveprepa-db",
+      "database_id": "bffd960c-1782-4705-9eb9-6e8e17d6b3d0"
+    }
+  ],
   "triggers": {
     "crons": ["0 * * * *"]
   }

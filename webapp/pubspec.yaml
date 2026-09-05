@@ -38,9 +38,8 @@ dependencies:
   url_launcher: ^6.3.2
   intl: ^0.20.3
   shared_preferences: ^2.5.5
-  firebase_core: ^4.13.0
   web: ^1.1.1
-  firebase_analytics: ^12.4.6
+  flutter_svg: ^2.3.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -64,22 +63,39 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/check.png
     - assets/folder.png
-    - assets/header.png
-    - assets/main.png
-    - assets/main2.png
-    - assets/main3.png
-    - assets/don.png
-    - assets/scroll_anim.png
-    - assets/cours.png
-    - assets/td.png
-    - assets/devoir.png
-    - assets/examen.png
+    - assets/icon/chimie.png
+    - assets/icon/contact.png
+    - assets/icon/don.png
+    - assets/icon/info.png
+    - assets/icon/langage.png
+    - assets/icon/math.png
+    - assets/icon/physique.png
+    - assets/icon/resume.png
+    - assets/icon/sta.png
+    - assets/illustrations/contact_art.svg
+    - assets/illustrations/contact_envelope.svg
+    - assets/illustrations/contact_star1.svg
+    - assets/illustrations/contact_star2.svg
+    - assets/illustrations/contact_star3.svg
+    - assets/illustrations/contact_star4.svg
+    - assets/illustrations/contact_star5.svg
+    - assets/illustrations/contact_star6.svg
 
   fonts:
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter-Variable.ttf
+    - family: Pacifico
+      fonts:
+        - asset: assets/fonts/Pacifico-Regular.ttf
+    - family: Quicksand
+      fonts:
+        - asset: assets/fonts/Quicksand-Variable.ttf
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Variable.ttf
     - family: PlayfairDisplay
       fonts:
         - asset: assets/fonts/PlayfairDisplay-Variable.ttf

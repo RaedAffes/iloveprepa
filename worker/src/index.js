@@ -1,7 +1,8 @@
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma',
+  'Access-Control-Max-Age': '86400',
   'Cache-Control': 'no-store',
 };
 
@@ -50,6 +51,18 @@ export default {
       return handleUnlock(env, state, url);
     }
 
+    if (url.pathname === '/api/stats') {
+      return handleGetStats(env);
+    }
+
+    if (url.pathname === '/api/stats/increment' && request.method === 'POST') {
+      return handleIncrementStats(env, request);
+    }
+
+    if (url.pathname === '/api/validate-email') {
+      return handleValidateEmail(url, env);
+    }
+
     if (state.locked) {
       return lockedResponse(state);
     }
@@ -57,7 +70,15 @@ export default {
     try {
       if (url.pathname === '/api/files') {
         const files = await listFiles(env, ctx);
-        return json({ files }, 200);
+        return new Response(JSON.stringify({ files }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS,
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        });
       }
 
       if (url.pathname.startsWith('/api/view/')) {
@@ -118,6 +139,134 @@ async function readState(env) {
   } catch (err) {
     console.error('readState failed:', err);
     return {};
+  }
+}
+
+// Validates a contact-form address in two steps:
+//   1. Cheap local gate: the domain must have mail (MX) records, checked via
+//      Cloudflare's public DNS-over-HTTPS JSON API (no API key needed).
+//   2. If a ZB_API_KEY secret is configured, asks ZeroBounce to verify the
+//      actual mailbox over SMTP (blocks addresses like a random @gmail.com
+//      that Gmail reports as non-existent).
+// Fails open everywhere: a DNS hiccup, a missing key, or a ZeroBounce
+// outage never blocks a legitimate contact message.
+async function handleValidateEmail(url, env) {
+  const email = (url.searchParams.get('email') || '').trim().toLowerCase();
+  const formatRe = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  if (!formatRe.test(email)) {
+    return json({ ok: false, reason: 'format' }, 200);
+  }
+  const domain = email.slice(email.lastIndexOf('@') + 1);
+
+  const lookup = async (type) => {
+    const res = await fetch(
+      `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=${type}`,
+      { headers: { accept: 'application/dns-json' } },
+    );
+    if (!res.ok) throw new Error(`DNS ${res.status}`);
+    const data = await res.json();
+    return data && Array.isArray(data.Answer) ? data.Answer : [];
+  };
+
+  try {
+    const mxRecords = await lookup('MX');
+    const hasMx = mxRecords.some((r) => r.type === 15);
+    if (!hasMx) {
+      // RFC 5321: a host with no MX falls back to its A record.
+      const aRecords = await lookup('A');
+      const hasA = aRecords.some((r) => r.type === 1);
+      if (!hasA) {
+        return json({ ok: false, reason: 'no-mx' }, 200);
+      }
+    }
+  } catch (err) {
+    // DNS check failed — let ZeroBounce carry the verdict alone.
+    console.error('DNS check failed:', err);
+  }
+
+  const apiKey = (env.ZB_API_KEY || '').trim();
+  if (!apiKey) {
+    return json({ ok: true, reason: 'mx-only' }, 200);
+  }
+
+  try {
+    const res = await fetch(
+      `https://api.zerobounce.net/v2/validate?api_key=${encodeURIComponent(apiKey)}&email=${encodeURIComponent(email)}`,
+    );
+    if (!res.ok) throw new Error(`ZeroBounce ${res.status}`);
+    const data = await res.json();
+    const status = String(data.status || 'unknown').toLowerCase();
+    const blocked = new Set([
+      'invalid',
+      'spam_trap',
+      'toxic',
+      'do_not_mail',
+      'disposable',
+    ]);
+    if (blocked.has(status)) {
+      return json({ ok: false, reason: status }, 200);
+    }
+    // valid / catch-all / unknown / abort all pass — a catch-all server
+    // (accepts any address) can't be probed, so rejecting would hurt real
+    // users for no benefit.
+    return json({ ok: true, reason: status }, 200);
+  } catch (err) {
+    console.error('ZeroBounce check failed:', err);
+    return json({ ok: true, reason: 'fail-open' }, 200);
+  }
+}
+
+async function handleGetStats(env) {
+  try {
+    const stmt = env.iloveprepa_db &&
+      await env.iloveprepa_db.prepare('SELECT visits, downloads FROM counters WHERE id = 1').first();
+    if (!stmt) {
+      return json({ visits: 0, downloads: 0 }, 200);
+    }
+    return json(
+      { visits: stmt.visits || 0, downloads: stmt.downloads || 0 },
+      200,
+    );
+  } catch (err) {
+    console.error('handleGetStats failed:', err);
+    return json({ error: String((err && err.message) || err) }, 500);
+  }
+}
+
+async function handleIncrementStats(env, request) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    body = {};
+  }
+  // Numeric counts so a batch of deferred increments can be flushed at once.
+  const visits = Math.max(0, Math.floor(Number(body.visits) || 0));
+  const downloads = Math.max(0, Math.floor(Number(body.downloads) || 0));
+  if (visits === 0 && downloads === 0) {
+    return json({ error: 'Nothing to increment' }, 400);
+  }
+
+  try {
+    const set = [];
+    if (visits) set.push(`visits = visits + ${visits}`);
+    if (downloads) set.push(`downloads = downloads + ${downloads}`);
+    await env.iloveprepa_db
+      .prepare(`INSERT INTO counters (id, visits, downloads) VALUES (1, 0, 0) ON CONFLICT(id) DO NOTHING`)
+      .run();
+    await env.iloveprepa_db
+      .prepare(`UPDATE counters SET ${set.join(', ')} WHERE id = 1`)
+      .run();
+    const stmt = await env.iloveprepa_db
+      .prepare('SELECT visits, downloads FROM counters WHERE id = 1')
+      .first();
+    return json(
+      { ok: true, visits: stmt ? stmt.visits || 0 : 0, downloads: stmt ? stmt.downloads || 0 : 0 },
+      200,
+    );
+  } catch (err) {
+    console.error('handleIncrementStats failed:', err);
+    return json({ error: String((err && err.message) || err) }, 500);
   }
 }
 
@@ -188,10 +337,6 @@ function pctOf(value, limit) {
 }
 
 async function listFiles(env, ctx) {
-  const cache = caches.default;
-  const cached = await cache.match(LIST_CACHE_URL);
-  if (cached) return cached.json();
-
   const objects = [];
   let totalBytes = 0;
   let cursor;
@@ -211,13 +356,6 @@ async function listFiles(env, ctx) {
     }
     cursor = page.truncated ? page.cursor : undefined;
   } while (cursor);
-
-  await cache.put(
-    LIST_CACHE_URL,
-    new Response(JSON.stringify(objects), {
-      headers: { 'Cache-Control': 'max-age=60' },
-    }),
-  );
 
   // Fast path: storage is visible the moment the bucket is listed. Lock
   // immediately if it crosses 90% instead of waiting for the cron job.

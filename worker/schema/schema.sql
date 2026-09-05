@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS counters (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  visits INTEGER NOT NULL DEFAULT 0,
+  downloads INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO counters (id, visits, downloads)
+SELECT 1, 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM counters WHERE id = 1);

@@ -1,86 +1,25 @@
-import 'dart:async';
-
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_core/firebase_core.dart';
-
-/// Google Analytics 4 tracking, tied to the Firebase project's web stream.
+/// Analytics facade.
 ///
-/// Every method is best-effort: if Firebase has not finished booting or is
-/// unreachable the call is a silent no-op, so analytics can never break the
-/// app. Events sent: `screen_view` (dashboard / folder), `document_view`,
-/// `document_download` and `folder_open`.
+/// Analytics is handled by Cloudflare Web Analytics, which is injected as a
+/// beacon script in `web/index.html` and tracks page views automatically in
+/// the Cloudflare dashboard. The visit/download counters live in Cloudflare D1
+/// and are driven by [StatsService].
+///
+/// These methods are kept as no-ops so call sites remain stable and analytics
+/// can never break the app.
 class AnalyticsService {
-  AnalyticsService({Future<void>? ready})
-      : _ready = ready ?? Future<void>.value(),
-        _test = false;
+  AnalyticsService();
 
-  /// Test seam — no Firebase dependency, everything is a no-op.
-  AnalyticsService.forTest() : _ready = null, _test = true;
+  /// Test seam — everything is a no-op.
+  AnalyticsService.forTest();
 
-  final Future<void>? _ready;
-  final bool _test;
+  Future<void> logAppOpen() async {}
 
-  FirebaseAnalytics? get _analytics {
-    if (_test) return null;
-    try {
-      if (Firebase.apps.isEmpty) return null;
-      return FirebaseAnalytics.instance;
-    } catch (_) {
-      return null;
-    }
-  }
+  Future<void> logScreenView(String screenName) async {}
 
-  /// Waits (bounded) for Firebase boot before reporting, so the very first
-  /// visit still reaches the analytics property instead of being dropped.
-  Future<FirebaseAnalytics?> _whenReady() async {
-    if (_test) return null;
-    final ready = _ready;
-    if (ready != null) {
-      try {
-        await ready.timeout(const Duration(seconds: 8));
-      } catch (_) {
-        // Firebase unavailable — analytics stay no-ops.
-      }
-    }
-    return _analytics;
-  }
+  Future<void> logFolderOpen(String path) async {}
 
-  Future<void> logAppOpen() async {
-    await _run((a) => a.logEvent(name: 'app_open'));
-  }
+  Future<void> logDocumentView(String name) async {}
 
-  Future<void> logScreenView(String screenName) async {
-    await _run((a) => a.logScreenView(screenName: screenName));
-  }
-
-  Future<void> logFolderOpen(String path) async {
-    await _run(
-      (a) => a.logEvent(name: 'folder_open', parameters: {'path': path}),
-    );
-  }
-
-  Future<void> logDocumentView(String name) async {
-    await _run(
-      (a) => a.logEvent(name: 'document_view', parameters: {'file': name}),
-    );
-  }
-
-  Future<void> logDocumentDownload(String name) async {
-    await _run(
-      (a) => a.logEvent(
-        name: 'document_download',
-        parameters: {'file': name},
-      ),
-    );
-  }
-
-  Future<void> _run(Future<void> Function(FirebaseAnalytics analytics) action) async {
-    final analytics = await _whenReady();
-    if (analytics == null) return;
-    try {
-      await action(analytics);
-    } catch (_) {
-      // Best-effort analytics; never break the app for a metric.
-    }
-  }
+  Future<void> logDocumentDownload(String name) async {}
 }

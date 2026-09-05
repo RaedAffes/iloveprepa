@@ -24,6 +24,13 @@ class DocumentItem {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'size': sizeBytes,
+        'uploadTimestamp': uploadedAt?.millisecondsSinceEpoch,
+        'contentType': contentType,
+      };
+
   String get fileName => name.split('/').last;
 
   String get displayName {

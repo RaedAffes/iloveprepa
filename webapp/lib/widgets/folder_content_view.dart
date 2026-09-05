@@ -8,6 +8,7 @@ import '../core/theme/app_typography.dart';
 import '../models/document_item.dart';
 import '../models/library_folder.dart';
 import 'landing/landing_colors.dart' as landing;
+import 'notion_folder_icon.dart';
 
 /// Soft blue fill used for chips in the file browser.
 const Color _blueSoft = Color(0xFFE8EDFA);
@@ -21,66 +22,203 @@ const Color _ink = Color(0xFF1B1B1B);
 /// Muted grey for secondary text.
 const Color _greyMuted = Color(0xFF6B7280);
 
-/// The main-page file browser: the open folder's documents are listed as
-/// numbered, professional rows with View / Download actions — like a real file
-/// app. Folders that only contain subfolders show nothing, since navigation
-/// happens in the tree.
+/// Structured main-page browser: the selected top-level folder's hierarchy is
+/// shown as expandable sections, like the sidebar used to be but now in the
+/// main page. Each folder is a section with a caret; tapping it expands to
+/// show its files and its subfolders as nested sections.
 class FolderContentView extends StatelessWidget {
   const FolderContentView({
     super.key,
     required this.folder,
+    required this.currentPath,
+    required this.expanded,
     required this.busy,
     required this.onView,
     required this.onDownload,
+    required this.onOpenFolder,
+    required this.onToggle,
   });
 
   final LibraryFolder folder;
-
-  /// Name of the document currently opening (disables its actions).
+  final List<String> currentPath;
+  final Set<String> expanded;
   final String? busy;
-
   final void Function(DocumentItem doc) onView;
   final void Function(DocumentItem doc) onDownload;
+  final void Function(List<String> path) onOpenFolder;
+  final void Function(List<String> path) onToggle;
 
   @override
   Widget build(BuildContext context) {
     final files = List<DocumentItem>.from(folder.files)
-      ..sort((a, b) => a.displayName.toLowerCase().compareTo(
-            b.displayName.toLowerCase(),
-          ));
+      ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+    final subfolders = folder.children.values.toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
-    if (files.isEmpty) {
-      if (folder.children.isEmpty) return const _EmptyFolder();
-      return const SizedBox.shrink();
+    if (files.isEmpty && subfolders.isEmpty) {
+      return const _EmptyFolder();
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: AppSpacing.xl),
-        const _SectionHeader(label: 'Documents'),
-        const SizedBox(height: AppSpacing.md),
-        _DocumentsWindow(
-          files: files,
-          busy: busy,
-          onView: onView,
-          onDownload: onDownload,
-        ),
+        if (currentPath.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: _MainBreadcrumb(path: currentPath, onTap: onOpenFolder),
+          ),
+        if (files.isNotEmpty) ...[
+          _DocumentsWindow(files: files, busy: busy, onView: onView, onDownload: onDownload),
+          if (subfolders.isNotEmpty) const SizedBox(height: AppSpacing.lg),
+        ],
+        for (final child in subfolders)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: _MainFolderSection(
+              folder: child,
+              path: [...currentPath, child.name],
+              expanded: expanded,
+              busy: busy,
+              onView: onView,
+              onDownload: onDownload,
+              onToggle: onToggle,
+              onOpenFolder: onOpenFolder,
+            ),
+          ),
       ],
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
+class _MainFolderSection extends StatelessWidget {
+  const _MainFolderSection({
+    required this.folder,
+    required this.path,
+    required this.expanded,
+    required this.busy,
+    required this.onView,
+    required this.onDownload,
+    required this.onToggle,
+    required this.onOpenFolder,
+  });
 
-  final String label;
+  final LibraryFolder folder;
+  final List<String> path;
+  final Set<String> expanded;
+  final String? busy;
+  final void Function(DocumentItem doc) onView;
+  final void Function(DocumentItem doc) onDownload;
+  final void Function(List<String> path) onToggle;
+  final void Function(List<String> path) onOpenFolder;
+
+  String get pathKey => path.join('/');
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: AppTypography.sectionTitle(_ink),
+    final isExpanded = expanded.contains(pathKey);
+    final files = List<DocumentItem>.from(folder.files)
+      ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+    final subfolders = folder.children.values.toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: AppRadius.cardR,
+        border: Border.all(color: AppColors.border, width: 1),
+        boxShadow: AppShadows.xs,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: () => onToggle(path),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              color: isExpanded ? _blueSoft : Colors.white,
+              child: Row(
+                children: [
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.25 : 0,
+                    duration: const Duration(milliseconds: 180),
+                    child: const Icon(Icons.chevron_right_rounded, size: 20, color: _greyMuted),
+                  ),
+                  const SizedBox(width: 6),
+                  const NotionFolderIcon(size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(folder.name, style: AppTypography.label(_ink).copyWith(fontWeight: FontWeight.w700, fontSize: 14)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isExpanded) ...[
+            const Divider(height: 1, thickness: 1, color: AppColors.border),
+            if (files.isNotEmpty)
+              _DocumentsWindow(files: files, busy: busy, onView: onView, onDownload: onDownload),
+            if (subfolders.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final child in subfolders)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _MainFolderSection(
+                          folder: child,
+                          path: [...path, child.name],
+                          expanded: expanded,
+                          busy: busy,
+                          onView: onView,
+                          onDownload: onDownload,
+                          onToggle: onToggle,
+                          onOpenFolder: onOpenFolder,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            if (files.isEmpty && subfolders.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Dossier vide', style: TextStyle(color: _greyMuted, fontSize: 13)),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MainBreadcrumb extends StatelessWidget {
+  const _MainBreadcrumb({required this.path, required this.onTap});
+  final List<String> path;
+  final void Function(List<String> path) onTap;
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6,
+      children: [
+        InkWell(
+          onTap: () => onTap(path.sublist(0, 1)),
+          child: Text(path.first, style: AppTypography.label(_ink).copyWith(fontWeight: FontWeight.w700)),
+        ),
+        for (var i = 1; i < path.length; i++) ...[
+          const Icon(Icons.chevron_right_rounded, size: 18, color: _greyMuted),
+          InkWell(
+            onTap: () => onTap(path.sublist(0, i + 1)),
+            child: Text(
+              path[i],
+              style: AppTypography.label(i == path.length - 1 ? _ink : _greyMuted)
+                  .copyWith(fontWeight: i == path.length - 1 ? FontWeight.w700 : FontWeight.w500),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -160,8 +298,6 @@ class _DocumentsWindow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _WindowHeader(),
-          const Divider(height: 1, thickness: 1, color: AppColors.border),
           for (final doc in files)
             _FileRow(
               doc: doc,
@@ -176,32 +312,6 @@ class _DocumentsWindow extends StatelessWidget {
   }
 }
 
-class _WindowHeader extends StatelessWidget {
-  const _WindowHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    const style = TextStyle(
-      color: Colors.white,
-      fontSize: 11,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.8,
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: 11,
-      ),
-      color: landing.AppColors.midBlue,
-      child: const Row(
-        children: [
-          Expanded(child: Text('NOM', style: style)),
-        ],
-      ),
-    );
-  }
-}
 
 class _FileRow extends StatelessWidget {
   const _FileRow({

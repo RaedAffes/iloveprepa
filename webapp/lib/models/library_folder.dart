@@ -54,15 +54,31 @@ class LibraryFolder {
 }
 
 /// Builds the full library tree from the flat list returned by the R2 worker.
+/// Empty folder placeholders (keys ending with `/`) are kept as folders even
+/// when they contain no files, so an empty folder created in R2 still appears.
 LibraryFolder buildLibraryTree(List<DocumentItem> documents) {
   final root = LibraryFolder(name: 'Library');
 
   for (final doc in documents) {
-    final parts = doc.name
+    final raw = doc.name.trim();
+    if (raw.isEmpty) continue;
+    final isFolder = raw.endsWith('/');
+    final parts = raw
         .split('/')
         .where((p) => p.trim().isNotEmpty)
         .toList();
     if (parts.isEmpty) continue;
+
+    if (isFolder) {
+      var node = root;
+      for (final segment in parts) {
+        node = node.children.putIfAbsent(
+          segment.trim(),
+          () => LibraryFolder(name: segment.trim()),
+        );
+      }
+      continue;
+    }
 
     var node = root;
     for (var i = 0; i < parts.length - 1; i++) {

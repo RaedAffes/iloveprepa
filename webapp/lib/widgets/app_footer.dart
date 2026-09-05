@@ -18,15 +18,20 @@ class AppFooter extends StatefulWidget {
     required this.documents,
     required this.countersStream,
     required this.scrollController,
+    this.onFirstVisible,
   });
 
-  /// Number of uploaded PDFs (comes straight from the API, not Firestore).
+  /// Number of uploaded PDFs (comes straight from the API).
   final int documents;
 
   final Stream<StatsCounters> countersStream;
 
   /// The page's scroll controller, used to detect when the footer is visible.
   final ScrollController scrollController;
+
+  /// Called the first time the footer becomes visible on screen, so the
+  /// visit/download counters only advance once the user actually sees them.
+  final VoidCallback? onFirstVisible;
 
   @override
   State<AppFooter> createState() => _AppFooterState();
@@ -62,7 +67,10 @@ class _AppFooterState extends State<AppFooter> {
   void _check() {
     if (!mounted) return;
     final visible = _isVisible();
-    if (visible && !_wasVisible) setState(() => _run++);
+    if (visible && !_wasVisible) {
+      setState(() => _run++);
+      widget.onFirstVisible?.call();
+    }
     _wasVisible = visible;
   }
 
@@ -225,7 +233,7 @@ class _AnimatedNumberState extends State<_AnimatedNumber>
     _target = widget.value;
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 450),
     );
     _curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
     _controller.addListener(() => setState(() {}));

@@ -7,6 +7,7 @@ import '../core/theme/app_typography.dart';
 import '../models/document_item.dart';
 import '../models/library_folder.dart';
 import '../models/library_index.dart';
+import '../utils/folder_icon.dart';
 import 'iloveprepa_brand.dart';
 import 'landing/landing_colors.dart' as landing;
 import 'notion_folder_icon.dart';
@@ -82,42 +83,39 @@ class LibrarySidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            height: 68,
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    if (onMenu != null) ...[
-                      IconButton(
-                        onPressed: onMenu,
-                        tooltip: 'Masquer la barre latérale',
-                        icon: const Icon(
-                          Icons.menu_rounded,
-                          size: 20,
-                          color: Colors.white,
-                        ),
-                        hoverColor: Colors.white12,
-                        splashRadius: 18,
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints.tightFor(
-                          width: 32,
-                          height: 32,
-                        ),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                    ],
-                    Expanded(
-                      child: IloveprepaBrand(
-                        fontSize: 26,
-                        iconSize: 24,
-                        color: Colors.white,
-                        onTap: onBrandTap,
-                      ),
+                if (onMenu != null) ...[
+                  IconButton(
+                    onPressed: onMenu,
+                    tooltip: 'Masquer la barre latérale',
+                    icon: const Icon(
+                      Icons.menu_rounded,
+                      size: 20,
+                      color: Colors.white,
                     ),
-                  ],
+                    hoverColor: Colors.white12,
+                    splashRadius: 18,
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
+                Expanded(
+                  child: IloveprepaBrand(
+                    fontSize: 26,
+                    iconSize: 24,
+                    color: Colors.white,
+                    onTap: onBrandTap,
+                  ),
                 ),
               ],
             ),
@@ -140,32 +138,37 @@ class LibrarySidebar extends StatelessWidget {
                   )
                 : ListView(
                     controller: treeScrollController,
-                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 24),
+                    padding: const EdgeInsets.fromLTRB(10, 20, 10, 24),
                     children: [
-                      for (final file in root.files)
-                        _TreeRow(
-                          depth: 0,
-                          isActive: false,
-                          isAncestor: false,
-                          leading: const SizedBox(width: 20),
-                          icon: const NotionPdfIcon(
-                            size: 15,
-                            color: Colors.white70,
-                          ),
-                          label: file.fileName,
-                          textColor: Colors.white70,
-                          fontWeight: FontWeight.w400,
-                          onTap: () => onOpenFile(file),
-                        ),
                       for (final subject in subjects)
-                        _Branch(
-                          folder: subject,
-                          path: [subject.name],
-                          currentPath: currentPath,
-                          expanded: expanded,
-                          onToggle: onToggle,
-                          onOpenFolder: onOpenFolder,
-                          onOpenFile: onOpenFile,
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _TreeRow(
+                            depth: 0,
+                            isActive: currentPath.isNotEmpty &&
+                                currentPath.first == subject.name &&
+                                currentPath.length == 1,
+                            isAncestor: currentPath.isNotEmpty &&
+                                currentPath.first == subject.name &&
+                                currentPath.length > 1,
+                            leading: const SizedBox(width: 2),
+                            icon: SizedBox(
+                              width: 44,
+                              height: 44,
+                              child: Image.asset(
+                                folderIcon(subject.name),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            label: subject.name,
+                            textColor: (currentPath.isNotEmpty && currentPath.first == subject.name)
+                                ? Colors.white
+                                : Colors.white70,
+                            fontWeight: (currentPath.isNotEmpty && currentPath.first == subject.name)
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            onTap: () => onOpenFolder([subject.name]),
+                          ),
                         ),
                     ],
                   ),
@@ -516,7 +519,7 @@ class _TreeRow extends StatelessWidget {
           child: AnimatedContainer(
             duration: AppMotion.normal,
             curve: AppMotion.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             decoration: BoxDecoration(
               color: isActive
                   ? landing.AppColors.orange
@@ -528,15 +531,15 @@ class _TreeRow extends StatelessWidget {
             child: Row(
               children: [
                 leading,
-                const SizedBox(width: 2),
+                const SizedBox(width: 6),
                 icon,
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     label,
                     style: AppTypography.metadata(
                       textColor,
-                    ).copyWith(fontWeight: fontWeight, fontSize: 13),
+                    ).copyWith(fontWeight: fontWeight, fontSize: 16),
                   ),
                 ),
               ],
