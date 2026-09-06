@@ -30,3 +30,4 @@ scripts/friend-upload-python/
 
 # Misc
 *.log
+.wrangler/
