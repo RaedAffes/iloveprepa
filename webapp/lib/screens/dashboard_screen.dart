@@ -111,12 +111,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
           jsonEncode(docs.map((d) => d.toJson()).toList()),
         );
       } catch (_) {}
-      _notifyBootReady();
-    }).catchError((_) => _notifyBootReady());
+    }).catchError((_) {});
     _seedFromCache();
+    _scheduleBootReady();
     _analytics.logAppOpen();
     _analytics.logScreenView('dashboard');
     unawaited(_precacheContactIllustration());
+  }
+
+  /// Hides the boot splash on the very first rendered frame instead of waiting
+  /// for the network fetch. On repeat visits the cached library is already in
+  /// the widget tree before the first build, so the app is fully drawn the
+  /// moment the splash fades — the network refresh keeps updating it behind
+  /// the scenes.
+  void _scheduleBootReady() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _notifyBootReady());
   }
 
   /// Warms the SVG cache the Contact illustration uses so the artwork appears
@@ -143,10 +152,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// Tells the boot splash (web/index.html) to fade out only once the library
-  /// data is fetched, rendered, AND the phone drawer has finished sliding in —
-  /// so the sidebar text/icons are already fully on screen the first moment
-  /// the splash disappears (no pop-in), with only the minimum wait added.
+  /// Tells the boot splash (web/index.html) to fade out on the first rendered
+  /// frame (and once the phone drawer has finished sliding in, when open).
+  /// The removal is no longer gated on the network fetch: the cached library
+  /// is already on screen, and any section still loading shows its skeleton.
   void _notifyBootReady() {
     Future.delayed(const Duration(milliseconds: 80), () {
       if (!mounted) return;

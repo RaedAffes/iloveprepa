@@ -36,6 +36,11 @@
   <title>IlovePrepa : 2000 documents de prépa (cours, DS, examens, exercices)</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- Start fetching the app code the instant this (tiny) shell arrives, in
+       parallel with the rest, so the first open does not sit in the brand
+       splash while main.dart.js (several MB) round-trips afterwards. -->
+  <link rel="preload" as="script" href="main.dart.js">
+
   <!-- Preload the brand font so the boot preview renders it directly and the
        text never swaps to the Georgia fallback (which can look like the brand
        changes size). -->
