@@ -67,11 +67,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // visibility-triggered count-up.
   final ScrollController _contentScroll = ScrollController();
 
-  late Future<List<DocumentItem>> _future;
   List<DocumentItem> _all = const [];
   LibraryIndex? _index;
   String _query = '';
   String? _busy;
+  Object? _apiError;
 
   // Keeps the sidebar tree's scroll position across a search round-trip.
   final ScrollController _treeScroll = ScrollController();
@@ -103,20 +103,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _future = _api.fetchDocuments();
-    _future.then((docs) async {
+    _loadDocuments();
+    _seedFromCache();
+    _scheduleBootReady();
+    _analytics.logAppOpen();
+    _analytics.logScreenView('dashboard');
+    unawaited(_precacheContactIllustration());
+  }
+
+  /// Kicks off the API refresh in the background (never blocks the UI). The
+  /// response is written to [_all] and triggers a rebuild; a failure is
+  /// captured in [_apiError] and only shown if no cached data exists.
+  void _loadDocuments() {
+    _api.fetchDocuments().then((docs) {
       try {
         web.window.localStorage.setItem(
           'flutter.cached_documents',
           jsonEncode(docs.map((d) => d.toJson()).toList()),
         );
       } catch (_) {}
-    }).catchError((_) {});
-    _seedFromCache();
-    _scheduleBootReady();
-    _analytics.logAppOpen();
-    _analytics.logScreenView('dashboard');
-    unawaited(_precacheContactIllustration());
+      if (mounted) setState(() { _all = docs; _apiError = null; });
+      return docs;
+    }).catchError((e) {
+      if (mounted) setState(() => _apiError = e);
+      return <DocumentItem>[];
+    });
   }
 
   /// Hides the boot splash on the very first rendered frame instead of waiting
@@ -216,13 +227,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _reload() {
     setState(() {
-      _all = const [];
-      _index = null;
-      _currentPath = const [];
+      // Keep _all/_index so the sidebar folder tree stays visible while the
+      // retry runs; only the error state and the search are cleared.
       _query = '';
+      _apiError = null;
       _searchController.clear();
-      _future = _api.fetchDocuments();
     });
+    _loadDocuments();
   }
 
   void _prepare(List<DocumentItem> docs) {
@@ -556,38 +567,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildContent() {
-    return FutureBuilder<List<DocumentItem>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (_showContactForm) {
-          return _viewPage(
-            child: ContactFormView(
-              key: ValueKey(_contactEpoch),
-              onBack: _closeContactForm,
-            ),
-          );
-        }
-        if (_showDon) {
-          return const DonView();
-        }
-        final isWaiting = snapshot.connectionState == ConnectionState.waiting;
-        final hasSnapshotData = snapshot.hasData;
-        final error = snapshot.hasError ? snapshot.error : null;
-        final docs = hasSnapshotData ? snapshot.data! : _all;
-        final loading = isWaiting && docs.isEmpty;
-        if (!isWaiting && error == null && hasSnapshotData) {
-          _all = docs;
-          _prepare(docs);
-        } else if (_all.isNotEmpty && _index == null) {
-          _prepare(_all);
-        }
-        return _buildBody(
-          loading: loading,
-          error: error,
-          docs: docs,
-          onReload: _reload,
-        );
-      },
+    if (_showContactForm) {
+      return _viewPage(
+        child: ContactFormView(
+          key: ValueKey(_contactEpoch),
+          onBack: _closeContactForm,
+        ),
+      );
+    }
+    if (_showDon) {
+      return const DonView();
+    }
+
+    // Always show content from _all immediately (populated from cache by
+    // _seedFromCache() on repeat visits, empty on first visit). The API
+    // refresh writes to _all via _loadDocuments() — never gate the UI on it.
+    final docs = _all;
+    final loading = docs.isEmpty && _apiError == null;
+    if (!loading && _index == null) {
+      _prepare(docs);
+    }
+    return _buildBody(
+      loading: loading,
+      error: _apiError,
+      docs: docs,
+      onReload: _reload,
     );
   }
 
@@ -645,11 +649,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return const SizedBox.shrink();
         }
         if (error != null) {
-          return ErrorView(
-            onRetry: onReload,
-            detail: _describeError(error),
-            apiBase: ApiService.apiBase,
-          );
+          // Every type of backend error (quota exceeded, throttling, timeout,
+          // unreachable server) shows the same "come back later" page.
+          return ComeBackLaterView(onRetry: onReload);
         }
         if (docs.isEmpty) {
           return EmptyView(onRefresh: onReload);
@@ -719,18 +721,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: EdgeInsets.zero,
       children: children,
     );
-  }
-
-  String _describeError(Object? error) {
-    if (error is ApiException) return '${error.message}\n\n$error';
-    final text = error.toString();
-    if (text.contains('TimeoutException')) {
-      return 'Le serveur a mis trop de temps à répondre.\n\n$text';
-    }
-    if (text.contains('SocketException') || text.contains('ClientException')) {
-      return 'Connexion au serveur impossible. Vérifiez le réseau.\n\n$text';
-    }
-    return text;
   }
 }
 

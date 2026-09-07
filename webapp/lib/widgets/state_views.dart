@@ -8,6 +8,58 @@ import 'landing/landing_colors.dart' as landing;
 
 const Color _blueSoft = Color(0xFFE8EDFA);
 
+/// Universal page shown for every backend error (quota exceeded, throttling,
+/// timeouts, unreachable server...). It mirrors the "Message envoyé" success
+/// card from the contact page — the check.png illustration — with a friendly
+/// "come back later" message and the orange retry pill.
+class ComeBackLaterView extends StatelessWidget {
+  const ComeBackLaterView({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/check.png', height: 280),
+            const SizedBox(height: 26),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Iloveprepa utilise des services totalement '
+                        'gratuits. Lorsqu\'un grand nombre de personnes se '
+                        'connectent en même temps, la limite de ces services '
+                        'peut être atteinte. Merci de revenir après un moment ',
+                  ),
+                  const TextSpan(
+                    text: '♥',
+                    style: TextStyle(color: Color(0xFFFF5A6A)),
+                  ),
+                ],
+              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Quicksand',
+                fontWeight: FontWeight.w600,
+                fontSize: 17,
+                height: 1.5,
+                color: Color(0xFF555A66),
+              ),
+            ),
+            const SizedBox(height: 30),
+            _OrangePillButton(label: 'Réessayer', onTap: onRetry),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StatePanel extends StatelessWidget {
   const _StatePanel({
     required this.icon,
@@ -17,6 +69,7 @@ class _StatePanel extends StatelessWidget {
     required this.subtitle,
     this.actionLabel,
     this.onAction,
+    this.action,
   });
 
   final IconData icon;
@@ -26,6 +79,10 @@ class _StatePanel extends StatelessWidget {
   final String subtitle;
   final String? actionLabel;
   final VoidCallback? onAction;
+
+  /// Custom action widget (e.g. the orange pill button). When provided it
+  /// replaces the default blue retry button.
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +116,10 @@ class _StatePanel extends StatelessWidget {
                 style: AppTypography.body(),
               ),
             ),
-            if (actionLabel != null) ...[
+            if (action != null) ...[
+              const SizedBox(height: AppSpacing.xl),
+              action!,
+            ] else if (actionLabel != null) ...[
               const SizedBox(height: AppSpacing.xl),
               FilledButton.icon(
                 onPressed: onAction,
@@ -125,6 +185,90 @@ class EmptyView extends StatelessWidget {
           'et ils apparaîtront ici.',
       actionLabel: 'Actualiser',
       onAction: onRefresh,
+    );
+  }
+}
+
+/// Shown when the backend has paused the service (free-tier usage lock).
+/// Replaces the raw 503 error with a friendly maintenance message and the
+/// orange pill button used on the contact page.
+class LibraryMaintenanceView extends StatelessWidget {
+  const LibraryMaintenanceView({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return _StatePanel(
+      icon: Icons.engineering_outlined,
+      iconColor: const Color(0xFFE88F2A),
+      iconBg: const Color(0xFFFFF3E0),
+      title: 'Bibliothèque en cours de réglage',
+      subtitle:
+          'La bibliothèque est maintenant en cours de réglage, merci de '
+          'revenir une autre fois.',
+      action: _OrangePillButton(label: 'Réessayer', onTap: onRetry),
+    );
+  }
+}
+
+/// Shown when Cloudflare is throttling the API (HTTP 429 / daily quota, or
+/// the browser-side `Failed to fetch` that the block produces). Same orange
+/// pill treatment as the maintenance view, with a "try again later" message.
+class ServerOverloadedView extends StatelessWidget {
+  const ServerOverloadedView({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return _StatePanel(
+      icon: Icons.cloud_queue_outlined,
+      iconColor: const Color(0xFFE88F2A),
+      iconBg: const Color(0xFFFFF3E0),
+      title: 'Service temporairement indisponible',
+      subtitle:
+          'Le serveur est temporairement surchargé ou bloqué. Merci de '
+          'réessayer dans quelques instants.',
+      action: _OrangePillButton(label: 'Réessayer', onTap: onRetry),
+    );
+  }
+}
+
+/// Pill-shaped orange button, matching the "Send message" button on the
+/// contact page (InkWell ripple, rounded 48, Quicksand bold on white).
+class _OrangePillButton extends StatelessWidget {
+  const _OrangePillButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(48),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF923C),
+            borderRadius: BorderRadius.circular(48),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Quicksand',
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

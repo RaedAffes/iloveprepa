@@ -11,13 +11,37 @@ class ApiService {
   );
 
   Future<List<DocumentItem>> fetchDocuments() async {
-    final uri = Uri.parse('$apiBase/api/files').replace(
-      queryParameters: {'t': DateTime.now().millisecondsSinceEpoch.toString()},
-    );
+    // No cache-buster on purpose: the worker serves /api/files with a 5-min
+    // Cache-Control, so repeated loads reuse the browser/CDN copy instead of
+    // listing the whole R2 bucket (a Class A op) every time.
+    final uri = Uri.parse('$apiBase/api/files');
     final response = await http
         .get(uri)
         .timeout(const Duration(seconds: 10));
     if (response.statusCode != 200) {
+      // The worker pauses itself when a free-tier usage limit is reached
+      // (503 + locked). Surface that as a maintenance state in the app
+      // instead of a raw server-code error.
+      if (response.statusCode == 503) {
+        try {
+          final body = jsonDecode(response.body) as Map<String, dynamic>;
+          if (body['locked'] == true) {
+            throw ServiceLockedException(
+              (body['error'] as String?) ?? 'Service temporarily paused',
+            );
+          }
+        } catch (e) {
+          if (e is ServiceLockedException) rethrow;
+        }
+      }
+      // Cloudflare throttles requests (daily quota / burst) with a 429.
+      // Show a friendly "try again later" instead of a raw server code.
+      if (response.statusCode == 429) {
+        throw RateLimitedException(
+          'Le serveur est temporairement surchargé. Merci de réessayer '
+          'dans quelques instants.',
+        );
+      }
       throw ApiException(
         'Le serveur a répondu avec le code ${response.statusCode}',
       );
@@ -113,6 +137,27 @@ class ApiService {
 class ApiException implements Exception {
   final String message;
   ApiException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+/// Thrown when the backend has paused the whole service (free-tier usage
+/// safety lock). The app shows a friendly maintenance state for this instead
+/// of the generic server-error screen.
+class ServiceLockedException implements Exception {
+  final String message;
+  ServiceLockedException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+/// Thrown when Cloudflare throttles requests (daily quota / burst, HTTP 429).
+/// The app shows the orange "service temporarily overburdened" state for it.
+class RateLimitedException implements Exception {
+  final String message;
+  RateLimitedException(this.message);
 
   @override
   String toString() => message;

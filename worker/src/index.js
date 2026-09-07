@@ -41,13 +41,14 @@ export default {
     }
 
     const url = new URL(request.url);
-    const state = await readState(env);
 
     if (url.pathname === '/api/status') {
+      const state = await readState(env);
       return json({ state }, 200);
     }
 
     if (url.pathname === '/api/unlock') {
+      const state = await readState(env);
       return handleUnlock(env, state, url);
     }
 
@@ -63,6 +64,11 @@ export default {
       return handleValidateEmail(url, env);
     }
 
+    // The KV read only gates the library operations below — the stats,
+    // increment and email-validation endpoints above (and the OPTIONS
+    // preflight) never touch the KV namespace, so the free KV read quota
+    // stays reserved for /api/files and file serving.
+    const state = await readState(env);
     if (state.locked) {
       return lockedResponse(state);
     }
@@ -75,13 +81,18 @@ export default {
             console.error('refreshNameIndex failed:', err),
           ),
         );
+        // Cache the listing on the browser/CDN for 5 minutes so a full R2
+        // bucket walk (a Class A operation) happens once per window per cache
+        // instead of once per page load. New uploads appear within 5 min.
         return new Response(JSON.stringify({ files }), {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            ...CORS,
-            'Cache-Control': 'no-store, no-cache, must-revalidate',
-            'Pragma': 'no-cache',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma',
+            'Access-Control-Max-Age': '86400',
+            'Cache-Control': 'public, max-age=300, s-maxage=300',
           },
         });
       }
@@ -241,14 +252,67 @@ async function handleValidateEmail(url, env) {
   }
 }
 
+// Keeps the running visits/downloads counters scoped to the current calendar
+// month (UTC, key "YYYY-MM"). On the first request of a new month the finished
+// month's totals are archived into `monthly_counts` and the running counters
+// are reset to zero, so each month's numbers are preserved in D1.
+async function ensureMonth(env) {
+  const db = env.iloveprepa_db;
+  if (!db) return;
+  const now = new Date();
+  const month = now.toISOString().slice(0, 7); // YYYY-MM
+  const row = await db.prepare('SELECT month FROM counters WHERE id = 1').first();
+  if (row && row.month === month) return;
+  const nowIso = now.toISOString();
+  if (row && row.month) {
+    // A new month started: snapshot the finished month into the archive,
+    // then reset the running counters for the fresh month.
+    const prev = await db
+      .prepare('SELECT visits, downloads FROM counters WHERE id = 1')
+      .first();
+    await db
+      .prepare(
+        `INSERT INTO monthly_counts (month, visits, downloads, updated_at)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(month) DO UPDATE SET
+           visits = excluded.visits,
+           downloads = excluded.downloads,
+           updated_at = excluded.updated_at`,
+      )
+      .bind(row.month, prev.visits || 0, prev.downloads || 0, nowIso)
+      .run();
+    await db
+      .prepare(
+        'UPDATE counters SET visits = 0, downloads = 0, month = ?, updated_at = ? WHERE id = 1',
+      )
+      .bind(month, nowIso)
+      .run();
+  } else if (row) {
+    // Migration: stamp the current month onto the pre-existing row without
+    // clearing the counters accumulated so far.
+    await db
+      .prepare('UPDATE counters SET month = ?, updated_at = ? WHERE id = 1')
+      .bind(month, nowIso)
+      .run();
+  } else {
+    await db
+      .prepare(
+        'INSERT INTO counters (id, visits, downloads, month, updated_at) VALUES (1, 0, 0, ?, ?)',
+      )
+      .bind(month, nowIso)
+      .run();
+  }
+}
+
 async function handleGetStats(env) {
   try {
+    await ensureMonth(env);
     const stmt = env.iloveprepa_db &&
       await env.iloveprepa_db.prepare('SELECT visits, downloads FROM counters WHERE id = 1').first();
     if (!stmt) {
-      return json({ visits: 0, downloads: 0 }, 200);
+      return cachedStats({ visits: 0, downloads: 0 });
     }
-    return json(
+    return cachedStats(
       { visits: stmt.visits || 0, downloads: stmt.downloads || 0 },
       200,
     );
@@ -256,6 +320,25 @@ async function handleGetStats(env) {
     console.error('handleGetStats failed:', err);
     return json({ error: String((err && err.message) || err) }, 500);
   }
+}
+
+// Short-lived stats snapshot shared by every visitor. The edge CDN honours
+// Cache-Control and serves /api/stats without invoking the Worker again, so
+// the footer poller costs roughly one Worker request per 5 minutes per user
+// pool instead of one per open tab — the 100k requests/day limit becomes
+// unreachable. Counters drift by at most a few minutes, which nobody notices.
+function cachedStats(payload, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma',
+      'Access-Control-Max-Age': '86400',
+      'Cache-Control': 'public, max-age=300, s-maxage=300',
+    },
+  });
 }
 
 async function handleIncrementStats(env, request) {
@@ -273,12 +356,10 @@ async function handleIncrementStats(env, request) {
   }
 
   try {
+    await ensureMonth(env);
     const set = [];
     if (visits) set.push(`visits = visits + ${visits}`);
     if (downloads) set.push(`downloads = downloads + ${downloads}`);
-    await env.iloveprepa_db
-      .prepare(`INSERT INTO counters (id, visits, downloads) VALUES (1, 0, 0) ON CONFLICT(id) DO NOTHING`)
-      .run();
     await env.iloveprepa_db
       .prepare(`UPDATE counters SET ${set.join(', ')} WHERE id = 1`)
       .run();

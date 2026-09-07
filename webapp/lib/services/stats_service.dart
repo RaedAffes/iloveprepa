@@ -14,7 +14,7 @@ import 'api_service.dart';
 /// API is unreachable.
 class StatsService {
   StatsService() : _test = false {
-    _startPolling();
+    _warm();
   }
 
   /// Test seam — no network, everything is a no-op / empty.
@@ -23,17 +23,32 @@ class StatsService {
   static const String _statsUrl = '${ApiService.apiBase}/api/stats';
   static const String _incrementUrl = '${ApiService.apiBase}/api/stats/increment';
 
+  /// How often the counters are refreshed while the footer is on screen.
+  /// 5 minutes is plenty: counts only move on visits/downloads, and those are
+  /// shown instantly via the optimistic update in [_increment]. The 100k
+  /// requests/day limit becomes effectively unreachable.
+  static const Duration _pollInterval = Duration(minutes: 5);
+
   final bool _test;
 
   final http.Client _client = http.Client();
 
-  /// Broadcast counters stream fed by the poller. A broadcast stream is
-  /// required: the footer is rebuilt lazily by the page's scroll view, so its
-  /// listener can be cancelled and re-attached at any time (and the landing
-  /// page and the library can listen at the same time). A single-subscription
-  /// stream would throw "Stream has already been listened to" the moment a
-  /// listener is re-attached, which made the footer crash into a huge grey
-  /// error box.
+  /// One in-flight read at most, so overlapping timer ticks never race.
+  bool _reading = false;
+
+  /// Broadcast counters stream fed by the poller while the footer is visible.
+  ///
+  /// A broadcast stream is required: the footer is rebuilt lazily by the
+  /// page's scroll view, so its listener can be cancelled and re-attached at
+  /// any time (and the landing page and the library can listen at the same
+  /// time). A single-subscription stream would throw "Stream has already been
+  /// listened to" the moment a listener is re-attached, which made the footer
+  /// crash into a huge grey error box.
+  ///
+  /// Polling only runs while the stream has a listener (i.e. the footer is
+  /// actually on screen): `onListen` starts the timer, `onCancel` stops it.
+  /// No background polling while the footer is hidden — every open tab that
+  /// never scrolls down costs exactly one warm-up read.
   late final StreamController<StatsCounters> _counters =
       StreamController<StatsCounters>.broadcast(
     onListen: () {
@@ -44,7 +59,9 @@ class StatsService {
       scheduleMicrotask(() {
         if (!_counters.isClosed) _counters.add(_last);
       });
+      _startPolling();
     },
+    onCancel: _stopPolling,
   );
 
   /// Latest known counters for optimistic UI updates.
@@ -60,20 +77,39 @@ class StatsService {
   /// once per session.
   bool _footerShown = false;
 
-  /// Emits the current counters and then keeps polling every 2 seconds so
-  /// the footer always shows fresh numbers. Every caller shares the same
+  /// Emits the current counters and then keeps polling every 5 minutes as
+  /// long as the footer remains on screen. Every caller shares the same
   /// stream, so the counters stay consistent across the whole app.
   Stream<StatsCounters> watch() => _counters.stream;
 
-  /// Reads the counters immediately, then re-reads every 2 seconds, pushing
-  /// each result to [_counters] for the app's whole lifetime. Errors are
-  /// already swallowed by [_read] so a failed read simply reuses the previous
-  /// value.
-  void _startPolling() async {
-    while (!_counters.isClosed) {
+  /// One read at startup so the immediate replay for the first footer listen
+  /// is not stale. No timer yet — nothing polls until the footer appears.
+  Future<void> _warm() async {
+    await _pollOnce();
+  }
+
+  void _startPolling() {
+    if (_test || _timer != null) return;
+    _timer = Timer.periodic(_pollInterval, (_) => _pollOnce());
+  }
+
+  void _stopPolling() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  Timer? _timer;
+
+  /// Reads the counters once and pushes the result to [_counters]. Errors are
+  /// swallowed by [_read] so a failed read simply reuses the previous value.
+  Future<void> _pollOnce() async {
+    if (_reading) return;
+    _reading = true;
+    try {
       _last = await _read();
-      _counters.add(_last);
-      await Future<void>.delayed(const Duration(seconds: 2));
+      if (!_counters.isClosed) _counters.add(_last);
+    } finally {
+      _reading = false;
     }
   }
 
