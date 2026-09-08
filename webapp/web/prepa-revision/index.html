@@ -37,18 +37,12 @@
   <title>IlovePrepa | 2000+ documents de prépa gratuits en Tunisie</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Start fetching the app code the instant this (tiny) shell arrives, in
-       parallel with the rest, so the first open does not sit in the brand
-       splash while the Wasm app binary (several MB) round-trips afterwards.
-       flutter_bootstrap.js picks main.dart.wasm on WasmGC browsers and falls
-       back to main.dart.js elsewhere; preloading the Wasm covers everyone. -->
+  <!-- Start fetching the app binary the instant this (tiny) text page arrives,
+       in parallel with everything else. flutter_bootstrap.js picks
+       main.dart.wasm on WasmGC browsers and falls back to main.dart.js
+       elsewhere. It downloads on a background connection while the text below
+       paints instantly. -->
   <link rel="preload" as="fetch" href="main.dart.wasm">
-
-  <!-- Preload the brand font so the boot preview renders it directly and the
-       text never swaps to the Georgia fallback (which can look like the brand
-       changes size). -->
-  <link rel="preload" href="assets/assets/fonts/PlayfairDisplay-Variable.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="preload" href="assets/assets/fonts/Inter-Variable.ttf" as="font" type="font/ttf" crossorigin>
 
   <style>
     html, body {
@@ -57,30 +51,24 @@
       background: #F4F6FB;
     }
 
-    /* Reuse the app's own bundled fonts so the preview is pixel-identical. */
-    @font-face {
-      font-family: 'PlayfairDisplay';
-      font-display: swap;
-      src: url('assets/assets/fonts/PlayfairDisplay-Variable.ttf') format('truetype');
-    }
-    @font-face {
-      font-family: 'Inter';
-      font-display: swap;
-      src: url('assets/assets/fonts/Inter-Variable.ttf') format('truetype');
-    }
-
     body {
-      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+      color: #1C2340;
     }
 
-    /* Static first paint — brand on mid-blue, shown until Flutter's first
-       frame. No spinner, no artificial delay. */
+    /* Instant static first paint — real text, plain system fonts, zero
+       downloads. It stays on top only until Flutter draws its first frame,
+       then fades away. Even if the app never loaded, the page would remain
+       a readable description instead of a blank screen. */
     #boot-preview {
       position: fixed;
       inset: 0;
       z-index: 2;
-      overflow: hidden;
-      background: #1B3FA0;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #F4F6FB;
       transition: opacity 0.25s ease;
     }
     #boot-preview.boot-hide {
@@ -88,22 +76,44 @@
       pointer-events: none;
     }
 
-    .boot-splash {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .boot-inner {
+      max-width: 640px;
+      text-align: center;
+      padding: 32px 24px;
     }
     .boot-brand {
-      font-family: 'PlayfairDisplay', Georgia, serif;
-      font-size: 40px;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 26px;
       font-weight: 700;
-      color: #FFFFFF;
+      letter-spacing: 0.2px;
+      color: #1B3FA0;
     }
     .boot-brand .heart {
       color: #F44336;
-      font-size: 36px;
+    }
+    .boot-h1 {
+      margin: 18px 0 10px;
+      font-size: 34px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #1C2340;
+    }
+    .boot-sub {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.5;
+      color: #3A4466;
+    }
+    .boot-note {
+      margin: 34px 0 0;
+      font-size: 13px;
+      color: #8A93B0;
+      animation: bootPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes bootPulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
     }
   </style>
   <meta property="og:type" content="website">
@@ -126,17 +136,19 @@
   </script>
 </head>
 <body>
-  <div id="boot-preview" aria-hidden="true">
-    <div class="boot-splash">
+  <main id="boot-preview">
+    <section class="boot-inner">
       <div class="boot-brand">I<span class="heart">♥</span>Prepa</div>
-    </div>
-  </div>
+      <h1 class="boot-h1">Cours, TD, DS, examens &amp; exercices corrigés</h1>
+      <p class="boot-sub">La bibliothèque des classes préparatoires tunisiennes — MP, PC, PT, T.</p>
+      <p class="boot-note">Chargement de la bibliothèque…</p>
+    </section>
+  </main>
   <script>
-    // Keep the splash up until Flutter signals that the library data is loaded
-    // and rendered (its "iloveprepa-data-ready" DOM event), so the sidebar
-    // text/icons are already on screen the moment it fades — never a blank
-    // flash first. A fallback timer guarantees the splash can never trap the
-    // page even if the app never reports in.
+    // One rule: the user must never wait. The text above paints the moment
+    // this HTML arrives (a few KB, system fonts). The Flutter Wasm app
+    // downloads in the background and the second it paints its own first
+    // frame — where it already shows a loading skeleton — this preview fades.
     (function () {
       function hidePreview() {
         var el = document.getElementById('boot-preview');
@@ -145,12 +157,30 @@
           setTimeout(function () { el.remove(); }, 300);
         }
       }
+      // Whichever comes first wins: content fully loaded (data-ready), first
+      // Flutter frame, or a hard timeout. Nothing can leave the user stuck.
       window.addEventListener('iloveprepa-data-ready', hidePreview, { once: true });
       document.addEventListener('iloveprepa-data-ready', hidePreview, { once: true });
-      setTimeout(hidePreview, 20000);
+
+      function onFirstFrame() {
+        var view = document.querySelector('flutter-view');
+        if (!view) return false;
+        // Wait two animation frames so the engine has actually painted before
+        // we reveal it.
+        requestAnimationFrame(function () {
+          requestAnimationFrame(hidePreview);
+        });
+        return true;
+      }
+      if (!onFirstFrame()) {
+        var obs = new MutationObserver(function () {
+          if (onFirstFrame()) obs.disconnect();
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+      }
+      setTimeout(hidePreview, 4000);
     })();
   </script>
-  <!--
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

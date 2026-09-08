@@ -664,7 +664,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         child: Builder(builder: (context) {
         if (loading) {
-          return const SizedBox.shrink();
+          // Real skeleton on the Flutter first frame — the browser preview
+          // already faded out, so the user must never stare at a blank page
+          // between the text preview and the loaded library.
+          return const _LoadingSkeleton();
         }
         if (error != null) {
           // Every type of backend error (quota exceeded, throttling, timeout,
