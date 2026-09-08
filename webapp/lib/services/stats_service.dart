@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:js_interop';
 
 import 'package:http/http.dart' as http;
+import 'package:web/web.dart' as web;
 
 import 'api_service.dart';
 
@@ -23,11 +25,12 @@ class StatsService {
   static const String _statsUrl = '${ApiService.apiBase}/api/stats';
   static const String _incrementUrl = '${ApiService.apiBase}/api/stats/increment';
 
-  /// How often the counters are refreshed while the footer is on screen.
-  /// 5 minutes is plenty: counts only move on visits/downloads, and those are
-  /// shown instantly via the optimistic update in [_increment]. The 100k
-  /// requests/day limit becomes effectively unreachable.
-  static const Duration _pollInterval = Duration(minutes: 5);
+  /// How often the counters are refreshed while the footer is on screen —
+  /// once an hour, and never while the tab is hidden (see
+  /// [_onVisibilityChanged]). Counts move rarely, so an hourly refresh is
+  /// plenty; the 100k requests/day limit stays effectively unreachable even
+  /// with the app left open all day.
+  static const Duration _pollInterval = Duration(hours: 1);
 
   final bool _test;
 
@@ -48,7 +51,8 @@ class StatsService {
   /// Polling only runs while the stream has a listener (i.e. the footer is
   /// actually on screen): `onListen` starts the timer, `onCancel` stops it.
   /// No background polling while the footer is hidden — every open tab that
-  /// never scrolls down costs exactly one warm-up read.
+  /// never scrolls down costs exactly one warm-up read. A backgrounded tab
+  /// pauses its own timer too ([_onVisibilityChanged]).
   late final StreamController<StatsCounters> _counters =
       StreamController<StatsCounters>.broadcast(
     onListen: () {
@@ -59,9 +63,13 @@ class StatsService {
       scheduleMicrotask(() {
         if (!_counters.isClosed) _counters.add(_last);
       });
+      _watching = true;
       _startPolling();
     },
-    onCancel: _stopPolling,
+    onCancel: () {
+      _watching = false;
+      _stopPolling();
+    },
   );
 
   /// Latest known counters for optimistic UI updates.
@@ -77,9 +85,9 @@ class StatsService {
   /// once per session.
   bool _footerShown = false;
 
-  /// Emits the current counters and then keeps polling every 5 minutes as
-  /// long as the footer remains on screen. Every caller shares the same
-  /// stream, so the counters stay consistent across the whole app.
+  /// Emits the current counters and then keeps polling every hour as long as
+  /// the footer remains on screen and the tab is visible. Every caller shares
+  /// the same stream, so the counters stay consistent across the whole app.
   Stream<StatsCounters> watch() => _counters.stream;
 
   /// One read at startup so the immediate replay for the first footer listen
@@ -90,6 +98,7 @@ class StatsService {
 
   void _startPolling() {
     if (_test || _timer != null) return;
+    _wireVisibility();
     _timer = Timer.periodic(_pollInterval, (_) => _pollOnce());
   }
 
@@ -99,6 +108,32 @@ class StatsService {
   }
 
   Timer? _timer;
+
+  /// True while at least one subscriber (the footer) is listening.
+  bool _watching = false;
+
+  /// Whether the visibility listener has been registered once.
+  bool _visibilityWired = false;
+
+  /// Pauses all stats polling while the tab is hidden, so idle tabs left open
+  /// in the background cost a single warm read. Polling resumes — and
+  /// refreshes the counters immediately — when the tab becomes visible again.
+  void _wireVisibility() {
+    if (_visibilityWired || _test) return;
+    _visibilityWired = true;
+    web.window.addEventListener('visibilitychange', _onVisibilityChanged.toJS);
+  }
+
+  void _onVisibilityChanged() {
+    if (web.document.visibilityState == 'hidden') {
+      _timer?.cancel();
+      _timer = null;
+      return;
+    }
+    if (!_watching) return;
+    _pollOnce();
+    _timer ??= Timer.periodic(_pollInterval, (_) => _pollOnce());
+  }
 
   /// Reads the counters once and pushes the result to [_counters]. Errors are
   /// swallowed by [_read] so a failed read simply reuses the previous value.
