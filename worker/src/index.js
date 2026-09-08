@@ -16,8 +16,10 @@ const LIST_CACHE_URL = 'https://r2files.internal/list';
 //      demand), serving in ~50-100 ms,
 //   3. a live bucket walk only when both are empty.
 const FILES_LIST_KEY = 'files:list:v1';
-const FILES_REFRESH_LOCK_KEY = 'files:refresh:lock:v1';
 const FILES_SNAPSHOT_TTL_MS = 5 * 60 * 1000; // matches Cache-Control max-age
+// Free Cache-API marker (instead of a KV lock, which would eat the daily write
+// quota) so concurrent stale serves never all walk the bucket.
+const FILES_REFRESH_MARKER_URL = 'https://r2files.internal/refresh-lock';
 const FILES_HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
@@ -39,6 +41,9 @@ const STOP_THRESHOLD = 0.9;
 const REARM_THRESHOLD = 0.75;
 
 const STATE_KEY = 'usage:state';
+// A 5-min colo-local Cache-API copy of the usage/lock state so requests don't
+// each pay a KV read; invalidated on every state write (lock, unlock, cron).
+const STATE_CACHE_URL = 'https://usage.internal/state';
 
 const CLASS_A_ACTIONS = new Set([
   'ListBuckets', 'PutBucket', 'ListObjects', 'PutObject', 'CopyObject',
@@ -62,7 +67,7 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === '/api/status') {
-      const state = await readState(env);
+      const state = await readStateCached(env);
       return json({ state }, 200);
     }
 
@@ -83,11 +88,11 @@ export default {
       return handleValidateEmail(url, env);
     }
 
-    // The KV read only gates the library operations below — the stats,
+    // The cached KV read only gates the library operations below — the stats,
     // increment and email-validation endpoints above (and the OPTIONS
     // preflight) never touch the KV namespace, so the free KV read quota
     // stays reserved for /api/files and file serving.
-    const state = await readState(env);
+    const state = await readStateCached(env);
     if (state.locked) {
       return lockedResponse(state);
     }
@@ -191,6 +196,36 @@ async function readState(env) {
     console.error('readState failed:', err);
     return {};
   }
+}
+
+// Most requests only need to know whether the service is locked. Serve that
+// from a 5-min Cache-API copy (colo-local, free) instead of one KV read per
+// request; on expiry (or after an invalidate) the KV state is re-read once
+// and re-cached. Boot latency is unchanged — the copy answers in ~0 ms.
+async function readStateCached(env) {
+  const cached = await caches.default.match(STATE_CACHE_URL);
+  if (cached) {
+    try {
+      const body = await cached.json();
+      if (body && typeof body === 'object') return body;
+    } catch (_) {}
+  }
+  const state = await readState(env);
+  await caches.default
+    .put(
+      STATE_CACHE_URL,
+      new Response(JSON.stringify(state), {
+        headers: { 'Cache-Control': 'public, max-age=300' },
+      }),
+    )
+    .catch(() => {});
+  return state;
+}
+
+async function invalidateStateCache() {
+  try {
+    await caches.default.delete(new Request(STATE_CACHE_URL));
+  } catch (_) {}
 }
 
 // Validates a contact-form address in two steps:
@@ -406,6 +441,7 @@ async function handleUnlock(env, state, url) {
     lockReason: null,
   };
   await env.usage_kv.put(STATE_KEY, JSON.stringify(next));
+  await invalidateStateCache();
   return json({ ok: true, state: next }, 200);
 }
 
@@ -443,6 +479,7 @@ async function evaluate(env, usage) {
   };
 
   await env.usage_kv.put(STATE_KEY, JSON.stringify(next));
+  await invalidateStateCache();
 
   if (next.locked && !state.locked) {
     await sendAlert(env, next, 'limit');
@@ -534,19 +571,23 @@ async function storeFilesSnapshot(env, files) {
   await refreshNameIndex(env, listing);
 }
 
-// One bucketed refresh at a time: the KV lock (5-min TTL) keeps concurrent
-// stale serves from all triggering their own R2 walk.
+// One bucketed refresh at a time per colo, guarded by a free Cache-API marker
+// (a KV lock would put ~576 writes/day into the free-tire write quota). A colo
+// that races and loses simply skips this window; the hourly cron still builds
+// the snapshot even if no traffic ever arrives.
 async function rebuildFilesSnapshot(env) {
-  if (!env.usage_kv) return;
-  const lock = await env.usage_kv.get(FILES_REFRESH_LOCK_KEY);
-  if (lock != null) return;
-  await env.usage_kv.put(FILES_REFRESH_LOCK_KEY, '1', {
-    expirationTtl: 300,
-  });
+  const marker = await caches.default.match(FILES_REFRESH_MARKER_URL);
+  if (marker) return;
+  await caches.default.put(
+    FILES_REFRESH_MARKER_URL,
+    new Response('1', {
+      headers: { 'Cache-Control': 'public, max-age=300' },
+    }),
+  );
   try {
     await storeFilesSnapshot(env);
   } finally {
-    await env.usage_kv.delete(FILES_REFRESH_LOCK_KEY);
+    await caches.default.delete(new Request(FILES_REFRESH_MARKER_URL));
   }
 }
 
