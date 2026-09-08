@@ -496,10 +496,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// Queues a download metric when a document is opened or downloaded. It is
-  /// only pushed to the backend once the footer becomes visible.
+  /// Registers a download metric when a document is opened or downloaded. Sent
+  /// to the backend immediately and reflected optimistically in the footer.
   void _markOpened(DocumentItem item) {
-    _stats.queueDownload();
+    _stats.logDownload();
   }
 
   LibraryFolder get _root => _index?.root ?? buildLibraryTree(_all);
@@ -728,7 +728,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       documents: _all.length,
       countersStream: _stats.watch(),
       scrollController: _contentScroll,
-      onFirstVisible: _stats.markFooterVisible,
     );
   }
 

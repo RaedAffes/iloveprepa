@@ -18,7 +18,6 @@ class AppFooter extends StatefulWidget {
     required this.documents,
     required this.countersStream,
     required this.scrollController,
-    this.onFirstVisible,
   });
 
   /// Number of uploaded PDFs (comes straight from the API).
@@ -26,12 +25,9 @@ class AppFooter extends StatefulWidget {
 
   final Stream<StatsCounters> countersStream;
 
-  /// The page's scroll controller, used to detect when the footer is visible.
+  /// The page's scroll controller, used to detect when the footer is visible
+  /// and restart the count-up animation.
   final ScrollController scrollController;
-
-  /// Called the first time the footer becomes visible on screen, so the
-  /// visit/download counters only advance once the user actually sees them.
-  final VoidCallback? onFirstVisible;
 
   @override
   State<AppFooter> createState() => _AppFooterState();
@@ -69,7 +65,6 @@ class _AppFooterState extends State<AppFooter> {
     final visible = _isVisible();
     if (visible && !_wasVisible) {
       setState(() => _run++);
-      widget.onFirstVisible?.call();
     }
     _wasVisible = visible;
   }
