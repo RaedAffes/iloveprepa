@@ -122,21 +122,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
           jsonEncode(docs.map((d) => d.toJson()).toList()),
         );
       } catch (_) {}
-      if (mounted) setState(() { _all = docs; _apiError = null; });
+      if (mounted) {
+        _apiSettled = true;
+        setState(() { _all = docs; _apiError = null; });
+        _maybeEmitBootReady();
+      }
       return docs;
     }).catchError((e) {
-      if (mounted) setState(() => _apiError = e);
+      if (mounted) {
+        _apiSettled = true;
+        setState(() => _apiError = e);
+        _maybeEmitBootReady();
+      }
       return <DocumentItem>[];
     });
   }
 
-  /// Hides the boot splash on the very first rendered frame instead of waiting
-  /// for the network fetch. On repeat visits the cached library is already in
-  /// the widget tree before the first build, so the app is fully drawn the
-  /// moment the splash fades — the network refresh keeps updating it behind
-  /// the scenes.
+  /// Hides the boot splash only once the first frame has rendered AND the
+  /// library is on screen — either seeded from localStorage or fed by the
+  /// first API response — so nothing is ever "missing" when the splash fades.
+  /// A hard fallback timer guarantees the splash can never trap the page.
   void _scheduleBootReady() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _notifyBootReady());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _firstFrameDone = true;
+      _maybeEmitBootReady();
+      _bootFallback ??= Timer(const Duration(seconds: 6), _emitBootReady);
+    });
+  }
+
+  bool _firstFrameDone = false;
+  bool _apiSettled = false;
+  bool _bootEmitted = false;
+  Timer? _bootFallback;
+
+  void _maybeEmitBootReady() {
+    if (_bootEmitted || !_firstFrameDone) return;
+    if (_all.isEmpty && !_apiSettled) return;
+    Future.delayed(const Duration(milliseconds: 80), () {
+      if (!mounted || _bootEmitted) return;
+      final drawerOpened = _drawerOpenAt;
+      var remaining = Duration.zero;
+      if (_isMobileWeb && drawerOpened != null) {
+        final sinceOpen =
+            DateTime.now().difference(drawerOpened).inMilliseconds;
+        remaining = Duration(milliseconds: 280 - sinceOpen);
+      }
+      if (remaining > Duration.zero) {
+        Future.delayed(remaining, _emitBootReady);
+      } else {
+        _emitBootReady();
+      }
+    });
+  }
+
+  void _emitBootReady() {
+    if (_bootEmitted) return;
+    _bootEmitted = true;
+    _bootFallback?.cancel();
+    if (!mounted) return;
+    web.document.dispatchEvent(web.Event('iloveprepa-data-ready'));
   }
 
   /// Warms the SVG cache the Contact illustration uses so the artwork appears
@@ -161,33 +206,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } catch (_) {
       // Preloading is a best-effort optimization; rendering handles failures.
     }
-  }
-
-  /// Tells the boot splash (web/index.html) to fade out on the first rendered
-  /// frame (and once the phone drawer has finished sliding in, when open).
-  /// The removal is no longer gated on the network fetch: the cached library
-  /// is already on screen, and any section still loading shows its skeleton.
-  void _notifyBootReady() {
-    Future.delayed(const Duration(milliseconds: 80), () {
-      if (!mounted) return;
-      final drawerOpened = _drawerOpenAt;
-      var remaining = Duration.zero;
-      if (_isMobileWeb && drawerOpened != null) {
-        final sinceOpen =
-            DateTime.now().difference(drawerOpened).inMilliseconds;
-        remaining = Duration(milliseconds: 280 - sinceOpen);
-      }
-      if (remaining > Duration.zero) {
-        Future.delayed(remaining, _emitBootReady);
-      } else {
-        _emitBootReady();
-      }
-    });
-  }
-
-  void _emitBootReady() {
-    if (!mounted) return;
-    web.document.dispatchEvent(web.Event('iloveprepa-data-ready'));
   }
 
   /// Synchronously restores the last library listing from localStorage so the
@@ -580,8 +598,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     // Always show content from _all immediately (populated from cache by
-    // _seedFromCache() on repeat visits, empty on first visit). The API
-    // refresh writes to _all via _loadDocuments() — never gate the UI on it.
+    // _seedFromCache() on repeat visits, or fed by _loadDocuments() on the
+    // first visit — the boot splash is what waits for the data to be here).
     final docs = _all;
     final loading = docs.isEmpty && _apiError == null;
     if (!loading && _index == null) {

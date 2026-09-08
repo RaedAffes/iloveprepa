@@ -8,6 +8,25 @@ const CORS = {
 
 const LIST_CACHE_URL = 'https://r2files.internal/list';
 
+// The assembled /api/files listing, cached in three layers so a cold open
+// never has to walk the whole R2 bucket (a paginated Class A listing that
+// takes ~2-3 s):
+//   1. the edge Cache API copy (5-min TTL, like the browser/CDN header),
+//   2. the KV snapshot below (survives edge eviction, rebuilt hourly + on
+//      demand), serving in ~50-100 ms,
+//   3. a live bucket walk only when both are empty.
+const FILES_LIST_KEY = 'files:list:v1';
+const FILES_REFRESH_LOCK_KEY = 'files:refresh:lock:v1';
+const FILES_SNAPSHOT_TTL_MS = 5 * 60 * 1000; // matches Cache-Control max-age
+const FILES_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma',
+  'Access-Control-Max-Age': '86400',
+  'Cache-Control': 'public, max-age=300, s-maxage=300',
+};
+
 // Cloudflare R2 free tier (per calendar month).
 const STORAGE_LIMIT_BYTES = 10 * 1024 * 1024 * 1024; // 10 GiB
 const CLASS_A_LIMIT = 1_000_000; // writes / lists
@@ -75,25 +94,14 @@ export default {
 
     try {
       if (url.pathname === '/api/files') {
-        const files = await listFiles(env, ctx);
-        ctx.waitUntil(
-          refreshNameIndex(env, files).catch((err) =>
-            console.error('refreshNameIndex failed:', err),
-          ),
-        );
-        // Cache the listing on the browser/CDN for 5 minutes so a full R2
-        // bucket walk (a Class A operation) happens once per window per cache
-        // instead of once per page load. New uploads appear within 5 min.
+        const files = await listFilesCached(env, ctx);
+        // Cache on the browser/CDN for 5 minutes (max-age / s-maxage). On the
+        // server side the response is served from the edge Cache API or the KV
+        // snapshot so a full R2 bucket walk (a Class A operation) happens only
+        // when both are cold.
         return new Response(JSON.stringify({ files }), {
           status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma',
-            'Access-Control-Max-Age': '86400',
-            'Cache-Control': 'public, max-age=300, s-maxage=300',
-          },
+          headers: FILES_HEADERS,
         });
       }
 
@@ -143,6 +151,13 @@ export default {
       await checkUsage(env);
     } catch (err) {
       console.error('R2 usage check failed:', err);
+    }
+    // Keep the /api/files snapshot warm every hour so first page loads never
+    // cold-start a full bucket walk.
+    try {
+      await storeFilesSnapshot(env);
+    } catch (err) {
+      console.error('Files snapshot refresh failed:', err);
     }
   },
 };
@@ -442,6 +457,99 @@ function pctOf(value, limit) {
   return typeof value === 'number' ? value / limit : undefined;
 }
 
+// Serves the /api/files listing from the cheapest warm source first:
+//   1. edge Cache API (5-min TTL),
+//   2. KV snapshot — when stale (older than 5 min) it is *still* served
+//      immediately, and a rebuild is scheduled in the background, so the
+//      caller never waits on an R2 walk,
+//   3. live bucket walk, persisted to both layers before returning.
+async function listFilesCached(env, ctx) {
+  // 1) Edge cache.
+  const cached = await caches.default.match(LIST_CACHE_URL);
+  if (cached) {
+    try {
+      const json = await cached.clone().json();
+      if (Array.isArray(json.files)) return json.files;
+    } catch (_) {}
+  }
+
+  // 2) KV snapshot.
+  if (env.usage_kv) {
+    try {
+      const raw = await env.usage_kv.get(FILES_LIST_KEY);
+      if (raw) {
+        const snapshot = JSON.parse(raw);
+        const files = snapshot.files;
+        if (Array.isArray(files) && files.length > 0) {
+          const stale =
+            Date.now() - (snapshot.at || 0) >= FILES_SNAPSHOT_TTL_MS;
+          if (stale) {
+            ctx.waitUntil(
+              rebuildFilesSnapshot(env).catch((err) =>
+                console.error('Background files refresh failed:', err),
+              ),
+            );
+          }
+          ctx.waitUntil(
+            caches.default
+              .put(LIST_CACHE_URL, fileListResponse(files))
+              .catch(() => {}),
+          );
+          return files;
+        }
+      }
+    } catch (err) {
+      console.error('Files KV read failed:', err);
+    }
+  }
+
+  // 3) Both layers cold: walk the bucket once, then persist.
+  const files = await listFiles(env, ctx);
+  ctx.waitUntil(
+    storeFilesSnapshot(env, files).catch((err) =>
+      console.error('Files snapshot write failed:', err),
+    ),
+  );
+  return files;
+}
+
+function fileListResponse(files) {
+  return new Response(JSON.stringify({ files }), {
+    status: 200,
+    headers: FILES_HEADERS,
+  });
+}
+
+// Persists an assembled listing to KV + the edge cache. With no argument it
+// walks R2 first (used by the hourly cron and background refreshes).
+async function storeFilesSnapshot(env, files) {
+  const listing = files || (await listFiles(env, null));
+  if (env.usage_kv) {
+    await env.usage_kv.put(
+      FILES_LIST_KEY,
+      JSON.stringify({ at: Date.now(), files: listing }),
+    );
+  }
+  await caches.default.put(LIST_CACHE_URL, fileListResponse(listing));
+  await refreshNameIndex(env, listing);
+}
+
+// One bucketed refresh at a time: the KV lock (5-min TTL) keeps concurrent
+// stale serves from all triggering their own R2 walk.
+async function rebuildFilesSnapshot(env) {
+  if (!env.usage_kv) return;
+  const lock = await env.usage_kv.get(FILES_REFRESH_LOCK_KEY);
+  if (lock != null) return;
+  await env.usage_kv.put(FILES_REFRESH_LOCK_KEY, '1', {
+    expirationTtl: 300,
+  });
+  try {
+    await storeFilesSnapshot(env);
+  } finally {
+    await env.usage_kv.delete(FILES_REFRESH_LOCK_KEY);
+  }
+}
+
 async function listFiles(env, ctx) {
   const objects = [];
   let totalBytes = 0;
@@ -466,11 +574,10 @@ async function listFiles(env, ctx) {
   // Fast path: storage is visible the moment the bucket is listed. Lock
   // immediately if it crosses 90% instead of waiting for the cron job.
   if (totalBytes >= STORAGE_LIMIT_BYTES * STOP_THRESHOLD) {
-    ctx.waitUntil(
-      evaluate(env, { storageBytes: totalBytes }).catch((err) =>
-        console.error('evaluate failed:', err),
-      ),
+    const task = evaluate(env, { storageBytes: totalBytes }).catch((err) =>
+      console.error('evaluate failed:', err),
     );
+    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(task);
   }
 
   return objects;

@@ -9,7 +9,7 @@ for %%K in (iprepa prepa-tunisie prepa-docs prepa-document prepa-documents docum
 if errorlevel 1 goto :error
 
 echo [1/3] Building Flutter web app...
-call flutter build web --release --dart-define=API_BASE_URL=https://iloveprepa-r2.ilovepreparatoire.workers.dev
+call flutter build web --release --wasm --dart-define=API_BASE_URL=https://iloveprepa-r2.ilovepreparatoire.workers.dev
 if errorlevel 1 goto :error
 
 echo [2/3] Deploying to Cloudflare Pages...

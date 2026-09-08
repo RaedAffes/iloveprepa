@@ -1,6 +1,14 @@
 # Revalidate the app shell on every load so deploys reach users immediately.
 # Static assets with hashed names (icons, fonts, canvaskit) keep long caching.
+# The app ships a Wasm build (main.dart.wasm + main.dart.mjs) with a plain-JS
+# fallback (main.dart.js); every browser's entrypoint is pinned to no-cache.
 /main.dart.js
+  Cache-Control: no-cache
+
+/main.dart.wasm
+  Cache-Control: no-cache
+
+/main.dart.mjs
   Cache-Control: no-cache
 
 /flutter_bootstrap.js
