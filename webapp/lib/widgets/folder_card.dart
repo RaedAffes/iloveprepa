@@ -40,7 +40,7 @@ class FolderCard extends StatelessWidget {
                 color: AppColors.folderYellowSoft,
                 borderRadius: AppRadius.iconR,
               ),
-              child: const NotionFolderIcon(size: 30),
+              child: const NotionFolderIcon(size: 34),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(

@@ -145,7 +145,7 @@ class _MainFolderSection extends StatelessWidget {
                     child: const Icon(Icons.chevron_right_rounded, size: 20, color: _greyMuted),
                   ),
                   const SizedBox(width: 6),
-                  const NotionFolderIcon(size: 20),
+                  const NotionFolderIcon(size: 24),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(folder.name, style: AppTypography.label(_ink).copyWith(fontWeight: FontWeight.w700, fontSize: 14)),
@@ -342,7 +342,7 @@ class _FileRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
-            vertical: 10,
+            vertical: 12,
           ),
           decoration: BoxDecoration(
             border: Border(

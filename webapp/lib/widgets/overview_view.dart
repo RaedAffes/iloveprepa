@@ -5,7 +5,7 @@ import '../core/theme/app_radius.dart';
 import '../core/theme/app_spacing.dart';
 import '../core/theme/app_typography.dart';
 import '../models/library_folder.dart';
-import '../utils/folder_icon.dart';
+import 'notion_folder_icon.dart';
 
 /// Home shown while no folder is selected: just the top-level folder icons
 /// and their names, centered — no tiles, no counts, minimal and clean.
@@ -108,11 +108,11 @@ class _FolderIconState extends State<_FolderIcon> {
                 duration: const Duration(milliseconds: 150),
                 transform: Matrix4.identity()..scaleByDouble(_hovered ? 1.06 : 1.0, _hovered ? 1.06 : 1.0, _hovered ? 1.06 : 1.0, 1.0),
                 child: SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: Image.asset(
-                    folderIcon(widget.folder.name),
-                    fit: BoxFit.contain,
+                  width: 84,
+                  height: 84,
+                  child: NotionFolderIcon(
+                    size: 56,
+                    name: widget.folder.name,
                   ),
                 ),
               ),

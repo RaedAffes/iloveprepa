@@ -65,15 +65,8 @@ flutter:
   assets:
     - assets/check.png
     - assets/folder.png
-    - assets/icon/chimie.png
     - assets/icon/contact.png
     - assets/icon/don.png
-    - assets/icon/info.png
-    - assets/icon/langage.png
-    - assets/icon/math.png
-    - assets/icon/physique.png
-    - assets/icon/resume.png
-    - assets/icon/sta.png
     - assets/illustrations/contact_art.svg
     - assets/illustrations/contact_envelope.svg
     - assets/illustrations/contact_star1.svg

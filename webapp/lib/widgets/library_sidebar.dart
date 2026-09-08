@@ -7,7 +7,6 @@ import '../core/theme/app_typography.dart';
 import '../models/document_item.dart';
 import '../models/library_folder.dart';
 import '../models/library_index.dart';
-import '../utils/folder_icon.dart';
 import 'iloveprepa_brand.dart';
 import 'landing/landing_colors.dart' as landing;
 import 'notion_folder_icon.dart';
@@ -153,11 +152,13 @@ class LibrarySidebar extends StatelessWidget {
                                 currentPath.length > 1,
                             leading: const SizedBox(width: 2),
                             icon: SizedBox(
-                              width: 44,
-                              height: 44,
-                              child: Image.asset(
-                                folderIcon(subject.name),
-                                fit: BoxFit.contain,
+                              width: 48,
+                              height: 48,
+                              child: Center(
+                                child: NotionFolderIcon(
+                                  size: 36,
+                                  name: subject.name,
+                                ),
                               ),
                             ),
                             label: subject.name,
@@ -326,7 +327,7 @@ class _SearchFolderRow extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(width: 20),
-                const NotionFolderIcon(size: 20),
+const NotionFolderIcon(size: 24),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -440,7 +441,7 @@ class _Branch extends StatelessWidget {
                   onTap: () => onToggle(path),
                 )
               : const SizedBox(width: 20),
-          icon: const NotionFolderIcon(size: 20),
+          icon: const NotionFolderIcon(size: 24),
           label: folder.name,
           textColor: isActive
               ? Colors.white
