@@ -56,19 +56,16 @@
       color: #1C2340;
     }
 
-    /* Instant static first paint — just the I♥Prepa brand, plain system
-       fonts, zero downloads. It stays on top only until Flutter draws its
-       first frame, then fades away. No spinner, no waiting tile, no extra
-       text. */
+    /* The same blue I♥Prepa splash as always on first open — white brand
+       text on #1B3FA0, red heart — but it paints instantly and yields the
+       screen the moment Flutter draws, so the user never waits. No spinner,
+       no loading tile, no extra text. */
     #boot-preview {
       position: fixed;
       inset: 0;
       z-index: 2;
       overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #F4F6FB;
+      background: #1B3FA0;
       transition: opacity 0.25s ease;
     }
     #boot-preview.boot-hide {
@@ -76,15 +73,32 @@
       pointer-events: none;
     }
 
+    <!-- Reuse the app's brand font so the splash is pixel-identical. It swaps
+       in as soon as it arrives; until then the same Georgia fallback as the
+       original stays on screen. No preload: it must never compete with the
+       Wasm binary download. -->
+    @font-face {
+      font-family: 'PlayfairDisplay';
+      font-display: swap;
+      src: url('assets/assets/fonts/PlayfairDisplay-Variable.ttf') format('truetype');
+    }
+
+    .boot-splash {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     .boot-brand {
-      font-family: Georgia, 'Times New Roman', serif;
-      font-size: 42px;
+      font-family: 'PlayfairDisplay', Georgia, serif;
+      font-size: 40px;
       font-weight: 700;
-      letter-spacing: 0.2px;
-      color: #1B3FA0;
+      color: #FFFFFF;
     }
     .boot-brand .heart {
       color: #F44336;
+      font-size: 36px;
     }
   </style>
   <meta property="og:type" content="website">
@@ -107,14 +121,16 @@
   </script>
 </head>
 <body>
-  <main id="boot-preview">
-    <div class="boot-brand">I<span class="heart">♥</span>Prepa</div>
-  </main>
+  <div id="boot-preview" aria-hidden="true">
+    <div class="boot-splash">
+      <div class="boot-brand">I<span class="heart">♥</span>Prepa</div>
+    </div>
+  </div>
   <script>
-    // One rule: the user must never wait. The I♥Prepa brand paints the moment
-    // this HTML arrives (a few KB, system fonts). The Flutter Wasm app
-    // downloads in the background and the second it paints its own first
-    // frame — where it already shows a loading skeleton — this fades.
+    // One rule: the user must never wait. The blue I♥Prepa splash paints the
+    // moment this HTML arrives (a few KB). The Flutter Wasm app downloads in
+    // the background and the second it paints its own first frame — where it
+    // already shows a loading skeleton — this splash fades.
     (function () {
       function hidePreview() {
         var el = document.getElementById('boot-preview');
