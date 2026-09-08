@@ -56,15 +56,15 @@
       color: #1C2340;
     }
 
-    /* Instant static first paint — real text, plain system fonts, zero
-       downloads. It stays on top only until Flutter draws its first frame,
-       then fades away. Even if the app never loaded, the page would remain
-       a readable description instead of a blank screen. */
+    /* Instant static first paint — just the I♥Prepa brand, plain system
+       fonts, zero downloads. It stays on top only until Flutter draws its
+       first frame, then fades away. No spinner, no waiting tile, no extra
+       text. */
     #boot-preview {
       position: fixed;
       inset: 0;
       z-index: 2;
-      overflow: auto;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -76,44 +76,15 @@
       pointer-events: none;
     }
 
-    .boot-inner {
-      max-width: 640px;
-      text-align: center;
-      padding: 32px 24px;
-    }
     .boot-brand {
       font-family: Georgia, 'Times New Roman', serif;
-      font-size: 26px;
+      font-size: 42px;
       font-weight: 700;
       letter-spacing: 0.2px;
       color: #1B3FA0;
     }
     .boot-brand .heart {
       color: #F44336;
-    }
-    .boot-h1 {
-      margin: 18px 0 10px;
-      font-size: 34px;
-      line-height: 1.2;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: #1C2340;
-    }
-    .boot-sub {
-      margin: 0;
-      font-size: 17px;
-      line-height: 1.5;
-      color: #3A4466;
-    }
-    .boot-note {
-      margin: 34px 0 0;
-      font-size: 13px;
-      color: #8A93B0;
-      animation: bootPulse 1.2s ease-in-out infinite;
-    }
-    @keyframes bootPulse {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
     }
   </style>
   <meta property="og:type" content="website">
@@ -137,18 +108,13 @@
 </head>
 <body>
   <main id="boot-preview">
-    <section class="boot-inner">
-      <div class="boot-brand">I<span class="heart">♥</span>Prepa</div>
-      <h1 class="boot-h1">Cours, TD, DS, examens &amp; exercices corrigés</h1>
-      <p class="boot-sub">La bibliothèque des classes préparatoires tunisiennes — MP, PC, PT, T.</p>
-      <p class="boot-note">Chargement de la bibliothèque…</p>
-    </section>
+    <div class="boot-brand">I<span class="heart">♥</span>Prepa</div>
   </main>
   <script>
-    // One rule: the user must never wait. The text above paints the moment
+    // One rule: the user must never wait. The I♥Prepa brand paints the moment
     // this HTML arrives (a few KB, system fonts). The Flutter Wasm app
     // downloads in the background and the second it paints its own first
-    // frame — where it already shows a loading skeleton — this preview fades.
+    // frame — where it already shows a loading skeleton — this fades.
     (function () {
       function hidePreview() {
         var el = document.getElementById('boot-preview');
