@@ -37,12 +37,27 @@
   <title>IlovePrepa | 2000+ documents de prépa gratuits en Tunisie</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Start fetching the app binary the instant this (tiny) text page arrives,
-       in parallel with everything else. flutter_bootstrap.js picks
-       main.dart.wasm on WasmGC browsers and falls back to main.dart.js
-       elsewhere. It downloads on a background connection while the text below
-       paints instantly. -->
-  <link rel="preload" as="fetch" href="main.dart.wasm">
+  <!-- Warm the connections a fast opening needs before they are actually
+       used, the same resource-hint technique mcmaster.com uses: the API that
+       serves the document list (DNS + TLS happen while the app binary
+       downloads) and the analytics beacon. -->
+  <link rel="dns-prefetch" href="https://iloveprepa-r2.ilovepreparatoire.workers.dev">
+  <link rel="preconnect" href="https://iloveprepa-r2.ilovepreparatoire.workers.dev" crossorigin>
+  <link rel="dns-prefetch" href="https://static.cloudflareinsights.com">
+
+  <!-- Start the boot's heavy downloads in parallel the moment this (tiny) text
+       page arrives, without ever downloading anything twice:
+         * main.dart.mjs and canvaskit/skwasm.js are fetched via dynamic
+           import(), so modulepreload warms them through the module map and
+           Chrome reuses the download later (no double fetch — a raw
+           <link rel="preload"> on the wasm files is fetched AGAIN by
+           Flutter's loader, wasting bandwidth).
+         * The engine is served same-origin (built locally, see deploy.bat) so
+           there is no gstatic CDN round-trip.
+       flutter_bootstrap.js picks main.dart.wasm on WasmGC browsers and falls
+       back to main.dart.js elsewhere. -->
+  <link rel="modulepreload" href="main.dart.mjs">
+  <link rel="modulepreload" href="canvaskit/skwasm.js">
 
   <style>
     html, body {
