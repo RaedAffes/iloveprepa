@@ -154,6 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
       _firstFrameDone = true;
       _maybeEmitBootReady();
+      _maybeOpenSeoDeepLink();
       _bootFallback ??= Timer(const Duration(seconds: 6), _emitBootReady);
       // Tell the browser the instant this first frame is actually on screen
       // (before the data round-trip completes) so the blue splash fades onto
@@ -203,10 +204,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// Opens the folder pointed to by the SEO middleware
   /// (<meta name="iloveprepa-folder">), so a visitor arriving from Google on
   /// /mathematiques/mme-nedra-moalla/ lands directly in that folder instead of
-  /// the home page. Runs once, only when the tree is ready.
+  /// the home page. Retried until the tree containing the folder exists (the
+  /// cached listing may be stale the first time around, the fresh API response
+  /// is not), then runs exactly once.
   void _maybeOpenSeoDeepLink() {
     if (_seoDeepLinkHandled) return;
-    _seoDeepLinkHandled = true;
     String? raw;
     try {
       raw = web.document
@@ -221,6 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .toList();
     if (segments.isEmpty) return;
     if (_root.descend(segments) == null) return;
+    _seoDeepLinkHandled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _restoreFolder(segments);
     });
