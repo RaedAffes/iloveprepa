@@ -168,22 +168,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _restoreFolder(path == null ? const [] : path.split('/'));
   }
 
-  /// Restores a folder exactly as if the user had navigated to it from the
-  /// home page: same path, all its ancestors expanded, no toggle/collapse
-  /// side-effects, no URL push. Used for browser back/forward and for direct
-  /// deep-link arrivals (typing / pasting a folder URL).
-  void _restoreFolder(List<String> path) {
-    setState(() {
-      _showContactForm = false;
-      _showDon = false;
-      _currentPath = List.of(path);
-      _expanded.addAll(_ancestors(path));
-      _rememberFiles(path);
-      _query = '';
-      _searchController.clear();
-    });
-  }
-
   /// Keeps the address bar in sync with the folder being viewed. Pushes a real
   /// URL (the SEO slug) with History.pushState so back/forward traverse the
   /// user's folder history instead of leaving the site.
@@ -418,29 +402,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openFolder(List<String> path) {
-    _applyFolder(path);
-    _pushUrlFor(path);
-  }
-
-  void _applyFolder(List<String> path) {
     _analytics.logFolderOpen(path.isEmpty ? 'root' : path.join(' / '));
     setState(() {
       _showContactForm = false;
       _showDon = false;
       _currentPath = List.of(path);
-      // Clicking a folder toggles it: if it's already open, close its whole
-      // branch; otherwise open it. Other folders the user has opened stay as
-      // they were — opening one never collapses the rest.
-      final key = path.join('/');
-      if (_expanded.remove(key)) {
-        _expanded.removeWhere((k) => k == key || k.startsWith('$key/'));
-      } else {
-        _expanded.addAll(_ancestors(path));
-        _rememberFiles(path);
-      }
+      // Anchor the main-page accordion on this folder: only its branch stays
+      // expanded, every other section starts collapsed.
+      _expanded
+        ..clear()
+        ..addAll(_ancestors(path));
+      _rememberFiles(path);
       _query = '';
       _searchController.clear();
     });
+    _pushUrlFor(path);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final wide = MediaQuery.sizeOf(context).width >= 960;
@@ -451,6 +427,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Navigator.of(context).maybePop();
         }
       }
+    });
+  }
+
+  /// Restores a folder exactly as if the user had navigated to it from the
+  /// home page: the accordion is anchored on the top-level subject and the
+  /// whole branch leading to [path] is expanded inline, with every other
+  /// section collapsed. Never pushes a history entry. Used for browser
+  /// back/forward and for direct deep-link arrivals (typed/pasted URL).
+  void _restoreFolder(List<String> path) {
+    setState(() {
+      _showContactForm = false;
+      _showDon = false;
+      _query = '';
+      _searchController.clear();
+      if (path.isEmpty) {
+        _currentPath = const [];
+        _expanded.clear();
+        _lastFilesPath = null;
+        return;
+      }
+      _currentPath = [path.first];
+      _expanded
+        ..clear()
+        ..addAll(_ancestors(path));
+      _rememberFiles(path);
     });
   }
 
@@ -520,38 +521,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _toggleNode(List<String> path) {
+    if (!_expanded.contains(path.join('/'))) {
+      // Expanding a sidebar subject anchors the main-page accordion on it,
+      // just like clicking the folder itself.
+      _openFolder(path);
+      return;
+    }
     final key = path.join('/');
-    final opening = !_expanded.contains(key);
     setState(() {
-      if (!_expanded.remove(key)) _expanded.add(key);
-      // Expanding a folder also shows its documents in the main page, just
-      // like clicking the folder itself. Collapsing leaves the view alone.
-      if (opening) {
-        _currentPath = List.of(path);
-        _rememberFiles(path);
-        _query = '';
-        _searchController.clear();
-      }
+      _expanded.remove(key);
+      _expanded.removeWhere((k) => k == key || k.startsWith('$key/'));
     });
-    if (opening) _pushUrlFor(path);
+    _syncUrlToDeepestExpanded();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final wide = MediaQuery.sizeOf(context).width >= 960;
-      if (wide) {
-        if (_sidebarCollapsed) setState(() => _sidebarCollapsed = false);
-      } else {
-        if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-          Navigator.of(context).maybePop();
-        }
+      if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+        Navigator.of(context).maybePop();
       }
     });
   }
 
+  /// Toggles an accordion section in the main content. Collapsing the whole
+  /// branch (or expanding a nested one) updates the URL to the deepest folder
+  /// that stays open, so the address bar always matches what is on screen.
   void _toggleSection(List<String> path) {
     final key = path.join('/');
     setState(() {
       if (!_expanded.remove(key)) _expanded.add(key);
     });
+    _syncUrlToDeepestExpanded();
+  }
+
+  /// Pushes the URL of the deepest expanded folder (the one whose content is
+  /// actually shown), or '/' when the tree is fully collapsed.
+  void _syncUrlToDeepestExpanded() {
+    String? best;
+    for (final k in _expanded) {
+      if (best == null || k.length > best.length) best = k;
+    }
+    _pushUrlFor(best == null ? const [] : best.split('/'));
   }
 
   /// True when running in a mobile browser (phone/tablet). Phones keep the
@@ -816,7 +824,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           busy: _busy,
           onView: _open,
           onDownload: _download,
-          onOpenFolder: _openFolder,
           onToggle: _toggleSection,
         );
       }),

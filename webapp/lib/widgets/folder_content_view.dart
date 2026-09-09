@@ -35,7 +35,6 @@ class FolderContentView extends StatelessWidget {
     required this.busy,
     required this.onView,
     required this.onDownload,
-    required this.onOpenFolder,
     required this.onToggle,
   });
 
@@ -45,7 +44,6 @@ class FolderContentView extends StatelessWidget {
   final String? busy;
   final void Function(DocumentItem doc) onView;
   final void Function(DocumentItem doc) onDownload;
-  final void Function(List<String> path) onOpenFolder;
   final void Function(List<String> path) onToggle;
 
   @override
@@ -76,7 +74,6 @@ class FolderContentView extends StatelessWidget {
               busy: busy,
               onView: onView,
               onDownload: onDownload,
-              onOpenFolder: onOpenFolder,
               onToggle: onToggle,
             ),
           ),
@@ -93,7 +90,6 @@ class _MainFolderSection extends StatelessWidget {
     required this.busy,
     required this.onView,
     required this.onDownload,
-    required this.onOpenFolder,
     required this.onToggle,
   });
 
@@ -103,7 +99,6 @@ class _MainFolderSection extends StatelessWidget {
   final String? busy;
   final void Function(DocumentItem doc) onView;
   final void Function(DocumentItem doc) onDownload;
-  final void Function(List<String> path) onOpenFolder;
   final void Function(List<String> path) onToggle;
 
   String get pathKey => path.join('/');
@@ -128,20 +123,16 @@ class _MainFolderSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           InkWell(
-            onTap: () => onOpenFolder(path),
+            onTap: () => onToggle(path),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               color: isExpanded ? _blueSoft : Colors.white,
               child: Row(
                 children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => onToggle(path),
-                    child: AnimatedRotation(
-                      turns: isExpanded ? 0.25 : 0,
-                      duration: const Duration(milliseconds: 180),
-                      child: const Icon(Icons.chevron_right_rounded, size: 20, color: _greyMuted),
-                    ),
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.25 : 0,
+                    duration: const Duration(milliseconds: 180),
+                    child: const Icon(Icons.chevron_right_rounded, size: 20, color: _greyMuted),
                   ),
                   const SizedBox(width: 6),
                   const NotionFolderIcon(size: 24),
@@ -173,7 +164,6 @@ class _MainFolderSection extends StatelessWidget {
                           busy: busy,
                           onView: onView,
                           onDownload: onDownload,
-                          onOpenFolder: onOpenFolder,
                           onToggle: onToggle,
                         ),
                       ),
