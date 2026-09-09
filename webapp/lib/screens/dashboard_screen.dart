@@ -731,7 +731,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           busy: _busy,
           onView: _open,
           onDownload: _download,
-          onOpenFolder: _openFolder,
           onToggle: _toggleSection,
         );
       }),

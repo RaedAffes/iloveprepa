@@ -35,7 +35,6 @@ class FolderContentView extends StatelessWidget {
     required this.busy,
     required this.onView,
     required this.onDownload,
-    required this.onOpenFolder,
     required this.onToggle,
   });
 
@@ -45,7 +44,6 @@ class FolderContentView extends StatelessWidget {
   final String? busy;
   final void Function(DocumentItem doc) onView;
   final void Function(DocumentItem doc) onDownload;
-  final void Function(List<String> path) onOpenFolder;
   final void Function(List<String> path) onToggle;
 
   @override
@@ -62,11 +60,6 @@ class FolderContentView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (currentPath.length > 1)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: _MainBreadcrumb(path: currentPath, onTap: onOpenFolder),
-          ),
         if (files.isNotEmpty) ...[
           _DocumentsWindow(files: files, busy: busy, onView: onView, onDownload: onDownload),
           if (subfolders.isNotEmpty) const SizedBox(height: AppSpacing.lg),
@@ -82,7 +75,6 @@ class FolderContentView extends StatelessWidget {
               onView: onView,
               onDownload: onDownload,
               onToggle: onToggle,
-              onOpenFolder: onOpenFolder,
             ),
           ),
       ],
@@ -99,7 +91,6 @@ class _MainFolderSection extends StatelessWidget {
     required this.onView,
     required this.onDownload,
     required this.onToggle,
-    required this.onOpenFolder,
   });
 
   final LibraryFolder folder;
@@ -109,7 +100,6 @@ class _MainFolderSection extends StatelessWidget {
   final void Function(DocumentItem doc) onView;
   final void Function(DocumentItem doc) onDownload;
   final void Function(List<String> path) onToggle;
-  final void Function(List<String> path) onOpenFolder;
 
   String get pathKey => path.join('/');
 
@@ -175,7 +165,6 @@ class _MainFolderSection extends StatelessWidget {
                           onView: onView,
                           onDownload: onDownload,
                           onToggle: onToggle,
-                          onOpenFolder: onOpenFolder,
                         ),
                       ),
                   ],
@@ -189,36 +178,6 @@ class _MainFolderSection extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-}
-
-class _MainBreadcrumb extends StatelessWidget {
-  const _MainBreadcrumb({required this.path, required this.onTap});
-  final List<String> path;
-  final void Function(List<String> path) onTap;
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 6,
-      children: [
-        InkWell(
-          onTap: () => onTap(path.sublist(0, 1)),
-          child: Text(path.first, style: AppTypography.label(_ink).copyWith(fontWeight: FontWeight.w700)),
-        ),
-        for (var i = 1; i < path.length; i++) ...[
-          const Icon(Icons.chevron_right_rounded, size: 18, color: _greyMuted),
-          InkWell(
-            onTap: () => onTap(path.sublist(0, i + 1)),
-            child: Text(
-              path[i],
-              style: AppTypography.label(i == path.length - 1 ? _ink : _greyMuted)
-                  .copyWith(fontWeight: i == path.length - 1 ? FontWeight.w700 : FontWeight.w500),
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
