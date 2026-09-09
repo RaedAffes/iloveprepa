@@ -346,18 +346,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (list.isEmpty) return;
       _all = list;
       _index = LibraryIndex(list);
-      _expandAll(_index!.root);
       _maybeOpenSeoDeepLink();
     } catch (_) {}
-  }
-
-  void _expandAll(LibraryFolder node, [List<String>? prefix]) {
-    final path = prefix ?? const <String>[];
-    for (final child in node.children.values) {
-      final childPath = [...path, child.name];
-      _expanded.add(childPath.join('/'));
-      _expandAll(child, childPath);
-    }
   }
 
   @override
@@ -383,7 +373,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (docs.isEmpty) return;
     if (_index != null && _all.isNotEmpty && _all.length == docs.length) return;
     _index = LibraryIndex(docs);
-    _expandAll(_index!.root);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() {});
     });
