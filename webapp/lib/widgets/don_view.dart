@@ -67,17 +67,36 @@ class _DonViewState extends State<DonView> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      'Votre soutien fait grandir notre idée. '
-                      'Merci de faire partie de l’aventure. ❤️',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Quicksand',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        height: 1.5,
-                        color: Color(0xFF57565C),
+                    // The heart lives in the bundled Material icons font (which
+                    // is already on screen), not an emoji font that Flutter
+                    // fetches lazily — so the heart and the text always appear
+                    // together.
+                    Text.rich(
+                      TextSpan(
+                        text: 'Votre soutien fait grandir notre idée. '
+                            'Merci de faire partie de l’aventure. ',
+                        style: const TextStyle(
+                          fontFamily: 'Quicksand',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          height: 1.5,
+                          color: Color(0xFF57565C),
+                        ),
+                        children: const [
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 2),
+                              child: Icon(
+                                Icons.favorite_rounded,
+                                size: 18,
+                                color: Color(0xFFE53935),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 26),
                     _buildRevealButton(),

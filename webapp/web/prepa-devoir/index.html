@@ -127,10 +127,15 @@
     </div>
   </div>
   <script>
-    // One rule: the user must never wait. The blue I♥Prepa splash paints the
-    // moment this HTML arrives (a few KB). The Flutter Wasm app downloads in
-    // the background and the second it paints its own first frame — where it
-    // already shows a loading skeleton — this splash fades.
+    // One rule: the user must never see a white nothing. The blue I♥Prepa
+    // splash paints the moment this HTML arrives (a few KB). It fades only
+    // when the app itself reports that something is on screen:
+    //   - "iloveprepa-first-frame": Flutter painted its first frame (it shows
+    //     its own loading skeleton while the documents arrive),
+    //   - "iloveprepa-data-ready": the library is fully loaded and rendered.
+    // A long safety timer covers a completely failed load so nothing can
+    // trap the page — but it must never beat Flutter's first frame, or a
+    // white flash would appear between the splash and the app.
     (function () {
       function hidePreview() {
         var el = document.getElementById('boot-preview');
@@ -139,28 +144,11 @@
           setTimeout(function () { el.remove(); }, 300);
         }
       }
-      // Whichever comes first wins: content fully loaded (data-ready), first
-      // Flutter frame, or a hard timeout. Nothing can leave the user stuck.
-      window.addEventListener('iloveprepa-data-ready', hidePreview, { once: true });
-      document.addEventListener('iloveprepa-data-ready', hidePreview, { once: true });
-
-      function onFirstFrame() {
-        var view = document.querySelector('flutter-view');
-        if (!view) return false;
-        // Wait two animation frames so the engine has actually painted before
-        // we reveal it.
-        requestAnimationFrame(function () {
-          requestAnimationFrame(hidePreview);
-        });
-        return true;
-      }
-      if (!onFirstFrame()) {
-        var obs = new MutationObserver(function () {
-          if (onFirstFrame()) obs.disconnect();
-        });
-        obs.observe(document.body, { childList: true, subtree: true });
-      }
-      setTimeout(hidePreview, 4000);
+      ['iloveprepa-first-frame', 'iloveprepa-data-ready'].forEach(function (name) {
+        window.addEventListener(name, hidePreview, { once: true });
+        document.addEventListener(name, hidePreview, { once: true });
+      });
+      setTimeout(hidePreview, 10000);
     })();
   </script>
   <!--

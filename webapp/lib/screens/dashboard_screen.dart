@@ -148,6 +148,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _firstFrameDone = true;
       _maybeEmitBootReady();
       _bootFallback ??= Timer(const Duration(seconds: 6), _emitBootReady);
+      // Tell the browser the instant this first frame is actually on screen
+      // (before the data round-trip completes) so the blue splash fades onto
+      // a real Flutter frame — the loading skeleton — instead of a white
+      // void. This is the event the splash waits for on first loads.
+      Future.delayed(const Duration(milliseconds: 80), () {
+        if (!mounted) return;
+        web.document.dispatchEvent(web.Event('iloveprepa-first-frame'));
+      });
     });
   }
 
