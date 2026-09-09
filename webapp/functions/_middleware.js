@@ -2,6 +2,13 @@
 // app shell for each keyword URL (prepa-examens, prepa-ds, ...), so Google
 // sees a relevant, distinct page per query without any change to the visible
 // site. The root app is untouched; the meta only affects search results.
+//
+// Folder URLs (mathematiques/mme-nedra-moalla, ...) get the same treatment:
+// the title is the folder's own name, the description lists its real content,
+// and a <meta name="iloveprepa-folder"> carries the real R2 path so the Flutter
+// app can deep-link straight into that folder.
+
+import { FOLDER_META } from "./folder_meta.js";
 
 const META = {
   "iprepa": {
@@ -194,28 +201,19 @@ const META = {
   },
 };
 
-export async function onRequest(context) {
-  const url = new URL(context.request.url);
-  const key = url.pathname.replace(/^\/+|\/+$/g, "");
-  const meta = META[key];
-  if (!meta) return context.next();
-
-  const res = await context.env.ASSETS.fetch(new URL("/", context.request.url));
-  let html = await res.text();
-  const canonical = "https://iprepa.tn/" + key + "/";
-
-  html = html.replace(/<title>[\s\S]*?<\/title>/, "<title>" + meta.title + "</title>");
+function applyMeta(html, title, desc, canonical) {
+  html = html.replace(/<title>[\s\S]*?<\/title>/, "<title>" + title + "</title>");
   html = html.replace(
     /(<meta name="description" content=")[^"]*(")/,
-    "$1" + meta.desc + "$2",
+    "$1" + desc + "$2",
   );
   html = html.replace(
     /(<meta property="og:title" content=")[^"]*(")/,
-    "$1" + meta.title + "$2",
+    "$1" + title + "$2",
   );
   html = html.replace(
     /(<meta property="og:description" content=")[^"]*(")/,
-    "$1" + meta.desc + "$2",
+    "$1" + desc + "$2",
   );
   html = html.replace(
     /(<meta property="og:url" content=")[^"]*(")/,
@@ -227,7 +225,14 @@ export async function onRequest(context) {
       '<meta property="og:url" content="' + canonical + '">\n  <link rel="canonical" href="' + canonical + '">',
     );
   }
+  return html;
+}
 
+function serve(html, title, desc, canonical, extra) {
+  html = applyMeta(html, title, desc, canonical);
+  if (extra) {
+    html = html.replace("</head>", extra + "</head>");
+  }
   return new Response(html, {
     status: 200,
     headers: {
@@ -235,4 +240,26 @@ export async function onRequest(context) {
       "Cache-Control": "no-cache",
     },
   });
+}
+
+export async function onRequest(context) {
+  const url = new URL(context.request.url);
+  const key = url.pathname.replace(/^\/+|\/+$/g, "");
+
+  const folder = FOLDER_META[key];
+  if (folder) {
+    const res = await context.env.ASSETS.fetch(new URL("/", context.request.url));
+    const html = await res.text();
+    const canonical = "https://iprepa.tn/" + key + "/";
+    const deepLink = '<meta name="iloveprepa-folder" content="' + folder.path + '">\n';
+    return serve(html, folder.title, folder.desc, canonical, deepLink);
+  }
+
+  const meta = META[key];
+  if (!meta) return context.next();
+
+  const res = await context.env.ASSETS.fetch(new URL("/", context.request.url));
+  const html = await res.text();
+  const canonical = "https://iprepa.tn/" + key + "/";
+  return serve(html, meta.title, meta.desc, canonical);
 }

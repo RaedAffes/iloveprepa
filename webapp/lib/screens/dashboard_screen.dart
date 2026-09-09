@@ -125,6 +125,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         _apiSettled = true;
         setState(() { _all = docs; _apiError = null; });
+        _maybeOpenSeoDeepLink();
         _maybeEmitBootReady();
       }
       return docs;
@@ -162,6 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _firstFrameDone = false;
   bool _apiSettled = false;
   bool _bootEmitted = false;
+  bool _seoDeepLinkHandled = false;
   Timer? _bootFallback;
 
   void _maybeEmitBootReady() {
@@ -190,6 +192,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _bootFallback?.cancel();
     if (!mounted) return;
     web.document.dispatchEvent(web.Event('iloveprepa-data-ready'));
+  }
+
+  /// Opens the folder pointed to by the SEO middleware
+  /// (<meta name="iloveprepa-folder">), so a visitor arriving from Google on
+  /// /mathematiques/mme-nedra-moalla/ lands directly in that folder instead of
+  /// the home page. Runs once, only when the tree is ready.
+  void _maybeOpenSeoDeepLink() {
+    if (_seoDeepLinkHandled) return;
+    _seoDeepLinkHandled = true;
+    String? raw;
+    try {
+      raw = web.document
+          .querySelector('meta[name="iloveprepa-folder"]')
+          ?.getAttribute('content');
+    } catch (_) {}
+    if (raw == null || raw.isEmpty) return;
+    final segments = raw
+        .split('/')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    if (segments.isEmpty) return;
+    if (_root.descend(segments) == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _openFolder(segments);
+    });
   }
 
   /// Warms the SVG cache the Contact illustration uses so the artwork appears
@@ -231,6 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _all = list;
       _index = LibraryIndex(list);
       _expandAll(_index!.root);
+      _maybeOpenSeoDeepLink();
     } catch (_) {}
   }
 
