@@ -544,11 +544,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _toggleSection(List<String> path) {
     final key = path.join('/');
-    final opening = !_expanded.contains(key);
     setState(() {
       if (!_expanded.remove(key)) _expanded.add(key);
     });
-    if (opening) _pushUrlFor(path);
   }
 
   /// True when running in a mobile browser (phone/tablet). Phones keep the
@@ -813,6 +811,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           busy: _busy,
           onView: _open,
           onDownload: _download,
+          onOpenFolder: _openFolder,
           onToggle: _toggleSection,
         );
       }),
