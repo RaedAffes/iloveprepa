@@ -165,7 +165,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return;
     }
     final path = _slugToPath[slug];
-    _applyFolder(path == null ? const [] : path.split('/'));
+    _restoreFolder(path == null ? const [] : path.split('/'));
+  }
+
+  /// Restores a folder exactly as if the user had navigated to it from the
+  /// home page: same path, all its ancestors expanded, no toggle/collapse
+  /// side-effects, no URL push. Used for browser back/forward and for direct
+  /// deep-link arrivals (typing / pasting a folder URL).
+  void _restoreFolder(List<String> path) {
+    setState(() {
+      _showContactForm = false;
+      _showDon = false;
+      _currentPath = List.of(path);
+      _expanded.addAll(_ancestors(path));
+      _rememberFiles(path);
+      _query = '';
+      _searchController.clear();
+    });
   }
 
   /// Keeps the address bar in sync with the folder being viewed. Pushes a real
@@ -288,7 +304,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (segments.isEmpty) return;
     if (_root.descend(segments) == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _applyFolder(segments);
+      if (mounted) _restoreFolder(segments);
     });
   }
 
