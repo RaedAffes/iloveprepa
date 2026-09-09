@@ -175,6 +175,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://iprepa.tn/prepa-sujet/</loc>
+<lastmod>2026-09-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://iprepa.tn/prepa-sujets/</loc>
 <lastmod>2026-09-09</lastmod>
     <changefreq>weekly</changefreq>
@@ -199,6 +205,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://iprepa.tn/prepa-revision/</loc>
+<lastmod>2026-09-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://iprepa.tn/prepa-revisions/</loc>
 <lastmod>2026-09-09</lastmod>
     <changefreq>weekly</changefreq>
@@ -206,6 +218,12 @@
   </url>
   <url>
     <loc>https://iprepa.tn/revisions-prepa/</loc>
+<lastmod>2026-09-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://iprepa.tn/prepa-corrige/</loc>
 <lastmod>2026-09-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
