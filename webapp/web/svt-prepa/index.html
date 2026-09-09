@@ -38,11 +38,12 @@
   <link rel="manifest" href="manifest.json">
 
   <!-- Preload what the first page (the blue I♥Prepa splash) needs to render
-       perfectly at once, even on the very first visit:
-         * the brand font PlayfairDisplay (the splash text), so the text
-           appears in its real font instead of swapping from a fallback,
-         * the browser/tab icon and the home-screen icon. -->
-  <link rel="preload" as="font" type="font/ttf" href="assets/assets/fonts/PlayfairDisplay-Variable.ttf" crossorigin>
+       at once, even on the very first visit: the browser/tab icon and the
+       home-screen icon (both fetched exactly once, verified in the net log).
+       The brand font PlayfairDisplay is deliberately NOT preloaded: a font
+       preload is fetched AGAIN by the style/FontManifest (2x instead of 1x,
+       ~400 KB wasted) — measured, net loss. It uses font-display:swap below
+       and paints in the real font right after the wasm. -->
   <link rel="preload" as="image" href="favicon.png?v=5">
   <link rel="preload" as="image" href="apple-touch-icon.png">
 
@@ -97,10 +98,10 @@
       pointer-events: none;
     }
 
-    <!-- Reuse the app's brand font so the splash is pixel-identical. It is
-       preloaded above so it paints directly in the real font on the very
-       first visit (no Georgia swap); at 198 KB it competes almost nothing
-       with the Wasm binary download. -->
+    <!-- Reuse the app's brand font so the splash is pixel-identical. font-display
+       swap shows Georgia for the instant the font takes to arrive — a font
+       preload would cost a second download (measured double fetch), so it
+       must never compete with the Wasm binary download. -->
     @font-face {
       font-family: 'PlayfairDisplay';
       font-display: swap;
