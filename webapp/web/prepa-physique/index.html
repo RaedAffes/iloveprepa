@@ -37,6 +37,15 @@
   <title>IlovePrepa | 2000+ documents de prépa gratuits en Tunisie</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- Preload what the first page (the blue I♥Prepa splash) needs to render
+       perfectly at once, even on the very first visit:
+         * the brand font PlayfairDisplay (the splash text), so the text
+           appears in its real font instead of swapping from a fallback,
+         * the browser/tab icon and the home-screen icon. -->
+  <link rel="preload" as="font" type="font/ttf" href="assets/assets/fonts/PlayfairDisplay-Variable.ttf" crossorigin>
+  <link rel="preload" as="image" href="favicon.png?v=5">
+  <link rel="preload" as="image" href="apple-touch-icon.png">
+
   <!-- Warm the connections a fast opening needs before they are actually
        used, the same resource-hint technique mcmaster.com uses: the API that
        serves the document list (DNS + TLS happen while the app binary
@@ -88,10 +97,10 @@
       pointer-events: none;
     }
 
-    <!-- Reuse the app's brand font so the splash is pixel-identical. It swaps
-       in as soon as it arrives; until then the same Georgia fallback as the
-       original stays on screen. No preload: it must never compete with the
-       Wasm binary download. -->
+    <!-- Reuse the app's brand font so the splash is pixel-identical. It is
+       preloaded above so it paints directly in the real font on the very
+       first visit (no Georgia swap); at 198 KB it competes almost nothing
+       with the Wasm binary download. -->
     @font-face {
       font-family: 'PlayfairDisplay';
       font-display: swap;
