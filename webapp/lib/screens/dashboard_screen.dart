@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:js_interop';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web/web.dart' as web;
 
@@ -71,10 +69,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<DocumentItem> _all = const [];
 
-  /// Path -> SEO slug map for every folder (loaded from folder_routes.json).
-  /// Used to keep the browser URL in sync with the folder the user browses.
-  Map<String, String> _pathToSlug = {};
-  Map<String, String> _slugToPath = {};
   LibraryIndex? _index;
   String _query = '';
   String? _busy;
@@ -112,76 +106,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadDocuments();
     _seedFromCache();
-    _loadFolderRoutes();
     _scheduleBootReady();
     _analytics.logAppOpen();
     _analytics.logScreenView('dashboard');
     unawaited(_precacheContactIllustration());
-    web.window.addEventListener('popstate', _onPopState.toJS);
   }
 
-  /// Fetches folder_routes.json (generated at deploy time) so folder clicks can
-  /// update the browser URL and back/forward can restore the folder the user
-  /// was browsing. Purely additive: if it fails, navigation works exactly as
-  /// before, only without URL/history integration.
-  Future<void> _loadFolderRoutes() async {
-    try {
-      final resp = await http
-          .get(Uri.parse('/folder_routes.json'))
-          .timeout(const Duration(seconds: 10));
-      if (resp.statusCode != 200) return;
-      final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      final routes = body['routes'] as List<dynamic>? ?? const [];
-      final pathToSlug = <String, String>{};
-      final slugToPath = <String, String>{};
-      for (final r in routes) {
-        final route = r as Map<String, dynamic>;
-        final path = route['path'] as String?;
-        final slug = route['slug'] as String?;
-        if (path == null || slug == null || path.isEmpty || slug.isEmpty) {
-          continue;
-        }
-        pathToSlug[path] = slug;
-        slugToPath[slug] = path;
-      }
-      if (!mounted || pathToSlug.isEmpty) return;
-      setState(() {
-        _pathToSlug = pathToSlug;
-        _slugToPath = slugToPath;
-      });
-    } catch (_) {}
-  }
-
-  /// Browser back/forward: restores the folder (or home) matching the URL,
-  /// without pushing a new history entry.
-  void _onPopState(web.Event event) {
-    String slug;
-    try {
-      slug = web.window.location.pathname.replaceAll(
-        RegExp(r'^/+|/+$'),
-        '',
-      );
-    } catch (_) {
-      return;
-    }
-    final path = _slugToPath[slug];
-    _restoreFolder(path == null ? const [] : path.split('/'));
-  }
-
-  /// Keeps the address bar in sync with the folder being viewed. Pushes a real
-  /// URL (the SEO slug) with History.pushState so back/forward traverse the
-  /// user's folder history instead of leaving the site.
-  void _pushUrlFor(List<String> path) {
-    final target = path.isEmpty
-        ? '/'
-        : _pathToSlug[path.join('/')];
-    if (target == null) return;
-    final url = path.isEmpty ? '/' : '/$target/';
-    try {
-      if (web.window.location.pathname == url) return;
-      web.window.history.pushState(null, '', url);
-    } catch (_) {}
-  }
+  /// Browser back/forward and in-app folder clicks no longer change the URL.
+  /// The address bar always stays on the app root (iprepa.tn); only search
+  /// engines and direct visitors use the per-folder URLs, which the middleware
+  /// answers with the folder's own title/description without routing.
 
   /// Kicks off the API refresh in the background (never blocks the UI). The
   /// response is written to [_all] and triggers a rebuild; a failure is
@@ -416,7 +350,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _query = '';
       _searchController.clear();
     });
-    _pushUrlFor(path);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final wide = MediaQuery.sizeOf(context).width >= 960;
@@ -433,8 +366,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// Restores a folder exactly as if the user had navigated to it from the
   /// home page: the accordion is anchored on the top-level subject and the
   /// whole branch leading to [path] is expanded inline, with every other
-  /// section collapsed. Never pushes a history entry. Used for browser
-  /// back/forward and for direct deep-link arrivals (typed/pasted URL).
+  /// section collapsed. Used for direct deep-link arrivals (typed/pasted or
+  /// search-engine URL). After opening, the address bar is set back to the
+  /// app root so in-app navigation never changes the URL.
   void _restoreFolder(List<String> path) {
     setState(() {
       _showContactForm = false;
@@ -445,6 +379,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _currentPath = const [];
         _expanded.clear();
         _lastFilesPath = null;
+        _urlToRoot();
         return;
       }
       _currentPath = [path.first];
@@ -453,6 +388,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ..addAll(_ancestors(path));
       _rememberFiles(path);
     });
+    if (path.isNotEmpty) _urlToRoot();
+  }
+
+  /// Rewrites the address bar back to the app root (replaceState, no history
+  /// entry) so the URL always reads iprepa.tn while the user browses.
+  void _urlToRoot() {
+    try {
+      if (web.window.location.pathname != '/') {
+        web.window.history.replaceState(null, '', '/');
+      }
+    } catch (_) {}
   }
 
   /// Once a folder that directly contains files is opened, remember it so the
@@ -491,7 +437,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _query = '';
       _searchController.clear();
     });
-    _pushUrlFor(const []);
   }
 
   /// Brand tap: resets the whole dashboard to its initial state, exactly like
@@ -508,7 +453,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _lastFilesPath = null;
       _sidebarCollapsed = false;
     });
-    _pushUrlFor(const []);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
@@ -532,7 +476,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _expanded.remove(key);
       _expanded.removeWhere((k) => k == key || k.startsWith('$key/'));
     });
-    _syncUrlToDeepestExpanded();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
@@ -541,25 +484,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  /// Toggles an accordion section in the main content. Collapsing the whole
-  /// branch (or expanding a nested one) updates the URL to the deepest folder
-  /// that stays open, so the address bar always matches what is on screen.
+  /// Toggles an accordion section in the main content: expand to show its files
+  /// and sub-folders inline, collapse to hide them again. Never touches the URL.
   void _toggleSection(List<String> path) {
     final key = path.join('/');
     setState(() {
       if (!_expanded.remove(key)) _expanded.add(key);
     });
-    _syncUrlToDeepestExpanded();
-  }
-
-  /// Pushes the URL of the deepest expanded folder (the one whose content is
-  /// actually shown), or '/' when the tree is fully collapsed.
-  void _syncUrlToDeepestExpanded() {
-    String? best;
-    for (final k in _expanded) {
-      if (best == null || k.length > best.length) best = k;
-    }
-    _pushUrlFor(best == null ? const [] : best.split('/'));
   }
 
   /// True when running in a mobile browser (phone/tablet). Phones keep the
