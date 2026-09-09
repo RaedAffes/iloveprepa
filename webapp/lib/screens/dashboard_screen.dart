@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:js_interop';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web/web.dart' as web;
 
@@ -68,6 +70,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ScrollController _contentScroll = ScrollController();
 
   List<DocumentItem> _all = const [];
+
+  /// Path -> SEO slug map for every folder (loaded from folder_routes.json).
+  /// Used to keep the browser URL in sync with the folder the user browses.
+  Map<String, String> _pathToSlug = {};
+  Map<String, String> _slugToPath = {};
   LibraryIndex? _index;
   String _query = '';
   String? _busy;
@@ -105,10 +112,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadDocuments();
     _seedFromCache();
+    _loadFolderRoutes();
     _scheduleBootReady();
     _analytics.logAppOpen();
     _analytics.logScreenView('dashboard');
     unawaited(_precacheContactIllustration());
+    web.window.addEventListener('popstate', _onPopState.toJS);
+  }
+
+  /// Fetches folder_routes.json (generated at deploy time) so folder clicks can
+  /// update the browser URL and back/forward can restore the folder the user
+  /// was browsing. Purely additive: if it fails, navigation works exactly as
+  /// before, only without URL/history integration.
+  Future<void> _loadFolderRoutes() async {
+    try {
+      final resp = await http
+          .get(Uri.parse('/folder_routes.json'))
+          .timeout(const Duration(seconds: 10));
+      if (resp.statusCode != 200) return;
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      final routes = body['routes'] as List<dynamic>? ?? const [];
+      final pathToSlug = <String, String>{};
+      final slugToPath = <String, String>{};
+      for (final r in routes) {
+        final route = r as Map<String, dynamic>;
+        final path = route['path'] as String?;
+        final slug = route['slug'] as String?;
+        if (path == null || slug == null || path.isEmpty || slug.isEmpty) {
+          continue;
+        }
+        pathToSlug[path] = slug;
+        slugToPath[slug] = path;
+      }
+      if (!mounted || pathToSlug.isEmpty) return;
+      setState(() {
+        _pathToSlug = pathToSlug;
+        _slugToPath = slugToPath;
+      });
+    } catch (_) {}
+  }
+
+  /// Browser back/forward: restores the folder (or home) matching the URL,
+  /// without pushing a new history entry.
+  void _onPopState(web.Event event) {
+    String slug;
+    try {
+      slug = web.window.location.pathname.replaceAll(
+        RegExp(r'^/+|/+$'),
+        '',
+      );
+    } catch (_) {
+      return;
+    }
+    final path = _slugToPath[slug];
+    _applyFolder(path == null ? const [] : path.split('/'));
+  }
+
+  /// Keeps the address bar in sync with the folder being viewed. Pushes a real
+  /// URL (the SEO slug) with History.pushState so back/forward traverse the
+  /// user's folder history instead of leaving the site.
+  void _pushUrlFor(List<String> path) {
+    final target = path.isEmpty
+        ? '/'
+        : _pathToSlug[path.join('/')];
+    if (target == null) return;
+    final url = path.isEmpty ? '/' : '/$target/';
+    try {
+      if (web.window.location.pathname == url) return;
+      web.window.history.pushState(null, '', url);
+    } catch (_) {}
   }
 
   /// Kicks off the API refresh in the background (never blocks the UI). The
@@ -216,7 +288,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (segments.isEmpty) return;
     if (_root.descend(segments) == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _openFolder(segments);
+      if (mounted) _applyFolder(segments);
     });
   }
 
@@ -341,6 +413,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openFolder(List<String> path) {
+    _applyFolder(path);
+    _pushUrlFor(path);
+  }
+
+  void _applyFolder(List<String> path) {
     _analytics.logFolderOpen(path.isEmpty ? 'root' : path.join(' / '));
     setState(() {
       _showContactForm = false;
@@ -408,6 +485,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _query = '';
       _searchController.clear();
     });
+    _pushUrlFor(const []);
   }
 
   /// Brand tap: resets the whole dashboard to its initial state, exactly like
@@ -424,6 +502,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _lastFilesPath = null;
       _sidebarCollapsed = false;
     });
+    _pushUrlFor(const []);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
@@ -449,6 +528,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _searchController.clear();
       }
     });
+    if (opening) _pushUrlFor(path);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final wide = MediaQuery.sizeOf(context).width >= 960;

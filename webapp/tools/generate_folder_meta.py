@@ -31,6 +31,7 @@ FUNCTIONS_DIR = WEBAPP / "functions"
 WEB_DIR = WEBAPP / "web"
 JS_OUT = FUNCTIONS_DIR / "folder_meta.js"
 SITEMAP_OUT = WEB_DIR / "sitemap.xml"
+ROUTES_OUT = WEB_DIR / "folder_routes.json"
 REDIRECTS = WEB_DIR / "_redirects"
 
 # Explicit top-level folder names -> clean SEO slug ("1. Math" is ugly as an URL).
@@ -207,6 +208,7 @@ def generate():
     content_nodes.sort(key=lambda pn: pn[0])
 
     print(f"Building slugs for {len(content_nodes)} folders...")
+    routes = []
     for path, node in content_nodes:
         segs = []
         for i, seg in enumerate(path):
@@ -217,11 +219,13 @@ def generate():
             slug = f"{base}-{n}"
             n += 1
         slugs.add(slug)
+        real = "/".join(path)
         entries[slug] = {
             "title": html.escape(clean_label(path[-1]), quote=True),
             "desc": html.escape(build_desc(node), quote=True),
-            "path": html.escape("/".join(path), quote=True),
+            "path": html.escape(real, quote=True),
         }
+        routes.append({"path": real, "slug": slug})
         raw_paths.append(path)
 
     js = [
@@ -237,6 +241,12 @@ def generate():
     FUNCTIONS_DIR.mkdir(parents=True, exist_ok=True)
     JS_OUT.write_text("\n".join(js) + "\n", encoding="utf-8")
     print(f"OK: {JS_OUT.relative_to(WEBAPP)} ({len(entries)} folders)")
+
+    ROUTES_OUT.write_text(
+        json.dumps({"routes": routes}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    print(f"OK: {ROUTES_OUT.relative_to(WEBAPP)} ({len(routes)} path->slug routes)")
 
     kw = keyword_slugs()
     today = date.today().isoformat()
