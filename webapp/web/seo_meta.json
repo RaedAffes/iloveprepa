@@ -1,0 +1,2145 @@
+{
+ "canonicalBase": "https://iprepa.tn",
+ "keywords": {
+  "chimie-prepa": {
+   "title": "Chimie Prépa : cours, TD et annales corrigées en PDF",
+   "desc": "Documents de prépa tunisienne en chimie : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "concours-prepa": {
+   "title": "Concours de Prépa Tunisie : annales et corrigés PDF",
+   "desc": "Concours de prépa tunisienne : annales, sujets et corrigés des épreuves de concours en téléchargement gratuit en PDF."
+  },
+  "corriges-prepa": {
+   "title": "Corrigés de Prépa : exercices et examens en PDF",
+   "desc": "Corrigés de prépa tunisienne à télécharger : corrections détaillées de devoirs de synthèse et d'examens en PDF gratuit."
+  },
+  "cours-prepa": {
+   "title": "Cours de Prépa Tunisie : cours MP, PC, PT et T en PDF",
+   "desc": "Cours de prépa tunisienne en PDF gratuit : cours complets et structurés de mathématiques, physique et chimie pour les prépas MP, PC, PT."
+  },
+  "devoirs-prepa": {
+   "title": "Devoirs de Prépa Tunisie à télécharger : PDF gratuits",
+   "desc": "Devoirs de prépa tunisienne à télécharger gratuitement : DS, devoirs maison et devoirs surveillés avec corrigés en PDF."
+  },
+  "documents-prepa": {
+   "title": "Documents de Prépa Tunisie : base complète de PDF",
+   "desc": "Documents de prépa tunisienne à télécharger gratuitement : cours, TD, DS et examens corrigés classés par filière et par matière."
+  },
+  "examens-prepa": {
+   "title": "Sujets d'Examens Prépa Tunisie : MP, PC, PT en PDF",
+   "desc": "Sujets d'examens de prépa tunisienne MP, PC, PT, T gratuits en PDF : examens de synthèse et épreuves corrigées de maths, physique et chimie."
+  },
+  "exercices-prepa": {
+   "title": "Exercices de Prépa : séries corrigées à télécharger",
+   "desc": "Exercices de prépa tunisienne à télécharger en PDF : séries d'exercices corrigés pour les filières MP, PC, PT et T."
+  },
+  "informatique-prepa": {
+   "title": "Informatique Prépa : cours, TD et examens en PDF",
+   "desc": "Documents de prépa tunisienne en informatique : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "iprepa": {
+   "title": "IlovePrepa : 2000+ documents de prépa tunisienne gratuits",
+   "desc": "IlovePrepa : plus de 2000 documents de prépa tunisienne gratuits (cours, TD, DS, examens) en PDF, sans inscription, pour réussir."
+  },
+  "mathematiques-prepa": {
+   "title": "Mathématiques Prépa : cours, TD et annales en PDF",
+   "desc": "Documents de prépa tunisienne en mathématiques : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "physique-prepa": {
+   "title": "Physique Prépa : cours, TD et annales corrigées en PDF",
+   "desc": "Documents de prépa tunisienne en physique : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "prepa-bg": {
+   "title": "Prépa BG Tunisie : documents de la filière BG en PDF",
+   "desc": "Tous les documents de prépa tunisienne de la filière BG (biologie-géologie) : cours, TD, DS, examens et exercices corrigés en PDF gratuit."
+  },
+  "prepa-chimie": {
+   "title": "Chimie Prépa Tunisie : cours, TD, examens en PDF",
+   "desc": "Documents de prépa tunisienne en chimie : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "prepa-concours": {
+   "title": "Concours de Prépa Tunisie : annales en PDF gratuits",
+   "desc": "Concours de prépa tunisienne : annales des concours nationaux avec sujets et corrigés, gratuites en PDF pour bien se préparer."
+  },
+  "prepa-corrige": {
+   "title": "Corrigés de Prépa Tunisie : corrections complètes en PDF",
+   "desc": "Corrigés de prépa tunisienne en PDF gratuit : corrections détaillées d'examens, de devoirs de synthèse et d'exercices."
+  },
+  "prepa-corriges": {
+   "title": "Corrigés Prépa Tunisie : DS et examens corrigés en PDF",
+   "desc": "Corrigés de prépa tunisienne : corrections complètes de DS, examens et séries d'exercices en PDF gratuit pour toutes les filières."
+  },
+  "prepa-cours": {
+   "title": "Cours de Prépa Tunisie : cours complets en PDF gratuit",
+   "desc": "Cours de prépa tunisienne gratuits en PDF : cours complets de maths, physique, chimie, informatique et SVT pour toutes les filières."
+  },
+  "prepa-devoir": {
+   "title": "Devoir de Prépa Tunisie : DS et devoirs maison en PDF",
+   "desc": "Devoir de prépa tunisienne en PDF gratuit : devoirs de synthèse, devoirs maison et devoirs surveillés corrigés pour toutes les filières."
+  },
+  "prepa-devoirs": {
+   "title": "Devoirs de Prépa Tunisie : DS, devoirs maison en PDF",
+   "desc": "Devoirs de prépa tunisienne gratuits en PDF : devoirs de synthèse et devoirs maison corrigés, classés par filière et par matière."
+  },
+  "prepa-docs": {
+   "title": "Documents de Prépa Tunisie : PDF gratuits à télécharger",
+   "desc": "Documents de prépa tunisienne gratuits en PDF : cours, TD, DS, examens et exercices corrigés pour toutes les filières scientifiques."
+  },
+  "prepa-document": {
+   "title": "Document Prépa Tunisie : cours, TD, examens en PDF",
+   "desc": "Document de prépa tunisienne en PDF : cours, TD, examens et exercices corrigés gratuits, sans inscription, pour les classes prépas."
+  },
+  "prepa-documents": {
+   "title": "Documents de Prépa Tunisie : cours, TD, examens PDF",
+   "desc": "Documents de prépa tunisienne : base complète de cours, TD, examens et corrigés en PDF gratuit pour les filières MP, PC, PT, T."
+  },
+  "prepa-ds": {
+   "title": "Devoirs de Synthèse (DS) Prépa Tunisie : PDF gratuits",
+   "desc": "Devoirs de synthèse (DS) de prépa tunisienne gratuits en PDF : sujets de DS corrigés de maths, physique et chimie pour toutes les filières."
+  },
+  "prepa-examen": {
+   "title": "Examen de Prépa Tunisie : sujets d'examens corrigés en PDF",
+   "desc": "Examen de prépa tunisienne : tous les sujets d'examens corrigés des classes préparatoires (MP, PC, PT, T) en téléchargement gratuit PDF."
+  },
+  "prepa-examens": {
+   "title": "Examens de Prépa Tunisie : sujets MP, PC, PT en PDF",
+   "desc": "Examens de prépa tunisienne gratuits en PDF : sujets d'examens de synthèse et épreuves corrigées pour les filières MP, PC, PT et T."
+  },
+  "prepa-exercice": {
+   "title": "Exercices de Prépa Tunisie corrigés : PDF gratuits",
+   "desc": "Exercices de prépa tunisienne corrigés en PDF : exercices types de maths, physique et chimie pour réviser chaque chapitre du programme."
+  },
+  "prepa-exercices": {
+   "title": "Exercices de Prépa Tunisie : séries corrigées en PDF",
+   "desc": "Exercices de prépa tunisienne gratuits : séries d'exercices corrigés de maths, physique, chimie et informatique, classées par chapitre."
+  },
+  "prepa-informatique": {
+   "title": "Informatique Prépa Tunisie : cours et TD en PDF",
+   "desc": "Documents de prépa tunisienne en informatique : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "prepa-mathematiques": {
+   "title": "Mathématiques Prépa Tunisie : cours et exercices en PDF",
+   "desc": "Documents de prépa tunisienne en mathématiques : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "prepa-maths": {
+   "title": "Maths Prépa Tunisie : cours, TD, examens de maths en PDF",
+   "desc": "Documents de prépa tunisienne en mathématiques : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "prepa-mp": {
+   "title": "Prépa MP Tunisie : cours, TD, examens de MP en PDF",
+   "desc": "Tous les documents de prépa tunisienne de la filière MP (mathématiques-physique) : cours, TD, DS, examens et exercices corrigés en PDF gratuit."
+  },
+  "prepa-pc": {
+   "title": "Prépa PC Tunisie : cours, TD, examens de PC en PDF",
+   "desc": "Tous les documents de prépa tunisienne de la filière PC (physique-chimie) : cours, TD, DS, examens et exercices corrigés en PDF gratuit."
+  },
+  "prepa-physique": {
+   "title": "Physique Prépa Tunisie : cours, TD, examens en PDF",
+   "desc": "Documents de prépa tunisienne en physique : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "prepa-pt": {
+   "title": "Prépa PT Tunisie : cours, TD, examens de PT en PDF",
+   "desc": "Tous les documents de prépa tunisienne de la filière PT (physique-technologie) : cours, TD, DS, examens et exercices corrigés en PDF gratuit."
+  },
+  "prepa-revision": {
+   "title": "Révision Prépa Tunisie : fiches de révision en PDF",
+   "desc": "Fiches de révision de prépa tunisienne en PDF : résumés de cours, formules essentielles et exercices types pour réviser efficacement."
+  },
+  "prepa-revisions": {
+   "title": "Révisions Prépa Tunisie : fiches et annales en PDF",
+   "desc": "Révisions de prépa tunisienne : fiches de révision, résumés de cours et annales corrigées en PDF gratuit pour réussir ses examens."
+  },
+  "prepa-sujet": {
+   "title": "Sujets de Prépa Tunisie : DS, examens, concours en PDF",
+   "desc": "Sujets de prépa tunisienne en PDF gratuit : sujets d'examens, de devoirs de synthèse et de concours blancs pour toutes les filières."
+  },
+  "prepa-sujets": {
+   "title": "Sujets de Prépa Tunisie : collection complète en PDF",
+   "desc": "Sujets de prépa tunisienne : collection complète d'annales, examens et devoirs de synthèse classés par filière, en PDF gratuit."
+  },
+  "prepa-svt": {
+   "title": "SVT Prépa Tunisie : cours, TD et examens en PDF",
+   "desc": "Documents de prépa tunisienne en SVT : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "prepa-t": {
+   "title": "Prépa T Tunisie : cours, TD, examens de la filière T",
+   "desc": "Tous les documents de prépa tunisienne de la filière T (technologie) : cours, TD, DS, examens et exercices corrigés en PDF gratuit."
+  },
+  "prepa-td": {
+   "title": "TD de Prépa Tunisie : travaux dirigés corrigés en PDF",
+   "desc": "TD de prépa tunisienne corrigés en PDF : travaux dirigés de maths, physique et chimie, classés par chapitre, gratuits à télécharger."
+  },
+  "prepa-tunisie": {
+   "title": "Prépa Tunisie : documents des classes prépas en PDF gratuit",
+   "desc": "Prépa Tunisie : tous les documents des classes préparatoires tunisiennes (cours, TD, DS, examens) en PDF gratuit, sans inscription."
+  },
+  "revisions-prepa": {
+   "title": "Révisions de Prépa Tunisie : fiches gratuites en PDF",
+   "desc": "Révisions de prépa tunisienne gratuites : fiches, formules et exercices types en PDF, classés par matière et par filière."
+  },
+  "sujets-prepa": {
+   "title": "Sujets de Prépa Tunisie à télécharger : PDF gratuit",
+   "desc": "Sujets de prépa tunisienne à télécharger gratuitement : examens, DS et concours blancs de maths, physique et chimie en PDF."
+  },
+  "svt-prepa": {
+   "title": "SVT Prépa : cours et exercices à télécharger en PDF",
+   "desc": "Documents de prépa tunisienne en SVT : cours complets, TD, exercices, DS et examens corrigés en PDF gratuit, classés par chapitre."
+  },
+  "td-prepa": {
+   "title": "TD Prépa Tunisie : travaux dirigés avec corrigés en PDF",
+   "desc": "TD de prépa tunisienne à télécharger : travaux dirigés avec corrections détaillées de mathématiques, physique et chimie en PDF."
+  }
+ },
+ "folders": {
+  "chimie": {
+   "title": "Chimie",
+   "desc": "Cours et TD IPEIN, Mme Ahlem Kabadou, Mme Sonia Dridi, Mr. Ali Ghorbel, Mr. Foued Ben Ayed, Mr. Girald Phillips, Mr. Mourad Cherif, ...",
+   "path": "3. Chimie"
+  },
+  "chimie/cours-et-td-ipein": {
+   "title": "Cours et TD IPEIN",
+   "desc": "4 tous les TD corrigés, cours chimie complet",
+   "path": "3. Chimie/Cours et TD IPEIN"
+  },
+  "chimie/mme-ahlem-kabadou": {
+   "title": "Mme Ahlem Kabadou",
+   "desc": "From Archiveprepa, From Unknown, From Yassomri4",
+   "path": "3. Chimie/Mme Ahlem Kabadou"
+  },
+  "chimie/mme-ahlem-kabadou/from-archiveprepa": {
+   "title": "From Archiveprepa",
+   "desc": "Cristallographie, EpH, Thermodynamique, 04. diagramme binnaire seance 1, 11. cours diagramme binaire, 14. série diagramme binaire, 16. résumé binaire, ...",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Archiveprepa"
+  },
+  "chimie/mme-ahlem-kabadou/from-archiveprepa/cristallographie": {
+   "title": "Cristallographie",
+   "desc": "cristallographie résumé, ex structures ioniques, Les Cristaux Métalliques, structure métallique, série 2 cristallographie, ...",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Archiveprepa/Cristallographie"
+  },
+  "chimie/mme-ahlem-kabadou/from-archiveprepa/eph": {
+   "title": "EpH",
+   "desc": "fiche reaction chimique",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Archiveprepa/EpH"
+  },
+  "chimie/mme-ahlem-kabadou/from-archiveprepa/thermodynamique": {
+   "title": "Thermodynamique",
+   "desc": "potentiel chimique, cours thermodynamique, résumé cours TD, résumé4, serie thermo, TD, thermodynamique résume +série corrigée",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Archiveprepa/Thermodynamique"
+  },
+  "chimie/mme-ahlem-kabadou/from-archiveprepa/thermodynamique/potentiel-chimique": {
+   "title": "potentiel chimique",
+   "desc": "résume potentiel chimique, Résumé + Cours + TD, série9 potentiel chimique +résume",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Archiveprepa/Thermodynamique/potentiel chimique"
+  },
+  "chimie/mme-ahlem-kabadou/from-unknown": {
+   "title": "From Unknown",
+   "desc": "binaire, cristallographie, potentel E-ph, thermo+potentiel+unaire, CoursMP1 atomistique, CoursMP1 Chimie des Sol MP1, ...",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Unknown"
+  },
+  "chimie/mme-ahlem-kabadou/from-unknown/binaire": {
+   "title": "binaire",
+   "desc": "13 14 15, 2 binaire, 3 binaire, 9 12, Binaire pc 2010 pc 98 pc 2001, correction 6 7 8 10, diag binaire cours +série corrigée, diagramme binaire, ...",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Unknown/binaire"
+  },
+  "chimie/mme-ahlem-kabadou/from-unknown/cristallographie": {
+   "title": "cristallographie",
+   "desc": "chimie métallique, exercice, atomistique, chap 1 cristallographie, chap 2 structure métallique, chap 3 structure ionique, ...",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Unknown/cristallographie"
+  },
+  "chimie/mme-ahlem-kabadou/from-unknown/cristallographie/chimie-metallique": {
+   "title": "chimie métallique",
+   "desc": "chimie métallique 1, chimie métallique 10, chimie métallique 11, chimie métallique 12, chimie métallique 13, chimie métallique 14, ...",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Unknown/cristallographie/chimie métallique"
+  },
+  "chimie/mme-ahlem-kabadou/from-unknown/cristallographie/exercice": {
+   "title": "exercice",
+   "desc": "atomistiques exercices concours, devoir chimie fss 2018, sujet ionique",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Unknown/cristallographie/exercice"
+  },
+  "chimie/mme-ahlem-kabadou/from-unknown/potentel-e-ph": {
+   "title": "potentel E-ph",
+   "desc": "1 reaction chimique, 1P Cinétique electrochimique, Ch I electrochimie Rappel Réaction d oxydoréduction, ...",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Unknown/potentel E-ph"
+  },
+  "chimie/mme-ahlem-kabadou/from-unknown/thermo-potentiel-unaire": {
+   "title": "thermo+potentiel+unaire",
+   "desc": "correction serie unaire, diag unaire résume +série corrigée, diagramme unaire, potentiel chimique, potentiel chimique résume +série corrigée, ...",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Unknown/thermo+potentiel+unaire"
+  },
+  "chimie/mme-ahlem-kabadou/from-yassomri4": {
+   "title": "From Yassomri4",
+   "desc": "Binaire (serie + corr + resume), potentiel E-pH, Thermodynamique",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Yassomri4"
+  },
+  "chimie/mme-ahlem-kabadou/from-yassomri4/binaire-serie-corr-resume": {
+   "title": "Binaire (serie + corr + resume)",
+   "desc": "13 14 15, 2 binaire, 9 12, Binaire pc 2010 pc 98 pc 2001, corr binaire 2, correction 6 7 8 10, Résumé binaire, serie Binaire",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Yassomri4/Binaire (serie + corr + resume)"
+  },
+  "chimie/mme-ahlem-kabadou/from-yassomri4/potentiel-e-ph": {
+   "title": "potentiel E-pH",
+   "desc": "1 reaction chimique, correction serie reactions chimique 6 7 8 9 10, cours diagramme E.PH, Résumé Diag E PH",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Yassomri4/potentiel E-pH"
+  },
+  "chimie/mme-ahlem-kabadou/from-yassomri4/thermodynamique": {
+   "title": "Thermodynamique",
+   "desc": "potentiel chimique, thermodynamique",
+   "path": "3. Chimie/Mme Ahlem Kabadou/From Yassomri4/Thermodynamique"
+  },
+  "chimie/mme-sonia-dridi": {
+   "title": "Mme Sonia Dridi",
+   "desc": "Cristallographie, Thermodynamique, Électrochimie",
+   "path": "3. Chimie/Mme Sonia Dridi"
+  },
+  "chimie/mme-sonia-dridi/1-cristallographie": {
+   "title": "Cristallographie",
+   "desc": "Cours, Exo, Révision",
+   "path": "3. Chimie/Mme Sonia Dridi/1. Cristallographie"
+  },
+  "chimie/mme-sonia-dridi/1-cristallographie/cours": {
+   "title": "Cours",
+   "desc": "0 Introduction, 1 Séance 1, 2 Séance 2, 3 Séance 3, 4 Séance 4, 6 Séance 6, 7 Séance 7",
+   "path": "3. Chimie/Mme Sonia Dridi/1. Cristallographie/Cours"
+  },
+  "chimie/mme-sonia-dridi/1-cristallographie/exo": {
+   "title": "Exo",
+   "desc": "Correction Exercices Cristaux Ioniques.pdf · version 1, Correction Problème Cristaux Métalliques.pdf · version 1, ...",
+   "path": "3. Chimie/Mme Sonia Dridi/1. Cristallographie/Exo"
+  },
+  "chimie/mme-sonia-dridi/1-cristallographie/revision": {
+   "title": "Révision",
+   "desc": "Correction Séance de Révision n°7 Cristaux ioniques.pdf · version 1, Correction Séance Révision n°6 Cristaux métalliques et covalents.pdf · version 1, ...",
+   "path": "3. Chimie/Mme Sonia Dridi/1. Cristallographie/Révision"
+  },
+  "chimie/mme-sonia-dridi/2-thermodynamique": {
+   "title": "Thermodynamique",
+   "desc": "Liquide Vapeur, Solide Liquide, Unaire",
+   "path": "3. Chimie/Mme Sonia Dridi/2. Thermodynamique"
+  },
+  "chimie/mme-sonia-dridi/2-thermodynamique/liquide-vapeur": {
+   "title": "Liquide Vapeur",
+   "desc": "Révision",
+   "path": "3. Chimie/Mme Sonia Dridi/2. Thermodynamique/Liquide Vapeur"
+  },
+  "chimie/mme-sonia-dridi/2-thermodynamique/liquide-vapeur/revision": {
+   "title": "Révision",
+   "desc": "Correction Séance Révision 2 Diagramme binaire Lq Vap.pdf · version 1, Séance Révision 2 Diagramme binaire Lq Vap.pdf · version 1",
+   "path": "3. Chimie/Mme Sonia Dridi/2. Thermodynamique/Liquide Vapeur/Révision"
+  },
+  "chimie/mme-sonia-dridi/2-thermodynamique/solide-liquide": {
+   "title": "Solide Liquide",
+   "desc": "Révision",
+   "path": "3. Chimie/Mme Sonia Dridi/2. Thermodynamique/Solide Liquide"
+  },
+  "chimie/mme-sonia-dridi/2-thermodynamique/solide-liquide/revision": {
+   "title": "Révision",
+   "desc": "Correction Séance de Réision 3 Diagramme Liq Sde.pdf · version 1, Séance Révision 3 Diagramme binaire Liq Sde.pdf · version 1",
+   "path": "3. Chimie/Mme Sonia Dridi/2. Thermodynamique/Solide Liquide/Révision"
+  },
+  "chimie/mme-sonia-dridi/2-thermodynamique/unaire": {
+   "title": "Unaire",
+   "desc": "Révision",
+   "path": "3. Chimie/Mme Sonia Dridi/2. Thermodynamique/Unaire"
+  },
+  "chimie/mme-sonia-dridi/2-thermodynamique/unaire/revision": {
+   "title": "Révision",
+   "desc": "Correction Séance Révision 1 Potentiel Chimique et Diagramme Unaire.pdf · version 1, ...",
+   "path": "3. Chimie/Mme Sonia Dridi/2. Thermodynamique/Unaire/Révision"
+  },
+  "chimie/mme-sonia-dridi/3-electrochimie": {
+   "title": "Électrochimie",
+   "desc": "E-PH, iE",
+   "path": "3. Chimie/Mme Sonia Dridi/3. Électrochimie"
+  },
+  "chimie/mme-sonia-dridi/3-electrochimie/e-ph": {
+   "title": "E-PH",
+   "desc": "Révision",
+   "path": "3. Chimie/Mme Sonia Dridi/3. Électrochimie/E-PH"
+  },
+  "chimie/mme-sonia-dridi/3-electrochimie/e-ph/revision": {
+   "title": "Révision",
+   "desc": "Correction Séance de Révision n°4 Diagramme E pH.pdf · version 1, Séance de Révision n°4 Diagramme E pH.pdf · version 1",
+   "path": "3. Chimie/Mme Sonia Dridi/3. Électrochimie/E-PH/Révision"
+  },
+  "chimie/mme-sonia-dridi/3-electrochimie/ie": {
+   "title": "iE",
+   "desc": "Révision",
+   "path": "3. Chimie/Mme Sonia Dridi/3. Électrochimie/iE"
+  },
+  "chimie/mme-sonia-dridi/3-electrochimie/ie/revision": {
+   "title": "Révision",
+   "desc": "Correction Séance Révision n°5 Courbes i E.pdf · version 1, Séance Révision 5 Diagrammes i E.pdf · version 1",
+   "path": "3. Chimie/Mme Sonia Dridi/3. Électrochimie/iE/Révision"
+  },
+  "chimie/mr-ali-ghorbel": {
+   "title": "Mr. Ali Ghorbel",
+   "desc": "Rappel, Cristallogroahie, Thermodynamique, Électrochimie, Révision, DS2 Chimie IPEIS 25 26 corrigé, Examen 2 Chimie IPEIS 23 corrigé, ...",
+   "path": "3. Chimie/Mr. Ali Ghorbel"
+  },
+  "chimie/mr-ali-ghorbel/0-rappel": {
+   "title": "Rappel",
+   "desc": "Atomistique, Cinétique Chimique, IMG 20250819 092922, IMG 20250819 092927, IMG 20250819 101028, IMG 20250819 102428, IMG 20250819 102431, ...",
+   "path": "3. Chimie/Mr. Ali Ghorbel/0. Rappel"
+  },
+  "chimie/mr-ali-ghorbel/1-cristallogroahie": {
+   "title": "Cristallogroahie",
+   "desc": "Les élements fondamentaux de la cristallographie, Les Cristaux métalliques, Les Cristaux Ioniques, Les Cristaux Covalents",
+   "path": "3. Chimie/Mr. Ali Ghorbel/1. Cristallogroahie"
+  },
+  "chimie/mr-ali-ghorbel/1-cristallogroahie/1-les-elements-fondamentaux-de-la-cristallographie": {
+   "title": "Les élements fondamentaux de la cristallographie",
+   "desc": "Les élements fondamentaux de la cristallographie 1, Les élements fondamentaux de la cristallographie 2, ...",
+   "path": "3. Chimie/Mr. Ali Ghorbel/1. Cristallogroahie/1. Les élements fondamentaux de la cristallographie"
+  },
+  "chimie/mr-ali-ghorbel/1-cristallogroahie/2-les-cristaux-metalliques": {
+   "title": "Les Cristaux métalliques",
+   "desc": "Les Cristaux métalliques 1, Les Cristaux métalliques 2, Les Cristaux métalliques 3",
+   "path": "3. Chimie/Mr. Ali Ghorbel/1. Cristallogroahie/2. Les Cristaux métalliques"
+  },
+  "chimie/mr-ali-ghorbel/1-cristallogroahie/3-les-cristaux-ioniques": {
+   "title": "Les Cristaux Ioniques",
+   "desc": "Les Cristaux Ioniques 1, Les Cristaux Ioniques 2, série 3 les cristaux ioniques corrigé ex3 + concours chimie pc21 corrigé",
+   "path": "3. Chimie/Mr. Ali Ghorbel/1. Cristallogroahie/3. Les Cristaux Ioniques"
+  },
+  "chimie/mr-ali-ghorbel/1-cristallogroahie/4-les-cristaux-covalents": {
+   "title": "Les Cristaux Covalents",
+   "desc": "2.Clapeyron correction cristal covalent, Les Cristaux Covalents 1, Les Cristaux Covalents 1&#x27;",
+   "path": "3. Chimie/Mr. Ali Ghorbel/1. Cristallogroahie/4. Les Cristaux Covalents"
+  },
+  "chimie/mr-ali-ghorbel/2-thermodynamique": {
+   "title": "Thermodynamique",
+   "desc": "Rappel Thermodynamique MP1, Diagramme de phases d’un corps pur (Diagramme Unaire), Diagramme Binaire (L-V), Diagramme Binaire (S-L)",
+   "path": "3. Chimie/Mr. Ali Ghorbel/2. Thermodynamique"
+  },
+  "chimie/mr-ali-ghorbel/2-thermodynamique/0-rappel-thermodynamique-mp1": {
+   "title": "Rappel Thermodynamique MP1",
+   "desc": "rappel thermodynamique mp1 + concours chimie (cristallographie) mp22 corrigé",
+   "path": "3. Chimie/Mr. Ali Ghorbel/2. Thermodynamique/0. Rappel Thermodynamique MP1"
+  },
+  "chimie/mr-ali-ghorbel/2-thermodynamique/1-diagramme-de-phases-d-un-corps-pur-diagramme-unaire": {
+   "title": "Diagramme de phases d’un corps pur (Diagramme Unaire)",
+   "desc": "Diagramme Unaire 1, Diagramme Unaire 2, Diagramme Unaire 3, série diagramme unaire ex2 corrigé, série diagramme unaire ex3,4 corrigé",
+   "path": "3. Chimie/Mr. Ali Ghorbel/2. Thermodynamique/1. Diagramme de phases d’un corps pur (Diagramme Unaire)"
+  },
+  "chimie/mr-ali-ghorbel/2-thermodynamique/2-diagramme-binaire-l-v": {
+   "title": "Diagramme Binaire (L-V)",
+   "desc": "concours chimie mp12 corrigé ex1,2, Diagramme Binaire (L V) 1, Diagramme Binaire (L V) 2, Diagramme Binaire (L V) 3, Diagramme Binaire (L V) 4, ...",
+   "path": "3. Chimie/Mr. Ali Ghorbel/2. Thermodynamique/2. Diagramme Binaire (L-V)"
+  },
+  "chimie/mr-ali-ghorbel/2-thermodynamique/3-diagramme-binaire-s-l": {
+   "title": "Diagramme Binaire (S-L)",
+   "desc": "concours chimie pt14 corrigé ex1, Diagramme Binaire (S L) 1, Diagramme Binaire (S L) 1&#x27;, série 3 diagramme binaire (S L) corrigé ex1",
+   "path": "3. Chimie/Mr. Ali Ghorbel/2. Thermodynamique/3. Diagramme Binaire (S-L)"
+  },
+  "chimie/mr-ali-ghorbel/3-electrochimie": {
+   "title": "Électrochimie",
+   "desc": "Diagramme E-pH (Diagramme de Pourbaix), Cinétique Électrochimie",
+   "path": "3. Chimie/Mr. Ali Ghorbel/3. Électrochimie"
+  },
+  "chimie/mr-ali-ghorbel/3-electrochimie/1-diagramme-e-ph-diagramme-de-pourbaix": {
+   "title": "Diagramme E-pH (Diagramme de Pourbaix)",
+   "desc": "Diagramme E pH 1, Diagramme E pH 2, Diagramme E pH 3, Diagramme E pH 4, Diagramme E pH 5, Diagramme E pH 6",
+   "path": "3. Chimie/Mr. Ali Ghorbel/3. Électrochimie/1. Diagramme E-pH (Diagramme de Pourbaix)"
+  },
+  "chimie/mr-ali-ghorbel/3-electrochimie/2-cinetique-electrochimie": {
+   "title": "Cinétique Électrochimie",
+   "desc": "Cinétique électrochimique 1, Cinétique électrochimique 2, Cinétique électrochimique 3, Cinétique électrochimique 4",
+   "path": "3. Chimie/Mr. Ali Ghorbel/3. Électrochimie/2. Cinétique Électrochimie"
+  },
+  "chimie/mr-ali-ghorbel/revision": {
+   "title": "Révision",
+   "desc": "Concours Chimie T18 épreuve, Examen 1 Chimie IPEIT 21 22 corrigé, Révision 1 chimie cnc MP18 (Sn) Binare SL et EpH, Révision 2 Cnc BG21 et MP15, ...",
+   "path": "3. Chimie/Mr. Ali Ghorbel/Révision"
+  },
+  "chimie/mr-foued-ben-ayed": {
+   "title": "Mr. Foued Ben Ayed",
+   "desc": "Cours de Chimie Préparation 2ème Année MP PC PT, Récapitulation de Chimie Préparation PC1 MP1 PT1",
+   "path": "3. Chimie/Mr. Foued Ben Ayed"
+  },
+  "chimie/mr-girald-phillips": {
+   "title": "Mr. Girald Phillips",
+   "desc": "Atomistique, Cinétique chimique, Cristallographie, Diagramme binaire, Diagramme d_Ellingham, Diagrammme E-PH, Solutions aqueuses, ...",
+   "path": "3. Chimie/Mr. Girald Phillips"
+  },
+  "chimie/mr-girald-phillips/atomistique": {
+   "title": "Atomistique",
+   "desc": "Argent 2, Chrome, Mercure 2, Silicium, Soufre",
+   "path": "3. Chimie/Mr. Girald Phillips/Atomistique"
+  },
+  "chimie/mr-girald-phillips/cinetique-chimique": {
+   "title": "Cinétique chimique",
+   "desc": "FiltrageOptique ChloreEnSolution DetenteEauDiazote, Pendule CinetiqueDensiteOptique",
+   "path": "3. Chimie/Mr. Girald Phillips/Cinétique chimique"
+  },
+  "chimie/mr-girald-phillips/cristallographie": {
+   "title": "Cristallographie",
+   "desc": "Argent, Mercure, Silicium",
+   "path": "3. Chimie/Mr. Girald Phillips/Cristallographie"
+  },
+  "chimie/mr-girald-phillips/diagramme-binaire": {
+   "title": "Diagramme binaire",
+   "desc": "Indice Distillation, MichelsonGravitation InterferencesDispersion MgCorrosion BinaireHNO3, ModeleThomsonEffetZeeman ChromeEllingham BinaireEauHF, ...",
+   "path": "3. Chimie/Mr. Girald Phillips/Diagramme binaire"
+  },
+  "chimie/mr-girald-phillips/diagramme-d-ellingham": {
+   "title": "Diagramme d_Ellingham",
+   "desc": "ModeleThomsonEffetZeeman ChromeEllingham BinaireEauHF, RendementBeauDeRochas Alternateur OxydesCuivre, Skeleton OndeMetal PreparationTitane",
+   "path": "3. Chimie/Mr. Girald Phillips/Diagramme d_Ellingham"
+  },
+  "chimie/mr-girald-phillips/diagrammme-e-ph": {
+   "title": "Diagrammme E-PH",
+   "desc": "BifurcationMecanique ChauffeEauSolaire DepotLaiton, Coaxial GuideRectangulaire Doppler PotentielPhChrome, ...",
+   "path": "3. Chimie/Mr. Girald Phillips/Diagrammme E-PH"
+  },
+  "chimie/mr-girald-phillips/solutions-aqueuses": {
+   "title": "Solutions aqueuses",
+   "desc": "Argent, BifurcationMecanique ChauffeEauSolaire DepotLaiton, FiltrageOptique ChloreEnSolution DetenteEauDiazote, Mercure, ...",
+   "path": "3. Chimie/Mr. Girald Phillips/Solutions aqueuses"
+  },
+  "chimie/mr-girald-phillips/structures-des-molecules": {
+   "title": "Structures des molécules",
+   "desc": "Chrome 2, COetCO2 CircuitsCouples, FiltrageOptique ChloreEnSolution DetenteEauDiazote 2, Soufre",
+   "path": "3. Chimie/Mr. Girald Phillips/Structures des molécules"
+  },
+  "chimie/mr-girald-phillips/thermochimie": {
+   "title": "Thermochimie",
+   "desc": "Argent, Chrome, ChuteTartine ReductionNiO DiffusionBarre 2, ConvoyeurRouleaux Monochromateur Vaporeformage, ...",
+   "path": "3. Chimie/Mr. Girald Phillips/Thermochimie"
+  },
+  "chimie/mr-mourad-cherif": {
+   "title": "Mr. Mourad Cherif",
+   "desc": "Cristallographie, Thermodynamique, Électrochimie, Fiches d&#x27;aides, extraits concours corrigé par Mourad Cherif",
+   "path": "3. Chimie/Mr. Mourad Cherif"
+  },
+  "chimie/mr-mourad-cherif/1-cristallographie": {
+   "title": "Cristallographie",
+   "desc": "Différents types de solides, Introduction et notions de base de la cristallographie, Les Cristaux Métalliques, Les Cristaux Ioniques, ...",
+   "path": "3. Chimie/Mr. Mourad Cherif/1. Cristallographie"
+  },
+  "chimie/mr-mourad-cherif/1-cristallographie/1-differents-types-de-solides": {
+   "title": "Différents types de solides",
+   "desc": "1 CACTV 1 2018, 1 Différents types de solides S1, 1 Différents types de solides S2, 1 EACTV 1 2018",
+   "path": "3. Chimie/Mr. Mourad Cherif/1. Cristallographie/1. Différents types de solides"
+  },
+  "chimie/mr-mourad-cherif/1-cristallographie/2-introduction-et-notions-de-base-de-la-cristallographie": {
+   "title": "Introduction et notions de base de la cristallographie",
+   "desc": "2 CACTV 2 2018, 2 EACTV 2 2018, 2 Introduction et notions de base de la cristallographie",
+   "path": "3. Chimie/Mr. Mourad Cherif/1. Cristallographie/2. Introduction et notions de base de la cristallographie"
+  },
+  "chimie/mr-mourad-cherif/1-cristallographie/3-les-cristaux-metalliques": {
+   "title": "Les Cristaux Métalliques",
+   "desc": "3 Corrigés Les cristaux métalliques, 3 Les cristaux métalliques, Thème1 Chap3a 2018 2019, Thème1 Chap3b 2018 2019, Thème1 Chap3c 2018 2019",
+   "path": "3. Chimie/Mr. Mourad Cherif/1. Cristallographie/3. Les Cristaux Métalliques"
+  },
+  "chimie/mr-mourad-cherif/1-cristallographie/4-les-cristaux-ioniques": {
+   "title": "Les Cristaux Ioniques",
+   "desc": "4 Corrigés les cristaux ionique, 4 Les cristaux ioniques, Thème 1 Chapitre4 2018 2019",
+   "path": "3. Chimie/Mr. Mourad Cherif/1. Cristallographie/4. Les Cristaux Ioniques"
+  },
+  "chimie/mr-mourad-cherif/1-cristallographie/5-les-cristax-covalents": {
+   "title": "Les Cristax Covalents",
+   "desc": "5 Corrigé Les cristaux covalents, 5 Les cristaux covalents, Thème 1 Chapitre5 2018 2019",
+   "path": "3. Chimie/Mr. Mourad Cherif/1. Cristallographie/5. Les Cristax Covalents"
+  },
+  "chimie/mr-mourad-cherif/2-thermodynamique": {
+   "title": "Thermodynamique",
+   "desc": "Équilibres entre phases d’un corps pur, Diagrammes binaires liquide-vapeur, Diagrammes binaires solide-liquide",
+   "path": "3. Chimie/Mr. Mourad Cherif/2. Thermodynamique"
+  },
+  "chimie/mr-mourad-cherif/2-thermodynamique/1-equilibres-entre-phases-d-un-corps-pur": {
+   "title": "Équilibres entre phases d’un corps pur",
+   "desc": "1 Équilibres entre phases dun corps pur, Activité1 thermo, CActivité1 thermo",
+   "path": "3. Chimie/Mr. Mourad Cherif/2. Thermodynamique/1. Équilibres entre phases d’un corps pur"
+  },
+  "chimie/mr-mourad-cherif/2-thermodynamique/2-diagrammes-binaires-liquide-vapeur": {
+   "title": "Diagrammes binaires liquide-vapeur",
+   "desc": "1 ACT VLE2019, 1 CACT VLE2019, 1 Équilibres entre phases mélange, 2 ACT VLE2019, 2 CACT VLE2019, 2 Les diagrammes d’équilibre liquide vapeur",
+   "path": "3. Chimie/Mr. Mourad Cherif/2. Thermodynamique/2. Diagrammes binaires liquide-vapeur"
+  },
+  "chimie/mr-mourad-cherif/2-thermodynamique/3-diagrammes-binaires-solide-liquide": {
+   "title": "Diagrammes binaires solide-liquide",
+   "desc": "1 ACT SLE2019, 1 CACT SLE2019, SLE 2018 2019",
+   "path": "3. Chimie/Mr. Mourad Cherif/2. Thermodynamique/3. Diagrammes binaires solide-liquide"
+  },
+  "chimie/mr-mourad-cherif/3-electrochimie": {
+   "title": "Électrochimie",
+   "desc": "Oxydo-réduction, Diagrammes E-pH de Pourbaix, Cinétique Électrochimique",
+   "path": "3. Chimie/Mr. Mourad Cherif/3. Électrochimie"
+  },
+  "chimie/mr-mourad-cherif/3-electrochimie/1-oxydo-reduction": {
+   "title": "Oxydo-réduction",
+   "desc": "1 Oxydoréduction2019, 2 Les équilibres entre couples Donneur2019, Activité 1 2019 oxydoréduction, CActivité 1 2019 oxydoréduction",
+   "path": "3. Chimie/Mr. Mourad Cherif/3. Électrochimie/1. Oxydo-réduction"
+  },
+  "chimie/mr-mourad-cherif/3-electrochimie/2-diagrammes-e-ph-de-pourbaix": {
+   "title": "Diagrammes E-pH de Pourbaix",
+   "desc": "Activité du cours E pH2019, Corrigé de Activité du cours E pH2019, Diagramme E pH 2019",
+   "path": "3. Chimie/Mr. Mourad Cherif/3. Électrochimie/2. Diagrammes E-pH de Pourbaix"
+  },
+  "chimie/mr-mourad-cherif/3-electrochimie/3-cinetique-electrochimique": {
+   "title": "Cinétique Électrochimique",
+   "desc": "1P Cinétique electrochimique, 2p Phénomènes electrochimique, 3p Activité 2019 i E, 3p CActivité 2019 i E, 3p Prévision des réactions spontannées",
+   "path": "3. Chimie/Mr. Mourad Cherif/3. Électrochimie/3. Cinétique Électrochimique"
+  },
+  "chimie/mr-mourad-cherif/fiches-d-aides": {
+   "title": "Fiches d&#x27;aides",
+   "desc": "FA1 Puissance de dix, FA10 Activités, FA2 Unités, FA3 CONVERSIONS, FA4 LES CHIFFRES SIGNIFICATIFS, FA5 Les formes géométriques, FA6 Algèbre, ...",
+   "path": "3. Chimie/Mr. Mourad Cherif/Fiches d&#x27;aides"
+  },
+  "chimie/mr-ridha-ben-ismail": {
+   "title": "Mr. Ridha Ben Ismail",
+   "desc": "Ver21-22, Ver22-23",
+   "path": "3. Chimie/Mr. Ridha Ben Ismail"
+  },
+  "chimie/mr-ridha-ben-ismail/ver21-22": {
+   "title": "Ver21-22",
+   "desc": "Cristallographie, Thermodynamique, Électrochimie",
+   "path": "3. Chimie/Mr. Ridha Ben Ismail/Ver21-22"
+  },
+  "chimie/mr-ridha-ben-ismail/ver21-22/1-cristallographie": {
+   "title": "Cristallographie",
+   "desc": "1. Introduction et notions de base de la cristallographie, 2. Cristaux métalliques, 3. Cristaux ioniques, 4. Cristaux covalents",
+   "path": "3. Chimie/Mr. Ridha Ben Ismail/Ver21-22/1. Cristallographie"
+  },
+  "chimie/mr-ridha-ben-ismail/ver21-22/2-thermodynamique": {
+   "title": "Thermodynamique",
+   "desc": "5. Diagrammes de phases de corps purs, 6. Diagrammes binaires d’équilibre de phases liquide liquide et liquide vapeur, ...",
+   "path": "3. Chimie/Mr. Ridha Ben Ismail/Ver21-22/2. Thermodynamique"
+  },
+  "chimie/mr-ridha-ben-ismail/ver21-22/3-electrochimie": {
+   "title": "Électrochimie",
+   "desc": "8. Diagramme de Pourbaix (E pH), 9. Courbes intensité potentiel",
+   "path": "3. Chimie/Mr. Ridha Ben Ismail/Ver21-22/3. Électrochimie"
+  },
+  "chimie/mr-ridha-ben-ismail/ver22-23": {
+   "title": "Ver22-23",
+   "desc": "Thermodynamique, Électrochimie",
+   "path": "3. Chimie/Mr. Ridha Ben Ismail/Ver22-23"
+  },
+  "chimie/mr-ridha-ben-ismail/ver22-23/2-thermodynamique": {
+   "title": "Thermodynamique",
+   "desc": "5. Systèmes unaires, 6. Diagramme liquide vapeur et liquide liquide, 7. Diagrammes binaires déquilibre de phases liquide solide",
+   "path": "3. Chimie/Mr. Ridha Ben Ismail/Ver22-23/2. Thermodynamique"
+  },
+  "chimie/mr-ridha-ben-ismail/ver22-23/3-electrochimie": {
+   "title": "Électrochimie",
+   "desc": "8. Diagrammes E PH, 9. Diagramme Intensité Potentiel",
+   "path": "3. Chimie/Mr. Ridha Ben Ismail/Ver22-23/3. Électrochimie"
+  },
+  "chimie/mr-samir-jarraya": {
+   "title": "Mr. Samir Jarraya",
+   "desc": "10. Le potentiel chimique, 11. Équilibre de phase diagramme du corps pur, 13. Les diagrammes binaires, 2. Réseau cristallin, ...",
+   "path": "3. Chimie/Mr. Samir Jarraya"
+  },
+  "chimie/resumes": {
+   "title": "Résumés",
+   "desc": "Résumé de, Résumé de ahmestiri21, Résumé de Bib Prepa, Résumé de Cherni Fidaa, Résumé de mansourislem75, Résumé de yassomri4",
+   "path": "3. Chimie/Résumés"
+  },
+  "chimie/resumes/resume-de": {
+   "title": "Résumé de",
+   "desc": "chimie, L&#x27;essentiel du cours en chimie",
+   "path": "3. Chimie/Résumés/Résumé de"
+  },
+  "chimie/resumes/resume-de-ahmestiri21": {
+   "title": "Résumé de ahmestiri21",
+   "desc": "Organique",
+   "path": "3. Chimie/Résumés/Résumé de ahmestiri21"
+  },
+  "chimie/resumes/resume-de-bib-prepa": {
+   "title": "Résumé de Bib Prepa",
+   "desc": "Chimie Inorganique, Résumé Chimie PC2",
+   "path": "3. Chimie/Résumés/Résumé de Bib Prepa"
+  },
+  "chimie/resumes/resume-de-bib-prepa/chimie-inorganique": {
+   "title": "Chimie Inorganique",
+   "desc": "résumé atomistique, Résumé diagramme liq sol, Résumé liq vap, résumé louis polarité vspr, Résumé potential chimique, Résumé Thermo 1er",
+   "path": "3. Chimie/Résumés/Résumé de Bib Prepa/Chimie Inorganique"
+  },
+  "chimie/resumes/resume-de-cherni-fidaa": {
+   "title": "Résumé de Cherni Fidaa",
+   "desc": "Chimie",
+   "path": "3. Chimie/Résumés/Résumé de Cherni Fidaa"
+  },
+  "chimie/resumes/resume-de-mansourislem75": {
+   "title": "Résumé de mansourislem75",
+   "desc": "1. Résumé Cristallographie, 2. Résumé Diagramme Unaire, 3. Résumé Diagramme Binaire (L V), 4. Résumé Diagramme E pH",
+   "path": "3. Chimie/Résumés/Résumé de mansourislem75"
+  },
+  "chimie/resumes/resume-de-yassomri4": {
+   "title": "Résumé de yassomri4",
+   "desc": "Chimie Inorganique, Chimie Organique, L&#x27;essentiel du cours en chimie",
+   "path": "3. Chimie/Résumés/Résumé de yassomri4"
+  },
+  "chimie/td-ipeiem": {
+   "title": "TD IPEIEM",
+   "desc": "TDs, TDs Chimie IPEIEM",
+   "path": "3. Chimie/TD IPEIEM"
+  },
+  "chimie/td-ipeiem/tds": {
+   "title": "TDs",
+   "desc": "CSerie E pH 2019 2020, digramme binaire lid sd 16Fev, recueil DS EXam AU1920, recueil TD chimie2MPPTPC AU1920, Série 6 liqvap 2019 2020, ...",
+   "path": "3. Chimie/TD IPEIEM/TDs"
+  },
+  "informatique": {
+   "title": "Informatique",
+   "desc": "Cours Informatique, Cours IPEIS, Info IPEIN, Mme Leila Ben Othman, Mr. Atef Boujelben, Python CheatSheets, Résumés",
+   "path": "4. Informatique"
+  },
+  "informatique/cours-informatique": {
+   "title": "Cours Informatique",
+   "desc": "Base de Données, Notions de Base Rappel, Programmation Orientée Objet, Quelques examens et DS d’Informatique avec corrigés, ...",
+   "path": "4. Informatique/Cours Informatique"
+  },
+  "informatique/cours-ipeis": {
+   "title": "Cours IPEIS",
+   "desc": "Cours Informatique (Syntaxe Python), Cours programmation Orientée Objet, Cours Simulation numérique, Les bases de données, ...",
+   "path": "4. Informatique/Cours IPEIS"
+  },
+  "informatique/info-ipein": {
+   "title": "Info IPEIN",
+   "desc": "Algebre Lineaire, Base de données, Cryptographie, Simulation 1er année, Traitement d image v1, Traitement image v2",
+   "path": "4. Informatique/Info IPEIN"
+  },
+  "informatique/mme-leila-ben-othman": {
+   "title": "Mme Leila Ben Othman",
+   "desc": "[gdriveitbot] algebre relationelle, [gdriveitbot] algo fonc proc, [gdriveitbot] algorithmes fondamentaux, [gdriveitbot] algorithmique python, ...",
+   "path": "4. Informatique/Mme Leila Ben Othman"
+  },
+  "informatique/mr-atef-boujelben": {
+   "title": "Mr. Atef Boujelben",
+   "desc": "Cours, Concours Informatique MP25 corrigé, Examen 2 Informatique FSS 25 26, Examen 2 Informatique FSS 25 26 corrigé, ...",
+   "path": "4. Informatique/Mr. Atef Boujelben"
+  },
+  "informatique/mr-atef-boujelben/cours": {
+   "title": "Cours",
+   "desc": "Introduction aux Bases de Données, Les Bases de Données Passage à la Pratique",
+   "path": "4. Informatique/Mr. Atef Boujelben/Cours"
+  },
+  "informatique/python-cheatsheets": {
+   "title": "Python CheatSheets",
+   "desc": "BASICS, BDR, NumPy, OOPCs",
+   "path": "4. Informatique/Python CheatSheets"
+  },
+  "informatique/resumes": {
+   "title": "Résumés",
+   "desc": "Résumé de, Résumé de ahmestiri21",
+   "path": "4. Informatique/Résumés"
+  },
+  "informatique/resumes/resume-de": {
+   "title": "Résumé de",
+   "desc": "info",
+   "path": "4. Informatique/Résumés/Résumé de"
+  },
+  "informatique/resumes/resume-de-ahmestiri21": {
+   "title": "Résumé de ahmestiri21",
+   "desc": "Info",
+   "path": "4. Informatique/Résumés/Résumé de ahmestiri21"
+  },
+  "langues": {
+   "title": "Langues",
+   "desc": "English, Français",
+   "path": "6. Langues"
+  },
+  "langues/english": {
+   "title": "English",
+   "desc": "COURS, Mme Karima Taguia, Résumé de, English Concours Guide Final, INVERSION IN CONDITIONAL SENTENCES, Neednt dont need to didnt need to neednt have",
+   "path": "6. Langues/English"
+  },
+  "langues/english/cours": {
+   "title": "COURS",
+   "desc": "Comparative And Superlative Adjectives, Compound Adjectives, Different Ways Of Expression, Globalization, Irregular Verbs, Linkers 1, Linkers 2, ...",
+   "path": "6. Langues/English/COURS"
+  },
+  "langues/english/mme-karima-taguia": {
+   "title": "Mme Karima Taguia",
+   "desc": "anglais, English Revision",
+   "path": "6. Langues/English/Mme Karima Taguia"
+  },
+  "langues/english/resume-de": {
+   "title": "Résumé de",
+   "desc": "anglais",
+   "path": "6. Langues/English/Résumé de"
+  },
+  "langues/francais": {
+   "title": "Français",
+   "desc": "FRANCAIS, Méthode, Résumé de, Examen 2 Français IPEIS 25 26, expressions essai argumentatif 1, lexique concours.docx 2026 Enregistré automatiquement",
+   "path": "6. Langues/Français"
+  },
+  "langues/francais/francais": {
+   "title": "FRANCAIS",
+   "desc": "arguments sur la surconsommation, Conquête spatiale.dissertation, Essai sur la digitalisation dans le domaine de l enseignement, essai sur le racisme, ...",
+   "path": "6. Langues/Français/FRANCAIS"
+  },
+  "langues/francais/methode": {
+   "title": "Méthode",
+   "desc": "Fiche méthode Résumé ou Contraction de texte",
+   "path": "6. Langues/Français/Méthode"
+  },
+  "langues/francais/resume-de": {
+   "title": "Résumé de",
+   "desc": "français",
+   "path": "6. Langues/Français/Résumé de"
+  },
+  "mathematiques": {
+   "title": "Math",
+   "desc": "Les Classiques, Livres, Math dupuydelome, MathFrance, Mme. Nedra Moalla, Mr. Elamdoui Mustapha, Problèmes, Résumés",
+   "path": "1. Math"
+  },
+  "mathematiques/les-classiques": {
+   "title": "Les Classiques",
+   "desc": "Classiques 1, Classiques 2, Demonstrations Classiques",
+   "path": "1. Math/Les Classiques"
+  },
+  "mathematiques/les-classiques/classiques-1": {
+   "title": "Classiques 1",
+   "desc": "Algèbre, Analyse, Nombres de Liouville, Nombres de Liouville Correction, Théorème de Darboux, Théorème de Darboux Correction, Théorème de Weierstrass, ...",
+   "path": "1. Math/Les Classiques/Classiques 1"
+  },
+  "mathematiques/les-classiques/classiques-1/algebre": {
+   "title": "Algèbre",
+   "desc": "Déterminant, Equations Differentielles, Espaces Préhilbertiens, Matrices, Polynômes, Réduction, Structure Algèbrique",
+   "path": "1. Math/Les Classiques/Classiques 1/Algèbre"
+  },
+  "mathematiques/les-classiques/classiques-1/algebre/determinant": {
+   "title": "Déterminant",
+   "desc": "Déterminants Classiques",
+   "path": "1. Math/Les Classiques/Classiques 1/Algèbre/Déterminant"
+  },
+  "mathematiques/les-classiques/classiques-1/algebre/equations-differentielles": {
+   "title": "Equations Differentielles",
+   "desc": "Equation differentielles matricielles, Equation differentielles matricielles Correction, Equation et fonction de Bessel, ...",
+   "path": "1. Math/Les Classiques/Classiques 1/Algèbre/Equations Differentielles"
+  },
+  "mathematiques/les-classiques/classiques-1/algebre/espaces-prehilbertiens": {
+   "title": "Espaces Préhilbertiens",
+   "desc": "Determinant de Gram, Determinant de Gram Correction, Matrices de Hilbert, Matrices de Hilbert Correction, Polynômes orthogonaux, ...",
+   "path": "1. Math/Les Classiques/Classiques 1/Algèbre/Espaces Préhilbertiens"
+  },
+  "mathematiques/les-classiques/classiques-1/algebre/matrices": {
+   "title": "Matrices",
+   "desc": "Equation matricielle, Hyperplans de Mn(IK), Matrice de Permutation, Matrice de Permutation Correction, Matrice productive, ...",
+   "path": "1. Math/Les Classiques/Classiques 1/Algèbre/Matrices"
+  },
+  "mathematiques/les-classiques/classiques-1/algebre/polynomes": {
+   "title": "Polynômes",
+   "desc": "1 Polynôme de Legendre, 2 Polynômes de Tchebychev, 3 Polynômes de Bezout, 4 Polynômes de Hilbert, 5 Polynôme de Bernoulli, ...",
+   "path": "1. Math/Les Classiques/Classiques 1/Algèbre/Polynômes"
+  },
+  "mathematiques/les-classiques/classiques-1/algebre/reduction": {
+   "title": "Réduction",
+   "desc": "1 Réduction, 2 Matrice Compagnon, 2 Matrice Compagnon Correction, 2 Matrice Compagnon Correction 2, 3 Matrices toutes puissantes, ...",
+   "path": "1. Math/Les Classiques/Classiques 1/Algèbre/Réduction"
+  },
+  "mathematiques/les-classiques/classiques-1/algebre/structure-algebrique": {
+   "title": "Structure Algèbrique",
+   "desc": "1 Idéaux de L(E), 1 Idéaux de L(E) Correction, 2 Groupe infini dont les ´el´ements sont d’ordre fini, ...",
+   "path": "1. Math/Les Classiques/Classiques 1/Algèbre/Structure Algèbrique"
+  },
+  "mathematiques/les-classiques/classiques-1/analyse": {
+   "title": "Analyse",
+   "desc": "Suites Numériques, Séries Numériques, Intégrales Impropres, Suites et Séries de fonctions, Intégrales à paramètres, Séries Entières, Sommabilité, ...",
+   "path": "1. Math/Les Classiques/Classiques 1/Analyse"
+  },
+  "mathematiques/les-classiques/classiques-1/analyse/0-suites-numeriques": {
+   "title": "Suites Numériques",
+   "desc": "1 Théorème de Césaro, 2 Algorithme de Babylone, 2 Algorithme de Babylone Correction, 3 Sommes et Produits infinis , Suite Récurrente , ...",
+   "path": "1. Math/Les Classiques/Classiques 1/Analyse/0. Suites Numériques"
+  },
+  "mathematiques/les-classiques/classiques-1/analyse/1-series-numeriques": {
+   "title": "Séries Numériques",
+   "desc": "1 Formule de Stirling, 2 Série Harmonique (Autour de la constante d’Euler), 2 Série Harmonique (Autour de la constante d’Euler) Correction, ...",
+   "path": "1. Math/Les Classiques/Classiques 1/Analyse/1. Séries Numériques"
+  },
+  "mathematiques/les-classiques/classiques-1/analyse/2-integrales-impropres": {
+   "title": "Intégrales Impropres",
+   "desc": "Integrale de Gauss, Integrale de Gauss Correction, Intégrales de Fresnel, Intégrales de Fresnel Correction",
+   "path": "1. Math/Les Classiques/Classiques 1/Analyse/2. Intégrales Impropres"
+  },
+  "mathematiques/les-classiques/classiques-1/analyse/3-suites-et-series-de-fonctions": {
+   "title": "Suites et Séries de fonctions",
+   "desc": "1 Polynômes de Bernstein, 2 Suites et Séries de Matrices , Exponentielle d une matrice, 2 Suites et Séries de Matrices , ...",
+   "path": "1. Math/Les Classiques/Classiques 1/Analyse/3. Suites et Séries de fonctions"
+  },
+  "mathematiques/les-classiques/classiques-1/analyse/4-integrales-a-parametres": {
+   "title": "Intégrales à paramètres",
+   "desc": "Transformation de Laplace et Intégrale de Dirichlet, Transformation de Laplace et Intégrale de Dirichlet Correction",
+   "path": "1. Math/Les Classiques/Classiques 1/Analyse/4. Intégrales à paramètres"
+  },
+  "mathematiques/les-classiques/classiques-1/analyse/5-series-entieres": {
+   "title": "Séries Entières",
+   "desc": "1 Théorème d Abel, 1 Théorème d Abel Correction, Prob m04ci1",
+   "path": "1. Math/Les Classiques/Classiques 1/Analyse/5. Séries Entières"
+  },
+  "mathematiques/les-classiques/classiques-1/analyse/6-sommabilite": {
+   "title": "Sommabilité",
+   "desc": "Classique de la sommabilite sans corrigé",
+   "path": "1. Math/Les Classiques/Classiques 1/Analyse/6. Sommabilité"
+  },
+  "mathematiques/les-classiques/classiques-1/analyse/7-fonctions-holomorphes": {
+   "title": "Fonctions Holomorphes",
+   "desc": "1 Fonctions holomorphes",
+   "path": "1. Math/Les Classiques/Classiques 1/Analyse/7. Fonctions Holomorphes"
+  },
+  "mathematiques/les-classiques/classiques-2": {
+   "title": "Classiques 2",
+   "desc": "02 resume algebre lineaire sup, 04 series resume, ClassquesProbaDiscrètes2015, des grands classiques de topologieSPE, FonctionZetaDeRiemann, ...",
+   "path": "1. Math/Les Classiques/Classiques 2"
+  },
+  "mathematiques/les-classiques/demonstrations-classiques": {
+   "title": "Demonstrations Classiques",
+   "desc": "alembert, alembert cauchy, bernoulli, bertrand, BW, cartan dieudonne, cesaro, cvgsapp, detcirc, dg3, diedral, diophante, escalier, euclideZ, ...",
+   "path": "1. Math/Les Classiques/Demonstrations Classiques"
+  },
+  "mathematiques/livres": {
+   "title": "Livres",
+   "desc": "Exercices de Michel Quercia, Mathématiques MPSI Pierron Théo ENS Ker Lann, monCoursSpe2013, monCoursSpe2014, monCoursSpe2015, monCoursSpe2015 1",
+   "path": "1. Math/Livres"
+  },
+  "mathematiques/math-dupuydelome": {
+   "title": "Math dupuydelome",
+   "desc": "Spé, Sup",
+   "path": "1. Math/Math dupuydelome"
+  },
+  "mathematiques/math-dupuydelome/spe": {
+   "title": "Spé",
+   "desc": "Algèbre, Analyse, Probabilités",
+   "path": "1. Math/Math dupuydelome/Spé"
+  },
+  "mathematiques/math-dupuydelome/spe/algebre": {
+   "title": "Algèbre",
+   "desc": "Anneaux, Endomorphismes des espaces euclidiens, Espaces préhilbertiens réels, Groupes, Réduction",
+   "path": "1. Math/Math dupuydelome/Spé/Algèbre"
+  },
+  "mathematiques/math-dupuydelome/spe/analyse": {
+   "title": "Analyse",
+   "desc": "Calcul différentiel, Compacité, Equations différentielles linéaires scalaires, Equations différentielles linéaires vectorielles, Espaces normés, ...",
+   "path": "1. Math/Math dupuydelome/Spé/Analyse"
+  },
+  "mathematiques/math-dupuydelome/spe/probabilites": {
+   "title": "Probabilités",
+   "desc": "Probabilités, Variables aléatoires discrètes",
+   "path": "1. Math/Math dupuydelome/Spé/Probabilités"
+  },
+  "mathematiques/math-dupuydelome/sup": {
+   "title": "Sup",
+   "desc": "Algèbre, Analyse, Probabilités",
+   "path": "1. Math/Math dupuydelome/Sup"
+  },
+  "mathematiques/math-dupuydelome/sup/algebre": {
+   "title": "Algèbre",
+   "desc": "Applications linéaires, Arithmétique, Calcul matriciel, Dénombrement, Déterminants, Espaces de dimension finie, Espaces euclidiens, ...",
+   "path": "1. Math/Math dupuydelome/Sup/Algèbre"
+  },
+  "mathematiques/math-dupuydelome/sup/analyse": {
+   "title": "Analyse",
+   "desc": "Calcul asymptotique, Calculs algébriques, Dérivation, Equations différentielles linéaires, Fonctions usuelles, Intégration sur un segment, ...",
+   "path": "1. Math/Math dupuydelome/Sup/Analyse"
+  },
+  "mathematiques/math-dupuydelome/sup/probabilites": {
+   "title": "Probabilités",
+   "desc": "Probabilités sur un univers fini, Variables aléatoires",
+   "path": "1. Math/Math dupuydelome/Sup/Probabilités"
+  },
+  "mathematiques/mathfrance": {
+   "title": "MathFrance",
+   "desc": "02 AlgebreLineaireII, 02ResumeMatrices 2, 03 Dualite, 03 Dualite Corrige, 03ResumeDeterminants, 04 Determinants, 04 Determinants Corrige, ...",
+   "path": "1. Math/MathFrance"
+  },
+  "mathematiques/mme-nedra-moalla": {
+   "title": "Mme. Nedra Moalla",
+   "desc": "Algébre, Analyse",
+   "path": "1. Math/Mme. Nedra Moalla"
+  },
+  "mathematiques/mme-nedra-moalla/algebre": {
+   "title": "Algébre",
+   "desc": "Rappel, Réduction, Structure Algébrique, Fonctions Vectorielles, Espaces Préhilbertiens Réels, Systèmes Différentiels, Calcul Différentiel, Révision, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/0-rappel": {
+   "title": "Rappel",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/0. Rappel"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/0-rappel/cours": {
+   "title": "Cours",
+   "desc": "Fiche application linéaire, Fiche déterminant, Fiche hyperplan, Fiche matrice inversible, Fiche rang, Fiche somme directe, Résumé cours déterminant, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/0. Rappel/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/0-rappel/problemes": {
+   "title": "Problèmes",
+   "desc": "Autour du rang correction, Problème autour du rang",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/0. Rappel/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/0-rappel/series": {
+   "title": "Séries",
+   "desc": "Correction polynôme caractéristique, Série déterminant Correction, Série révision Déterminant, Série révision ev correction, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/0. Rappel/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/1-reduction": {
+   "title": "Réduction",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/1. Réduction"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/1-reduction/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillé réduction partie 1, Cours détaillé réduction partie 2, Elements propre d une matrice correction, Fiche digonalsation, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/1. Réduction/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/1-reduction/problemes": {
+   "title": "Problèmes",
+   "desc": "1. Problème Endomorphisme nilpotent, 2. Problème Éléments propres d’une matrice, 3. Problème Commutant d’un endomorphisme, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/1. Réduction/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/1-reduction/series": {
+   "title": "Séries",
+   "desc": "1. Série 1 Réduction, 2. Série 2 Réduction, 3. Série 3 Réduction, Correction Série 1 Réduction, Correction Série 2 Réduction, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/1. Réduction/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/2-structure-algebrique": {
+   "title": "Structure Algébrique",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/2. Structure Algébrique"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/2-structure-algebrique/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillé structure, Fiche algèbre, Fiche anneau, Fiche groupe, Résumé cours structure",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/2. Structure Algébrique/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/2-structure-algebrique/problemes": {
+   "title": "Problèmes",
+   "desc": "1. DM Structure, 2. Problème Réduction et structure, 3. Problème Semi simple, corr problème structure et réduction + corr problème semi simple, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/2. Structure Algébrique/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/2-structure-algebrique/series": {
+   "title": "Séries",
+   "desc": "1. Série Groupe Sous groupe, 2. Série Anneau Corps Algèbre, Correction Série Anneau Corps Algèbre, Correction Série Groupe Sous groupe, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/2. Structure Algébrique/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/3-fonctions-vectorielles": {
+   "title": "Fonctions Vectorielles",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/3. Fonctions Vectorielles"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/3-fonctions-vectorielles/cours": {
+   "title": "Cours",
+   "desc": "Cours fonction vectorielle, Fiche fonction vectorielle, Résumé fonction vectorielle",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/3. Fonctions Vectorielles/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/3-fonctions-vectorielles/problemes": {
+   "title": "Problèmes",
+   "desc": "Correction Problème Réduction et fonctions vectorielles, Problème Réduction et fonctions vectorielles, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/3. Fonctions Vectorielles/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/3-fonctions-vectorielles/series": {
+   "title": "Séries",
+   "desc": "corr série fonction vectorielle ex7,problème, Correction Série Fonction Vectorielle, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/3. Fonctions Vectorielles/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/4-espaces-prehilbertiens-reels": {
+   "title": "Espaces Préhilbertiens Réels",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/4. Espaces Préhilbertiens Réels"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/4-espaces-prehilbertiens-reels/cours": {
+   "title": "Cours",
+   "desc": "Cours 2 prehilbertien, Fiche 1 prehilbertien, Fiche end orthogonal et matrice orthogonale, Fiche endo symétrique, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/4. Espaces Préhilbertiens Réels/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/4-espaces-prehilbertiens-reels/problemes": {
+   "title": "Problèmes",
+   "desc": "1. Problème Matrice de Gram, 10. Problème Décomposition polaire, 2. Problèmes Polynômes orthogonaux, 3. Problème Projection orthogonale, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/4. Espaces Préhilbertiens Réels/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/4-espaces-prehilbertiens-reels/series": {
+   "title": "Séries",
+   "desc": "1. Série 1 Espace Préhilbertien Réel, 2. Série 2 Espace Préhilbertien Réel, Correction Série 1 Espace Préhilbertien Réel, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/4. Espaces Préhilbertiens Réels/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/5-systemes-differentiels": {
+   "title": "Systèmes Différentiels",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/5. Systèmes Différentiels"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/5-systemes-differentiels/cours": {
+   "title": "Cours",
+   "desc": "Fiche système différentiel, Résumé système différentiel",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/5. Systèmes Différentiels/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/5-systemes-differentiels/problemes": {
+   "title": "Problèmes",
+   "desc": "1. Problème 1 Système différentiel, 2. Problème 2 Système différentiel, 3. Problème 3 Système différentiel, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/5. Systèmes Différentiels/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/5-systemes-differentiels/series": {
+   "title": "Séries",
+   "desc": "1. Série Équations différentielles et systèmes différentiels, 2. Série 2 Système différentiel, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/5. Systèmes Différentiels/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/6-calcul-differentiel": {
+   "title": "Calcul Différentiel",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/6. Calcul Différentiel"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/6-calcul-differentiel/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillé calcul différentiel, Résumé Calcul Différentiel",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/6. Calcul Différentiel/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/6-calcul-differentiel/problemes": {
+   "title": "Problèmes",
+   "desc": "Problème Calcul différentiel",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/6. Calcul Différentiel/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/6-calcul-differentiel/series": {
+   "title": "Séries",
+   "desc": "1. Série Calcul différentiel, 2. Série 2 Calcul différentiel, corr série 2 calcul différentiel ex1,2,3,4, Correction Série Calcul différentiel, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/6. Calcul Différentiel/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/algebre/revision": {
+   "title": "Révision",
+   "desc": "CNC Math2 MP17 épreuve, CNC Math2 MP22 épreuve, Fiche Structure Algèbrique, Problème Révision Péhilbertien, Problème Révision Système Différentiel, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Algébre/Révision"
+  },
+  "mathematiques/mme-nedra-moalla/analyse": {
+   "title": "Analyse",
+   "desc": "Rappel, Séries Numériques, Intégration sur un intervalle quelconque, Espaces Véctoriels Normés, Suites et Séries de fonctions, Intégrales à paramètre, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/0-rappel": {
+   "title": "Rappel",
+   "desc": "Cours, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/0. Rappel"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/0-rappel/cours": {
+   "title": "Cours",
+   "desc": "Fiche convexe, Fiche relation de comparaison, Fiche suites usuelles, Rappel fonction convexe, Rappel TAF et Taylor",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/0. Rappel/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/0-rappel/series": {
+   "title": "Séries",
+   "desc": "Correction série révision 2, Série 2 révision Analyse, Série révision analyse, Série révision analyse correction",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/0. Rappel/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/1-series-numeriques": {
+   "title": "Séries Numériques",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/1. Séries Numériques"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/1-series-numeriques/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillé série numérique 2, Fiche série numérique, Résumé les séries numériques",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/1. Séries Numériques/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/1-series-numeriques/problemes": {
+   "title": "Problèmes",
+   "desc": "1. Problème 2 Séries Numériques, 2. Problème 3 La règle de Raabe Duhamel, 3. Problème 4 Produit infini, 4. Problème B convergente, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/1. Séries Numériques/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/1-series-numeriques/series": {
+   "title": "Séries",
+   "desc": "1. Série 1 Séries Numériques, 2. Série 2 Séries Numériques, Correction Série 1 Séries Numériques, Correction Série 2 Séries Numériques",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/1. Séries Numériques/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/2-integration-sur-un-intervalle-quelconque": {
+   "title": "Intégration sur un intervalle quelconque",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/2. Intégration sur un intervalle quelconque"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/2-integration-sur-un-intervalle-quelconque/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillé intégration, Fiche intégration, Résumé cours intégration",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/2. Intégration sur un intervalle quelconque/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/2-integration-sur-un-intervalle-quelconque/problemes": {
+   "title": "Problèmes",
+   "desc": "1. Problème 1 Intégrale, 2. Problème 2 Intégrale, 3. DM, 4. Problème 3 Intégrale et série, 5. Problème 3 Intégrale, 6. Problème Integrale et série, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/2. Intégration sur un intervalle quelconque/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/2-integration-sur-un-intervalle-quelconque/series": {
+   "title": "Séries",
+   "desc": "1. Série 1 Intégration sur un intervalle quelconque, 2. Série 2 Intégration sur un intervalle quelconque, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/2. Intégration sur un intervalle quelconque/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/3-espaces-vectoriels-normes": {
+   "title": "Espaces Véctoriels Normés",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/3. Espaces Véctoriels Normés"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/3-espaces-vectoriels-normes/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillé EVN, Fiche application linéaire, Fiche compact, Fiche norme, Fiche ouvert fermé, Fiche suite et série dans un ben, Résumé cours evn",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/3. Espaces Véctoriels Normés/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/3-espaces-vectoriels-normes/problemes": {
+   "title": "Problèmes",
+   "desc": "1. Problème 1 Intégrale et Norme, 2. Problème Exponentiel d une matrice et d un endomorphisme, 3. Exercice Norme de Hölder, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/3. Espaces Véctoriels Normés/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/3-espaces-vectoriels-normes/series": {
+   "title": "Séries",
+   "desc": "1. Série 1 Espace Véctoriel Normé, 1. Série 1 Espace Véctoriel Normé (1), 2. Série 2 Espace Véctoriel Normé, 3. Série 3 Espace Véctoriel Normé, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/3. Espaces Véctoriels Normés/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/4-suites-et-series-de-fonctions": {
+   "title": "Suites et Séries de fonctions",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/4. Suites et Séries de fonctions"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/4-suites-et-series-de-fonctions/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillé suite et série de fonctions, Fiche suites de fonctions, Fiche série de fonctions, Résumé suite et série de fonctions",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/4. Suites et Séries de fonctions/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/4-suites-et-series-de-fonctions/problemes": {
+   "title": "Problèmes",
+   "desc": "1. Problème Séries de fonctions, 2. Problème Fonction Zêta, 3. Problème Série de Fourier, 4. Problèmes Révision S1, Correction Fourier, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/4. Suites et Séries de fonctions/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/4-suites-et-series-de-fonctions/series": {
+   "title": "Séries",
+   "desc": "1. Série 1 Suites de fonctions, 2. Série 2 Suites de fonctions, 3. Série 1 Séries de fonctions, 4. Série 2 Séries de fonctions, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/4. Suites et Séries de fonctions/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/5-integrales-a-parametre": {
+   "title": "Intégrales à paramètre",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/5. Intégrales à paramètre"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/5-integrales-a-parametre/cours": {
+   "title": "Cours",
+   "desc": "Cours intégrale a paramétre, Fiche intégrale a paramètres",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/5. Intégrales à paramètre/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/5-integrales-a-parametre/problemes": {
+   "title": "Problèmes",
+   "desc": "1. Problème Transformée de Laplace, 2. Problème Norme et Intégrale à paramètre, 3. Problème 2 Intégrale à paramètre, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/5. Intégrales à paramètre/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/5-integrales-a-parametre/series": {
+   "title": "Séries",
+   "desc": "1. Série 1 Intégrale à paramètre, 2. Série 2 Intégrale à paramètre, Correction Série 1 Intégrale à paramètre, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/5. Intégrales à paramètre/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/6-series-entieres": {
+   "title": "Séries Entières",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/6. Séries Entières"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/6-series-entieres/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillé série entière, Fiche série entière, Résumé série entière",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/6. Séries Entières/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/6-series-entieres/problemes": {
+   "title": "Problèmes",
+   "desc": "1. Problème 1 Série Entière, 2. Problème Fonction Gamma et Série Entière, 3. Problèmes Série Entière, 4. DM Série Entière, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/6. Séries Entières/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/6-series-entieres/series": {
+   "title": "Séries",
+   "desc": "1. Série 1 Série Entière, 2. Série 2 Série Entière, 3. Exercices corrigés Série Entière, corr série 1 série entière ex3,4, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/6. Séries Entières/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/7-familles-sommables": {
+   "title": "Familles Sommables",
+   "desc": "Cours, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/7. Familles Sommables"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/7-familles-sommables/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillés Famille Sommable, Fiche Famille sommable, Résumé cours Famille sommable",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/7. Familles Sommables/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/7-familles-sommables/series": {
+   "title": "Séries",
+   "desc": "corr série famille sommable problème, rappel familles sommables + corr série famille sommable ex1,2,3,4, Série Famille Sommable",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/7. Familles Sommables/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/8-probabilites": {
+   "title": "Probabilités",
+   "desc": "Cours, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/8. Probabilités"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/8-probabilites/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillé proba, Fiche probabilité, Résumé Proba",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/8. Probabilités/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/8-probabilites/series": {
+   "title": "Séries",
+   "desc": "Correction Série Probabilité, rappel probabilités + corr série probabilité ex1,2,3 + corr série 1 probabilité et variable aléatoire ex1,3,4, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/8. Probabilités/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/9-variables-aleatoires-discretes": {
+   "title": "Variables Aléatoires Discrètes",
+   "desc": "Cours, Problèmes, Séries",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/9. Variables Aléatoires Discrètes"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/9-variables-aleatoires-discretes/cours": {
+   "title": "Cours",
+   "desc": "Cours détaillé Va, Fiche espérance, Fiche fonction génératrice, Fiche loi conjointe, Fiche v à, Fiche variance et covariance, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/9. Variables Aléatoires Discrètes/Cours"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/9-variables-aleatoires-discretes/problemes": {
+   "title": "Problèmes",
+   "desc": "1. Problème Loi Zêta, 2. Problème 2 Variable aléatoire, 3. Problème 3 Moments d une variable aléatoire, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/9. Variables Aléatoires Discrètes/Problèmes"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/9-variables-aleatoires-discretes/series": {
+   "title": "Séries",
+   "desc": "1. Série 1 Probabilité et Variable aléatoire, 2. Série 2 Probabilité et Variable aléatoire, 3. Série 3 Variable aléatoire, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/9. Variables Aléatoires Discrètes/Séries"
+  },
+  "mathematiques/mme-nedra-moalla/analyse/revision": {
+   "title": "Révision",
+   "desc": "CNC Math1 MP17 corrigé, CNC Math1 MP17 épreuve, Concours Math1 MP18 corrigé, Concours Mines Ponts Math PSI21 épreuve, ...",
+   "path": "1. Math/Mme. Nedra Moalla/Analyse/Révision"
+  },
+  "mathematiques/mr-elamdoui-mustapha": {
+   "title": "Mr. Elamdoui Mustapha",
+   "desc": "Cours &amp; Résumés, Problèmes ver1, Problèmes ver2",
+   "path": "1. Math/Mr. Elamdoui Mustapha"
+  },
+  "mathematiques/mr-elamdoui-mustapha/cours-et-resumes": {
+   "title": "Cours &amp; Résumés",
+   "desc": "Algébre, Analyse, Probabilités, Math Prepas Résumé de Cours MP, Résumés Math",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Cours &amp; Résumés"
+  },
+  "mathematiques/mr-elamdoui-mustapha/cours-et-resumes/algebre": {
+   "title": "Algébre",
+   "desc": "1. Cours Groupes, 1. Résumé Groupes, 2. Cours Anneaux Coprs, 2. Résumé Anneaux Coprs, 3. Cours Réduction, 3. Résumé Réduction, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Cours &amp; Résumés/Algébre"
+  },
+  "mathematiques/mr-elamdoui-mustapha/cours-et-resumes/analyse": {
+   "title": "Analyse",
+   "desc": "1. Cours Espaces vectoriels normés, 1. Résumé Espaces vectoriels normés, 2. Cours Séries dans un EVN, 2. Résumé Séries dans un EVN, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Cours &amp; Résumés/Analyse"
+  },
+  "mathematiques/mr-elamdoui-mustapha/cours-et-resumes/probabilites": {
+   "title": "Probabilités",
+   "desc": "1. Cours Probabilités, 1. Résumé Probabilités, 2. Cours Variables aléatoires discrètes, 2. Résumé Variables aléatoires discrètes",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Cours &amp; Résumés/Probabilités"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1": {
+   "title": "Problèmes ver1",
+   "desc": "MP, MPSI",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp": {
+   "title": "MP",
+   "desc": "Algèbre, Analyse, Probabilités",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/algebre": {
+   "title": "Algèbre",
+   "desc": "Structure algèbrique, Réduction, Équations différentielles",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Algèbre"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/algebre/1-structure-algebrique": {
+   "title": "Structure algèbrique",
+   "desc": "DL corrigé Groupe operant, Exposant d un groupe, Les entiers de gauss, Sous groupes de (R,+), TD corrigé",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Algèbre/1. Structure algèbrique"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/algebre/2-reduction": {
+   "title": "Réduction",
+   "desc": "Automorphisme, Classiques, Dunford, Matrice stockastique, Noyaux images, Poly minimal, produit de kronecker corrigé, produit de kronecker enoncé, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Algèbre/2. Réduction"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/algebre/3-equations-differentielles": {
+   "title": "Équations différentielles",
+   "desc": "Cal dif Equation chaleur",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Algèbre/3. Équations différentielles"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/analyse": {
+   "title": "Analyse",
+   "desc": "Topologie, Séries Numériques, Dérivation - Intégration, Suites et Séries de fonctions, Séries Entières, Sommabilité, Fonction holomorphes",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Analyse"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/analyse/1-topologie": {
+   "title": "Topologie",
+   "desc": "calcul de distance par la norme de Schur, classiques topologie Mn(K), formes linéaires continues, hyperplans, normes subordonnées, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Analyse/1. Topologie"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/analyse/2-series-numeriques": {
+   "title": "Séries Numériques",
+   "desc": "SER Stirling 3",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Analyse/2. Séries Numériques"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/analyse/3-derivation-integration": {
+   "title": "Dérivation - Intégration",
+   "desc": "Intégrale de Gauss, Les polynômes de Bernoulli",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Analyse/3. Dérivation - Intégration"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/analyse/4-suites-et-series-de-fonctions": {
+   "title": "Suites et Séries de fonctions",
+   "desc": "comparaison des modes de cv, Fonction Digamma, Fonctions d Euler, Les fonctions Eulériennes, théorème d Abel, théorème de Stone Weirstrass, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Analyse/4. Suites et Séries de fonctions"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/analyse/5-series-entieres": {
+   "title": "Séries Entières",
+   "desc": "Autour les séries entières, nombre de dérangement, Théorèmes d Abel et Tauberien faible",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Analyse/5. Séries Entières"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/analyse/6-sommabilite": {
+   "title": "Sommabilité",
+   "desc": "classiques sommabilité",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Analyse/6. Sommabilité"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/analyse/7-fonction-holomorphes": {
+   "title": "Fonction holomorphes",
+   "desc": "REV ERA",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Analyse/7. Fonction holomorphes"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/probabilites": {
+   "title": "Probabilités",
+   "desc": "Proba Classique, Deux démonstrations probabilistes de la formule de Stirling, DS5MPREPAS1718, Fonctions génératrices, Loi de Zipf, Loi Khi deux 1, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Probabilités"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mp/probabilites/proba-classique": {
+   "title": "Proba Classique",
+   "desc": "Fon Gen Mom, Formule de Stirling, Loi de Zipf, Proba convergence, Proba Fonc caract, Proba fonc gen moments, Proba For stirling, Proba geo exp conv, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MP/Probabilités/Proba Classique"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mpsi": {
+   "title": "MPSI",
+   "desc": "Algébre Linéaire, Déterminant, Matrices, Polynômes Classiques",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MPSI"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mpsi/algebre-lineaire": {
+   "title": "Algébre Linéaire",
+   "desc": "13 Rappel Sup Alg Lin, algebre lineaire, TD révision",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MPSI/Algébre Linéaire"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mpsi/determinant": {
+   "title": "Déterminant",
+   "desc": "Calcul de determinant, Det d une matrice dependant d un parametre, Det de vandermonde et de cauchy, Systeme tridiagonal symetrique",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MPSI/Déterminant"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mpsi/matrices": {
+   "title": "Matrices",
+   "desc": "Equation matricielle, Hyperplans de Mn(K), Matrice productive, Matrices magiques d ordre 3, Matrices semblables è son inverse, Puissance d une matrice",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MPSI/Matrices"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver1/mpsi/polynomes-classiques": {
+   "title": "Polynômes Classiques",
+   "desc": "Polynome de Bezout, Polynome de Hilbert, Polynome de Legendre, Polynome de Tchebychev, Polynomes irreductibles dans Q[X], Theoreme de Tchebychev, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver1/MPSI/Polynômes Classiques"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2": {
+   "title": "Problèmes ver2",
+   "desc": "Algèbre, Analyse, Probabilités",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/algebre": {
+   "title": "Algèbre",
+   "desc": "Structure Algèbrique, Réduction, Espaces Euclidiens",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Algèbre"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/algebre/1-structure-algebrique": {
+   "title": "Structure Algèbrique",
+   "desc": "Groupe des inversibles de Z sur nZ, l ensemble des Non inversibles Z sur nZ, L exposant d un groupe, Les Génerateurs de groupe linéaire, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Algèbre/1. Structure Algèbrique"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/algebre/2-reduction": {
+   "title": "Réduction",
+   "desc": "Commutant d un endomorphisme, Crochet De Lie, Determinants Classiques, Décomposition De Dunford, Décomposition de Frobenius, Endomorphisme cyclique, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Algèbre/2. Réduction"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/algebre/3-espaces-euclidiens": {
+   "title": "Espaces Euclidiens",
+   "desc": "Connexité par arc de SOn(R), Distance d un point a une partie, Inégalité De Hadamard, Polynome De Hermite, Polynomes de Legandre, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Algèbre/3. Espaces Euclidiens"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/analyse": {
+   "title": "Analyse",
+   "desc": "EVN, Suites et Series de fonctions, Intégrales à paramétres, Séries Entières, Séries et Familles Sommables",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Analyse"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/analyse/1-evn": {
+   "title": "EVN",
+   "desc": "Copie de Distance d un point a une partie, Fonction de Blancmange, Fonctions continues et lipschitziennes .Densité, Formes linéaires continues , ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Analyse/1. EVN"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/analyse/2-suites-et-series-de-fonctions": {
+   "title": "Suites et Series de fonctions",
+   "desc": "Comparison des modes de convergences, Développement eulérien de zéta, Développement Eulérien de Zéta 2, Etude d une série de fonction, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Analyse/2. Suites et Series de fonctions"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/analyse/3-integrales-a-parametres": {
+   "title": "Intégrales à paramétres",
+   "desc": "Echanges limites intégrales, Fonction Digamma, Intégrale de Gauss, Les classiques des integrales à parametres, Les polynomes de Bernoulli",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Analyse/3. Intégrales à paramétres"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/analyse/4-series-entieres": {
+   "title": "Séries Entières",
+   "desc": "Autour des Séries Entiéres",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Analyse/4. Séries Entières"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/analyse/5-series-et-familles-sommables": {
+   "title": "Séries et Familles Sommables",
+   "desc": "Formule De Stirling, Lrs classiques De la sommabilité, Produit de cauchy et zeta de Rieman, Série de Newmann",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Analyse/5. Séries et Familles Sommables"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/probabilites": {
+   "title": "Probabilités",
+   "desc": "Variables Aléatoires Discrètes",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Probabilités"
+  },
+  "mathematiques/mr-elamdoui-mustapha/problemes-ver2/probabilites/variables-aleatoires-discretes": {
+   "title": "Variables Aléatoires Discrètes",
+   "desc": "Fonctions Génératrices, Fonctions Génératrices des moments, Loi Faible des grands Nombres, Stone Weierstrass et applications, ...",
+   "path": "1. Math/Mr. Elamdoui Mustapha/Problèmes ver2/Probabilités/Variables Aléatoires Discrètes"
+  },
+  "mathematiques/problemes": {
+   "title": "Problèmes",
+   "desc": "CCP 2010 CORG, ccp 2010 pc maths 1 corrige, ccp maths 2 mp 2005 corrige, ccp maths 2 mp 2005 epreuve, ccp psi 2020 maths corrige, ...",
+   "path": "1. Math/Problèmes"
+  },
+  "mathematiques/resumes": {
+   "title": "Résumés",
+   "desc": "Résumé de, Résumé de ahmestiri21, Résumé de mansourislem75",
+   "path": "1. Math/Résumés"
+  },
+  "mathematiques/resumes/resume-de": {
+   "title": "Résumé de",
+   "desc": "analyse, notes analyse",
+   "path": "1. Math/Résumés/Résumé de"
+  },
+  "mathematiques/resumes/resume-de-ahmestiri21": {
+   "title": "Résumé de ahmestiri21",
+   "desc": "Algèbre, Analyse",
+   "path": "1. Math/Résumés/Résumé de ahmestiri21"
+  },
+  "mathematiques/resumes/resume-de-mansourislem75": {
+   "title": "Résumé de mansourislem75",
+   "desc": "Algèbre, Analyse",
+   "path": "1. Math/Résumés/Résumé de mansourislem75"
+  },
+  "mathematiques/resumes/resume-de-mansourislem75/algebre": {
+   "title": "Algèbre",
+   "desc": "1. Résumé Réduction, 2. Résumé Structures algébriques, 3. Résumé espace préhilbertien euclidien, 4. Résumé équation différentielle, ...",
+   "path": "1. Math/Résumés/Résumé de mansourislem75/Algèbre"
+  },
+  "mathematiques/resumes/resume-de-mansourislem75/analyse": {
+   "title": "Analyse",
+   "desc": "1. Résumé séries numériques, 2. Résumé intégration, 3. Résumé espace vectoriel normé, 4. Résumé suites.séries des fonctions, ...",
+   "path": "1. Math/Résumés/Résumé de mansourislem75/Analyse"
+  },
+  "physique": {
+   "title": "Physique",
+   "desc": "Concours et Problèmes, Les Classiques, Mr. Amor Khlif, Mr. Borhen Kchaw, Mr. Gerald Phillips, Mr. Janson de Sailly, Mr. Mourad, Mr. Neil Jomaa, ...",
+   "path": "2. Physique"
+  },
+  "physique/concours-et-problemes": {
+   "title": "Concours et Problèmes",
+   "desc": "cnc mp 2015 physique 2 corrige, cnc mp 2015 physique 2 epreuve",
+   "path": "2. Physique/Concours et Problèmes"
+  },
+  "physique/les-classiques": {
+   "title": "Les Classiques",
+   "desc": "Spé, Sup",
+   "path": "2. Physique/Les Classiques"
+  },
+  "physique/les-classiques/spe": {
+   "title": "Spé",
+   "desc": "Électromagnétisme, Optique Ondulatoire, Mécanique Quantique",
+   "path": "2. Physique/Les Classiques/Spé"
+  },
+  "physique/les-classiques/spe/1-electromagnetisme": {
+   "title": "Électromagnétisme",
+   "desc": "Ondes Électromagnétiques, Électromagnétique",
+   "path": "2. Physique/Les Classiques/Spé/1. Électromagnétisme"
+  },
+  "physique/les-classiques/spe/1-electromagnetisme/electromagnetique": {
+   "title": "Électromagnétique",
+   "desc": "1 Effet Hall, 1 Effet Hall Correction, 10 Chute d un cadre dans un champ magnétique, 10 Chute d un cadre dans un champ magnétique Correction, ...",
+   "path": "2. Physique/Les Classiques/Spé/1. Électromagnétisme/Électromagnétique"
+  },
+  "physique/les-classiques/spe/1-electromagnetisme/ondes-electromagnetiques": {
+   "title": "Ondes Électromagnétiques",
+   "desc": "1 Propagation d une onde electromagnetique dans le vide, 1 Propagation d une onde electromagnetique dans le vide Correction, ...",
+   "path": "2. Physique/Les Classiques/Spé/1. Électromagnétisme/Ondes Électromagnétiques"
+  },
+  "physique/les-classiques/spe/2-optique-ondulatoire": {
+   "title": "Optique Ondulatoire",
+   "desc": "1 Miroir de LIoyd , Miroir de Fresnel, 1 Miroir de LIoyd , Miroir de Fresnel Correction, 2 Trous d Young, 2 Trous d Young Correction, ...",
+   "path": "2. Physique/Les Classiques/Spé/2. Optique Ondulatoire"
+  },
+  "physique/les-classiques/spe/3-mecanique-quantique": {
+   "title": "Mécanique Quantique",
+   "desc": "1 Microscope à effet tunnel, 1 Microscope à effet tunnel Correction, 2 Effet Photoélectrique , Effet Compton, 2 Effet Photoélectrique , ...",
+   "path": "2. Physique/Les Classiques/Spé/3. Mécanique Quantique"
+  },
+  "physique/les-classiques/sup": {
+   "title": "Sup",
+   "desc": "Optique Géométrique, Mécanique, Électrostatique, Magnétostatique, Thermodynamique Sup",
+   "path": "2. Physique/Les Classiques/Sup"
+  },
+  "physique/les-classiques/sup/1-optique-geometrique": {
+   "title": "Optique Géométrique",
+   "desc": "0 Prisme, 0 Prisme correction, 1 Lunette de Galilée + Téléscope de Casgrain, 1 Lunette de Galilée + Téléscope de Casgrain Corrigé, ...",
+   "path": "2. Physique/Les Classiques/Sup/1. Optique Géométrique"
+  },
+  "physique/les-classiques/sup/2-mecanique": {
+   "title": "Mécanique",
+   "desc": "1 Mouvement d un point sur un rail circulaire, 1 Mouvement d un point sur un rail circulaire Correction, 10 Pendule Simple, ...",
+   "path": "2. Physique/Les Classiques/Sup/2. Mécanique"
+  },
+  "physique/les-classiques/sup/3-electrostatique": {
+   "title": "Électrostatique",
+   "desc": "1 Champ crée par 2 charges ponctuelles Correction, 1 Champ créé par 2 charges ponctuelles, 10 Champ créé par une plaque uniformément chargée, ...",
+   "path": "2. Physique/Les Classiques/Sup/3. Électrostatique"
+  },
+  "physique/les-classiques/sup/4-magnetostatique": {
+   "title": "Magnétostatique",
+   "desc": "1 Spire , Bobine de Helmotz , Solénoîde, 1 Spire , Bobine de Helmotz , Solénoîde Correction, 2 Champ magnétique terrestre avec Correction, ...",
+   "path": "2. Physique/Les Classiques/Sup/4. Magnétostatique"
+  },
+  "physique/les-classiques/sup/5-thermodynamique-sup": {
+   "title": "Thermodynamique Sup",
+   "desc": "1 Atmosphère correction, 1 Atmosphère., 10 Calorimétrie, 10 Calorimétrie correction, 11 Détentes de Joule et Thomson et Ecoulements stationnaires, ...",
+   "path": "2. Physique/Les Classiques/Sup/5. Thermodynamique Sup"
+  },
+  "physique/mr-amor-khlif": {
+   "title": "Mr. Amor Khlif",
+   "desc": "Traitement de Signal, Électromagnétisme, Optique Ondulatoire, Transfert Thermique, Mécanique Quantique, Thermodynamique Statistique, ...",
+   "path": "2. Physique/Mr. Amor Khlif"
+  },
+  "physique/mr-amor-khlif/1-traitement-de-signal": {
+   "title": "Traitement de Signal",
+   "desc": "1. Eléments de traitement du signal",
+   "path": "2. Physique/Mr. Amor Khlif/1. Traitement de Signal"
+  },
+  "physique/mr-amor-khlif/2-electromagnetisme": {
+   "title": "Électromagnétisme",
+   "desc": "1. Induction électromagnétique, 3. Ondes électromagnétiques planes dans le vide, Les 4 équations de Maxwell, Les conducteurs électriques, ...",
+   "path": "2. Physique/Mr. Amor Khlif/2. Électromagnétisme"
+  },
+  "physique/mr-amor-khlif/3-optique-ondulatoire": {
+   "title": "Optique Ondulatoire",
+   "desc": "2. Interférences par division du front d’onde, 3. Interférences par division d’amplitude, 4. Interféerences à N ondes",
+   "path": "2. Physique/Mr. Amor Khlif/3. Optique Ondulatoire"
+  },
+  "physique/mr-amor-khlif/4-transfert-thermique": {
+   "title": "Transfert Thermique",
+   "desc": "1. Transferts thermiques, 2. Rayonnement thermique, TD Transferts thermiques IPEIB",
+   "path": "2. Physique/Mr. Amor Khlif/4. Transfert Thermique"
+  },
+  "physique/mr-amor-khlif/5-mecanique-quantique": {
+   "title": "Mécanique Quantique",
+   "desc": "Physique Quantique",
+   "path": "2. Physique/Mr. Amor Khlif/5. Mécanique Quantique"
+  },
+  "physique/mr-amor-khlif/6-thermodynamique-statistique": {
+   "title": "Thermodynamique Statistique",
+   "desc": "1. Eléments de thermodynamique statistique",
+   "path": "2. Physique/Mr. Amor Khlif/6. Thermodynamique Statistique"
+  },
+  "physique/mr-borhen-kchaw": {
+   "title": "Mr. Borhen Kchaw",
+   "desc": "26&#x27;s Version, Mahdy’s Version",
+   "path": "2. Physique/Mr. Borhen Kchaw"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version": {
+   "title": "26&#x27;s Version",
+   "desc": "Traitement de Signal, Electromagnetisme, Optique Ondulatoire, Transfert Thermique, Mécanique Quantique, Thermodynamique Statistique, Révision, ...",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version/1-traitement-de-signal": {
+   "title": "Traitement de Signal",
+   "desc": "1. Série 1 Filtre et Série de Fourrier, 2. Série 1 Filtre et Série de Fourrier, 3. Modulation + Etude d’un Sismographe, ...",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version/1. Traitement de Signal"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version/2-electromagnetisme": {
+   "title": "Electromagnetisme",
+   "desc": "Induction, Équations de Maxwell, Ondes et Rayonnements",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version/2. Electromagnetisme"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version/2-electromagnetisme/1-induction": {
+   "title": "Induction",
+   "desc": "0. Magnétostatique, 1. Modèle de Drude + Effet Hall + Magnétorésistance, 2. Série 2 Induction, 3. Champ Électrique, ...",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version/2. Electromagnetisme/1. Induction"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version/2-electromagnetisme/2-equations-de-maxwell": {
+   "title": "Équations de Maxwell",
+   "desc": "Énergie Électromagnétique Série 1 + Comportement fréquentiel d’un fil conducteur",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version/2. Electromagnetisme/2. Équations de Maxwell"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version/2-electromagnetisme/3-ondes-et-rayonnements": {
+   "title": "Ondes et Rayonnements",
+   "desc": "1. Onde dans le vide Série 1 + Cavité Résonante + Antenne (1 2 6), 2. Conducteurs en régime varaible Série 2, ...",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version/2. Electromagnetisme/3. Ondes et Rayonnements"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version/3-optique-ondulatoire": {
+   "title": "Optique Ondulatoire",
+   "desc": "0. Optique Géométrique, 1. Conditions d’interférences + Optique Ondulatoire (Systèmes à division de front d’onde) Série 1 + L’inexistence d’une Source...",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version/3. Optique Ondulatoire"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version/4-transfert-thermique": {
+   "title": "Transfert Thermique",
+   "desc": "1. Transfert Thermique, 2. Transfert Thermique, 3. Transfert Thermique, 4. Énegie volumique du rayonnement thermique",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version/4. Transfert Thermique"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version/5-mecanique-quantique": {
+   "title": "Mécanique Quantique",
+   "desc": "1. Mécanique Quantique, 2. Mécanique Quantique, 3. Mécanique Quantique, 4. État liés d’une particule dans un puits en fonction delta, ...",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version/5. Mécanique Quantique"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version/6-thermodynamique-statistique": {
+   "title": "Thermodynamique Statistique",
+   "desc": "1. Thermodynamique Statistique, 2. Thermodynamique Statistique, 3. Systéme à 2 niveaux d’énergie",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version/6. Thermodynamique Statistique"
+  },
+  "physique/mr-borhen-kchaw/25-26-s-version/revision": {
+   "title": "Révision",
+   "desc": "CNC Physique 2 MP19 corrigé, CNC Physique 2 MP19 épreuve, Examen 2 Physique IPEIS 21 22, Examen 2 Physique IPEIS 21 22 corrigé, ...",
+   "path": "2. Physique/Mr. Borhen Kchaw/25-26&#x27;s Version/Révision"
+  },
+  "physique/mr-borhen-kchaw/mahdy-s-version": {
+   "title": "Mahdy’s Version",
+   "desc": "Traitement de Signal, Électromagnétisme, Optique Ondulatoire, Transfert Thermique, Mécanique Quantique, Thermodynamique Statistique",
+   "path": "2. Physique/Mr. Borhen Kchaw/Mahdy’s Version"
+  },
+  "physique/mr-borhen-kchaw/mahdy-s-version/1-traitement-de-signal": {
+   "title": "Traitement de Signal",
+   "desc": "1. Serie 1 filtre, 2. Serie 2 echantillonage, 3. Modulation, 4. Serie etude d&#x27;un siesmographe, Amplificateur opérationel, Realisation d&#x27;un teslametre",
+   "path": "2. Physique/Mr. Borhen Kchaw/Mahdy’s Version/1. Traitement de Signal"
+  },
+  "physique/mr-borhen-kchaw/mahdy-s-version/2-electromagnetisme": {
+   "title": "Électromagnétisme",
+   "desc": "Induction, Ondes et Rayonnements",
+   "path": "2. Physique/Mr. Borhen Kchaw/Mahdy’s Version/2. Électromagnétisme"
+  },
+  "physique/mr-borhen-kchaw/mahdy-s-version/2-electromagnetisme/1-induction": {
+   "title": "Induction",
+   "desc": "1. Electrostatique, 10. Magnetoresistance, 2. Dipole electrostatique, 3. Magnetostatique, 4. Induction, 5. Chauffage par induction, 6. Cable coaxial, ...",
+   "path": "2. Physique/Mr. Borhen Kchaw/Mahdy’s Version/2. Électromagnétisme/1. Induction"
+  },
+  "physique/mr-borhen-kchaw/mahdy-s-version/2-electromagnetisme/3-ondes-et-rayonnements": {
+   "title": "Ondes et Rayonnements",
+   "desc": "1. Electromagnetique dans le vide, 10. Cavité resonante, 11. Propagation guidée, 12. Polarisation, 13. Rayonnement dipolaire, ...",
+   "path": "2. Physique/Mr. Borhen Kchaw/Mahdy’s Version/2. Électromagnétisme/3. Ondes et Rayonnements"
+  },
+  "physique/mr-borhen-kchaw/mahdy-s-version/3-optique-ondulatoire": {
+   "title": "Optique Ondulatoire",
+   "desc": "1. Dispersion de la lumiere, 2. Conditions d&#x27;interferences, 3. Systemes a division front d&#x27;onde, 4. Coherence temporelle, 5. Biprisme de Fresnel",
+   "path": "2. Physique/Mr. Borhen Kchaw/Mahdy’s Version/3. Optique Ondulatoire"
+  },
+  "physique/mr-borhen-kchaw/mahdy-s-version/4-transfert-thermique": {
+   "title": "Transfert Thermique",
+   "desc": "1. Serie 1 transfert thermique, 2. Serie 2 Rayonnement",
+   "path": "2. Physique/Mr. Borhen Kchaw/Mahdy’s Version/4. Transfert Thermique"
+  },
+  "physique/mr-borhen-kchaw/mahdy-s-version/5-mecanique-quantique": {
+   "title": "Mécanique Quantique",
+   "desc": "1. Introduction a la mecanique quantique, 2. Evolution des particules quantiques, 3. Etats lié d&#x27;une particule en fonction delta",
+   "path": "2. Physique/Mr. Borhen Kchaw/Mahdy’s Version/5. Mécanique Quantique"
+  },
+  "physique/mr-borhen-kchaw/mahdy-s-version/6-thermodynamique-statistique": {
+   "title": "Thermodynamique Statistique",
+   "desc": "Serie thermodynamique statistique",
+   "path": "2. Physique/Mr. Borhen Kchaw/Mahdy’s Version/6. Thermodynamique Statistique"
+  },
+  "physique/mr-gerald-phillips": {
+   "title": "Mr. Gerald Phillips",
+   "desc": "Spé, Sup",
+   "path": "2. Physique/Mr. Gerald Phillips"
+  },
+  "physique/mr-gerald-phillips/spe": {
+   "title": "Spé",
+   "desc": "Diffraction, Induction, Interférence, Ondes généralités, Ondes Électromagnétiques, Thermique, Électromagnétisme",
+   "path": "2. Physique/Mr. Gerald Phillips/Spé"
+  },
+  "physique/mr-gerald-phillips/spe/diffraction": {
+   "title": "Diffraction",
+   "desc": "BoucleDetection ChuteDansB DiffractionYoung, Diffraction de base, Diffraction et effets turbulence pour telescope, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Spé/Diffraction"
+  },
+  "physique/mr-gerald-phillips/spe/electromagnetisme": {
+   "title": "Électromagnétisme",
+   "desc": "Spire dans un champ magnetique uniforme",
+   "path": "2. Physique/Mr. Gerald Phillips/Spé/Électromagnétisme"
+  },
+  "physique/mr-gerald-phillips/spe/induction": {
+   "title": "Induction",
+   "desc": "ChampMagnetiqueTerrestre, Chute aimant dans tube metallique, CompresseurAdiabatique ElihuThomson, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Spé/Induction"
+  },
+  "physique/mr-gerald-phillips/spe/interference": {
+   "title": "Interférence",
+   "desc": "Biprisme EffetHall PressionElectromagnetisme, ConvoyeurRouleaux Monochromateur Vaporeformage, Lambdametre, MachZehnder Filtrage RefrigerationAirPulse, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Spé/Interférence"
+  },
+  "physique/mr-gerald-phillips/spe/ondes-electromagnetiques": {
+   "title": "Ondes Électromagnétiques",
+   "desc": "Absorption OPPM par un gaz, Biprisme EffetHall PressionElectromagnetisme, Bon conducteur et guide TE, Coefficients de reflexion et de transmission, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Spé/Ondes Électromagnétiques"
+  },
+  "physique/mr-gerald-phillips/spe/ondes-generalites": {
+   "title": "Ondes généralités",
+   "desc": "Coaxial GuideRectangulaire Doppler PotentielPhChrome 2, DisqueRotationInitiale PasseBandeTriangle CaviteLaser Gravitation, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Spé/Ondes généralités"
+  },
+  "physique/mr-gerald-phillips/spe/thermique": {
+   "title": "Thermique",
+   "desc": "BifurcationMecanique ChauffeEauSolaire DepotLaiton, CartesElectroniques, ChampEBordPlan ChambreProjectionTemporelle ThermiqueTransistor, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Spé/Thermique"
+  },
+  "physique/mr-gerald-phillips/sup": {
+   "title": "Sup",
+   "desc": "Magnétostatique, Mécanique du point, Mécanique du solide, Optique Géométrique, Thermodynamique, Électronique, Électrostatique",
+   "path": "2. Physique/Mr. Gerald Phillips/Sup"
+  },
+  "physique/mr-gerald-phillips/sup/electronique": {
+   "title": "Électronique",
+   "desc": "COetCO2 CircuitsCouples, DetectionSynchrone FiltreUniversel, EffetMoyenne CouleursDiffraction 2, Electrocinetique de base, Filtre selectif, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Sup/Électronique"
+  },
+  "physique/mr-gerald-phillips/sup/electrostatique": {
+   "title": "Électrostatique",
+   "desc": "AvancementGaz Accelerometre TemperatureLune 2, Biprisme EffetHall PressionElectromagnetisme, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Sup/Électrostatique"
+  },
+  "physique/mr-gerald-phillips/sup/magnetostatique": {
+   "title": "Magnétostatique",
+   "desc": "ChampMagnetiqueTerrestre, CompresseurAdiabatique ElihuThomson, Effet Hall et magnetoresistance, Indice Distillation, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Sup/Magnétostatique"
+  },
+  "physique/mr-gerald-phillips/sup/mecanique-du-point": {
+   "title": "Mécanique du point",
+   "desc": "AvancementGaz Accelerometre TemperatureLune, ChampEBordPlan ChambreProjectionTemporelle ThermiqueTransistor, ChampMagnetiqueTerrestre, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Sup/Mécanique du point"
+  },
+  "physique/mr-gerald-phillips/sup/mecanique-du-solide": {
+   "title": "Mécanique du solide",
+   "desc": "BifurcationMecanique ChauffeEauSolaire DepotLaiton, ChuteTartine ReductionNiO DiffusionBarre, ConvoyeurRouleaux Monochromateur Vaporeformage, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Sup/Mécanique du solide"
+  },
+  "physique/mr-gerald-phillips/sup/optique-geometrique": {
+   "title": "Optique Géométrique",
+   "desc": "FibreOptique Aluminium, Miroirs et lentilles, Projecteur ObservationEtoiles, Satellites d observation terrestre, Synthese d ouverture, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Sup/Optique Géométrique"
+  },
+  "physique/mr-gerald-phillips/sup/thermodynamique": {
+   "title": "Thermodynamique",
+   "desc": "FiltrageOptique ChloreEnSolution DetenteEauDiazote 2, Gaz parfait et eau liquide et vapeur, MachZehnder Filtrage RefrigerationAirPulse, ...",
+   "path": "2. Physique/Mr. Gerald Phillips/Sup/Thermodynamique"
+  },
+  "physique/mr-janson-de-sailly": {
+   "title": "Mr. Janson de Sailly",
+   "desc": "Électromagnétisme, Optique Ondulatoire, Transfert Thermique, Fiches de physique Samuel MIMRAM",
+   "path": "2. Physique/Mr. Janson de Sailly"
+  },
+  "physique/mr-janson-de-sailly/1-electromagnetisme": {
+   "title": "Électromagnétisme",
+   "desc": "Magnétostatique, Ondes électromagnétiques dans le vide, Ondes électromagnétiques dans les milieux, Électromagnétisme dans l&#x27;ARQS, Électrostatique",
+   "path": "2. Physique/Mr. Janson de Sailly/1. Électromagnétisme"
+  },
+  "physique/mr-janson-de-sailly/2-optique-ondulatoire": {
+   "title": "Optique Ondulatoire",
+   "desc": "Division du front d&#x27;onde, Interféromètre de Michelson, Introduction à l&#x27;optique ondulatoire",
+   "path": "2. Physique/Mr. Janson de Sailly/2. Optique Ondulatoire"
+  },
+  "physique/mr-janson-de-sailly/3-transfert-thermique": {
+   "title": "Transfert Thermique",
+   "desc": "Diffusion thermique",
+   "path": "2. Physique/Mr. Janson de Sailly/3. Transfert Thermique"
+  },
+  "physique/mr-mourad": {
+   "title": "Mr. Mourad",
+   "desc": "CHAP 1 signaux p riodiques1, Chap 10 Introduction aux i, Chap 11 Interférences à deux ondes, CHAP 12 Dispositif inter, CHAP 13 Linterféromèt, ...",
+   "path": "2. Physique/Mr. Mourad"
+  },
+  "physique/mr-neil-jomaa": {
+   "title": "Mr. Neil Jomaa",
+   "desc": "Électromagnétisme, Optique Ondulatoire, Mécanique Quantique, Tranfert Thermique, Thermodynamique Statistique",
+   "path": "2. Physique/Mr. Neil Jomaa"
+  },
+  "physique/mr-neil-jomaa/1-electromagnetisme": {
+   "title": "Électromagnétisme",
+   "desc": "1 Les équations de Maxwell, 2 Ondes dans le vide, 3 Propagation des ondes dans le plasma métal, 4 Réflexion Guidage Cavité, 5 Rayonnement Dipolaire, ...",
+   "path": "2. Physique/Mr. Neil Jomaa/1. Électromagnétisme"
+  },
+  "physique/mr-neil-jomaa/2-optique-ondulatoire": {
+   "title": "Optique Ondulatoire",
+   "desc": "7 Généralité Optique Cohérence Temporelle, 8 Interférence Division de front d’onde amplitude, 9 Interférence à Nonde",
+   "path": "2. Physique/Mr. Neil Jomaa/2. Optique Ondulatoire"
+  },
+  "physique/mr-neil-jomaa/3-mecanique-quantique": {
+   "title": "Mécanique Quantique",
+   "desc": "10 Physique Quantique",
+   "path": "2. Physique/Mr. Neil Jomaa/3. Mécanique Quantique"
+  },
+  "physique/mr-neil-jomaa/4-tranfert-thermique": {
+   "title": "Tranfert Thermique",
+   "desc": "11 Transfert Thermique",
+   "path": "2. Physique/Mr. Neil Jomaa/4. Tranfert Thermique"
+  },
+  "physique/mr-neil-jomaa/5-thermodynamique-statistique": {
+   "title": "Thermodynamique Statistique",
+   "desc": "12 Physique Statistique",
+   "path": "2. Physique/Mr. Neil Jomaa/5. Thermodynamique Statistique"
+  },
+  "physique/mr-s-boukaddid": {
+   "title": "Mr. S.Boukaddid",
+   "desc": "ELECTROCHIMIE, Electromagnétisme, Electronique, Mecanique de solide, Optique Ondulatoire, Physique des ondes, Thermo SPE, THERMOCHIMIE",
+   "path": "2. Physique/Mr. S.Boukaddid"
+  },
+  "physique/mr-s-boukaddid/electrochimie": {
+   "title": "ELECTROCHIMIE",
+   "desc": "ElectroChimie",
+   "path": "2. Physique/Mr. S.Boukaddid/ELECTROCHIMIE"
+  },
+  "physique/mr-s-boukaddid/electromagnetisme": {
+   "title": "Electromagnétisme",
+   "desc": "1 Formulation locale des lois de l&#x27;électrostatique, 2 Champ et potentiel magnétostatique, 3 Dipole magnétique, 4 Force de Laplace, ...",
+   "path": "2. Physique/Mr. S.Boukaddid/Electromagnétisme"
+  },
+  "physique/mr-s-boukaddid/electronique": {
+   "title": "Electronique",
+   "desc": "composition en fréquence d&#x27;un signal périodique, effet d&#x27;un filtre sur un signal périodique",
+   "path": "2. Physique/Mr. S.Boukaddid/Electronique"
+  },
+  "physique/mr-s-boukaddid/mecanique-de-solide": {
+   "title": "Mecanique de solide",
+   "desc": "1 Cinématique du solide et des solides en contact, 2 Cinétique d&#x27;un système de points matériels, 3 Dynamique d&#x27;un système de points matériels, ...",
+   "path": "2. Physique/Mr. S.Boukaddid/Mecanique de solide"
+  },
+  "physique/mr-s-boukaddid/optique-ondulatoire": {
+   "title": "Optique Ondulatoire",
+   "desc": "1 Modèle scalaire de la lumière, 2 Interférences non localisées de 2 ondes totalement cohérentes, 3 Cohérence de la lumière, ...",
+   "path": "2. Physique/Mr. S.Boukaddid/Optique Ondulatoire"
+  },
+  "physique/mr-s-boukaddid/physique-des-ondes": {
+   "title": "Physique des ondes",
+   "desc": "1 Propagation du champ électromagnétique dans le vide, 2 Ondes électromagnétiques dans un conducteur et dans un plasma, ...",
+   "path": "2. Physique/Mr. S.Boukaddid/Physique des ondes"
+  },
+  "physique/mr-s-boukaddid/thermo-spe": {
+   "title": "Thermo SPE",
+   "desc": "1 Diffusion thermique, 2 Rayonnement thermique",
+   "path": "2. Physique/Mr. S.Boukaddid/Thermo SPE"
+  },
+  "physique/mr-s-boukaddid/thermochimie": {
+   "title": "THERMOCHIMIE",
+   "desc": "Aspet thermodynamique des réactions rédox, Déplacement des équilibres chimiques",
+   "path": "2. Physique/Mr. S.Boukaddid/THERMOCHIMIE"
+  },
+  "physique/resumes": {
+   "title": "Résumés",
+   "desc": "Cours de El Filali Said, Résumé de, Résumé de ahmestiri21, Résumé de Cherni Fidaa, Résumé de Mhamdi Aidi",
+   "path": "2. Physique/Résumés"
+  },
+  "physique/resumes/cours-de-el-filali-said": {
+   "title": "Cours de El Filali Said",
+   "desc": "Cours de Physique El Filali Said",
+   "path": "2. Physique/Résumés/Cours de El Filali Said"
+  },
+  "physique/resumes/resume-de": {
+   "title": "Résumé de",
+   "desc": "physique",
+   "path": "2. Physique/Résumés/Résumé de"
+  },
+  "physique/resumes/resume-de-ahmestiri21": {
+   "title": "Résumé de ahmestiri21",
+   "desc": "Physique",
+   "path": "2. Physique/Résumés/Résumé de ahmestiri21"
+  },
+  "physique/resumes/resume-de-cherni-fidaa": {
+   "title": "Résumé de Cherni Fidaa",
+   "desc": "LKOL FEL KOL Phy",
+   "path": "2. Physique/Résumés/Résumé de Cherni Fidaa"
+  },
+  "physique/resumes/resume-de-mhamdi-aidi": {
+   "title": "Résumé de Mhamdi Aidi",
+   "desc": "résumé physique Mhamdi Aidi",
+   "path": "2. Physique/Résumés/Résumé de Mhamdi Aidi"
+  },
+  "physique/td-ipeiem": {
+   "title": "TD IPEIEM",
+   "desc": "TD1 Traitement de Signal, TD2 Induction, TD3 Maxwell, TD4 Propagation des ondes EM, TD5 Optique Ondulatoire, TD6 Transfert Thermique, ...",
+   "path": "2. Physique/TD IPEIEM"
+  },
+  "physique/td-ipeiem/td1-traitement-de-signal": {
+   "title": "TD1 Traitement de Signal",
+   "desc": "correction TD1",
+   "path": "2. Physique/TD IPEIEM/TD1 Traitement de Signal"
+  },
+  "physique/td-ipeiem/td2-induction": {
+   "title": "TD2 Induction",
+   "desc": "correction ex1, correction ex2, correction ex3, correction ex4",
+   "path": "2. Physique/TD IPEIEM/TD2 Induction"
+  },
+  "physique/td-ipeiem/td3-maxwell": {
+   "title": "TD3 Maxwell",
+   "desc": "correction ex1 TD3, correction ex2 TD3, correction ex3 TD3, problème de Laplace, TD3 Maxwell",
+   "path": "2. Physique/TD IPEIEM/TD3 Maxwell"
+  },
+  "physique/td-ipeiem/td4-propagation-des-ondes-em": {
+   "title": "TD4 Propagation des ondes EM",
+   "desc": "correction DM diffusion Rayleigh, correction ex1 TD4, correction exercice 3, correction exercice 4 (guide ), correction exercice 5 (antenne), ...",
+   "path": "2. Physique/TD IPEIEM/TD4 Propagation des ondes EM"
+  },
+  "physique/td-ipeiem/td5-optique-ondulatoire": {
+   "title": "TD5 Optique Ondulatoire",
+   "desc": "correction pb 1 TD 5, correction PB 2 TD 5, correction PB 3 TD 5, correction PB 4 TD 5, correction PB 5 TD 5, correction pb 6 et 7, ...",
+   "path": "2. Physique/TD IPEIEM/TD5 Optique Ondulatoire"
+  },
+  "physique/td-ipeiem/td6-transfert-thermique": {
+   "title": "TD6 Transfert Thermique",
+   "desc": "correction ex1, correction ex2, correction ex3, correction ex4, correction ex5, correction ex6, cours transfert thermique, ...",
+   "path": "2. Physique/TD IPEIEM/TD6 Transfert Thermique"
+  },
+  "physique/td-ipeiem/td7-mecanique-quantique": {
+   "title": "TD7 Mécanique Quantique",
+   "desc": "Correction EX1 TD MQ, Correction EX2 TD MQ, résumé MQ, TD mécanique quantique",
+   "path": "2. Physique/TD IPEIEM/TD7 Mécanique Quantique"
+  },
+  "physique/td-ipeiem/td8-thermodynamique-statistique": {
+   "title": "TD8 Thermodynamique Statistique",
+   "desc": "correction td stat, Eléments de thermodynamique statistique, TD stat",
+   "path": "2. Physique/TD IPEIEM/TD8 Thermodynamique Statistique"
+  },
+  "resumes": {
+   "title": "Résumés",
+   "desc": "Résume de, Résumé 2ème année pt, Résumé de, Résumé de ahmestiri21, Résumé de Cherni Fidaa, Résumé de mansourislem75",
+   "path": "Résumés"
+  },
+  "resumes/resume-2eme-annee-pt": {
+   "title": "Résumé 2ème année pt",
+   "desc": "[gdriveitbot] résumé algèbre, [gdriveitbot] résumé analyse, [gdriveitbot] résumé auto, [gdriveitbot] résumé chimie, [gdriveitbot] résumé CM, ...",
+   "path": "Résumés/Résumé 2ème année pt"
+  },
+  "resumes/resume-de": {
+   "title": "Résume de",
+   "desc": "Auto, Chimie Inorganique, Chimie Organique, MSI",
+   "path": "Résumés/Résume de"
+  },
+  "resumes/resume-de-2": {
+   "title": "Résumé de",
+   "desc": "analyse, anglais, chimie, français, info, notes analyse, physique, sta",
+   "path": "Résumés/Résumé de"
+  },
+  "resumes/resume-de-ahmestiri21": {
+   "title": "Résumé de ahmestiri21",
+   "desc": "Algèbre, Analyse, Info, Org, Physique, STA (Auto), STA (MSI)",
+   "path": "Résumés/Résumé de ahmestiri21"
+  },
+  "resumes/resume-de-cherni-fidaa": {
+   "title": "Résumé de Cherni Fidaa",
+   "desc": "Auto, Chimie, CM, MG, Physique, prod 1er",
+   "path": "Résumés/Résumé de Cherni Fidaa"
+  },
+  "resumes/resume-de-mansourislem75": {
+   "title": "Résumé de mansourislem75",
+   "desc": "Algèbre, Analyse, Chimie, Mansourislem Résumé automatique",
+   "path": "Résumés/Résumé de mansourislem75"
+  },
+  "resumes/resume-de-mansourislem75/algebre": {
+   "title": "Algèbre",
+   "desc": "1. Résumé Réduction, 2. Résumé Structures algébriques, 3. Résumé espace préhilbertien euclidien, 4. Résumé équation différentielle, ...",
+   "path": "Résumés/Résumé de mansourislem75/Algèbre"
+  },
+  "resumes/resume-de-mansourislem75/analyse": {
+   "title": "Analyse",
+   "desc": "1. Résumé séries numériques, 2. Résumé intégration, 3. Résumé espace vectoriel normé, 4. Résumé suites.séries des fonctions, ...",
+   "path": "Résumés/Résumé de mansourislem75/Analyse"
+  },
+  "resumes/resume-de-mansourislem75/chimie": {
+   "title": "Chimie",
+   "desc": "1. Résumé Cristallographie, 2. Résumé Diagramme Unaire, 3. Résumé Diagramme Binaire (L V), 4. Résumé Diagramme E pH",
+   "path": "Résumés/Résumé de mansourislem75/Chimie"
+  },
+  "sta": {
+   "title": "STA",
+   "desc": "MSI, AUTO, CM, Résumés, Concours STA MP21, Concours STA MP25 corrigé",
+   "path": "5. STA"
+  },
+  "sta/1-msi": {
+   "title": "MSI",
+   "desc": "Cours MSI, TD - DS - Examen, MSI, Résumé de Cours SII",
+   "path": "5. STA/1. MSI"
+  },
+  "sta/1-msi/cours-msi": {
+   "title": "Cours MSI",
+   "desc": "cours cinétique dynamique statique energitique, cours dynamique énergétique, cours geo de masse, Geo de masse",
+   "path": "5. STA/1. MSI/Cours MSI"
+  },
+  "sta/1-msi/td-ds-examen": {
+   "title": "TD - DS - Examen",
+   "desc": "DS2 MSI IPEIS 24 25, DS2 MSI IPEIS 25 26 corrigé, Examen 2 MSI IPEIS 25 26 corrigé, TD1 MSI (Géométrie des masses) IPEIS 25 26, ...",
+   "path": "5. STA/1. MSI/TD - DS - Examen"
+  },
+  "sta/2-auto": {
+   "title": "AUTO",
+   "desc": "Cours AUTO, Mr. Lefi Abdellaoui, TD - DS - Examen, Asservissement Résumé, Auto, Mansourislem Résumé automatique, yt",
+   "path": "5. STA/2. AUTO"
+  },
+  "sta/2-auto/cours-auto": {
+   "title": "Cours AUTO",
+   "desc": "cours auto",
+   "path": "5. STA/2. AUTO/Cours AUTO"
+  },
+  "sta/2-auto/mr-lefi-abdellaoui": {
+   "title": "Mr. Lefi Abdellaoui",
+   "desc": "révision automatique séance 1, révision automatique séance 2, révision automatique séance 3, révision automatique séance 4",
+   "path": "5. STA/2. AUTO/Mr. Lefi Abdellaoui"
+  },
+  "sta/2-auto/td-ds-examen": {
+   "title": "TD - DS - Examen",
+   "desc": "DS1 Auto IPEIS 22 23, DS1 Auto IPEIS 24 25, DS1 Auto IPEIS 25 26, Examen 1 Auto IPEIS 22 23, Examen 1 Auto IPEIS 23 24, Examen 1 Auto IPEIS 24 25, ...",
+   "path": "5. STA/2. AUTO/TD - DS - Examen"
+  },
+  "sta/3-cm": {
+   "title": "CM",
+   "desc": "CM, Rappel CM 2026, Révision CM 2025",
+   "path": "5. STA/3. CM"
+  },
+  "sta/resumes": {
+   "title": "Résumés",
+   "desc": "Résumé de, Résumé de ahmestiri21, Résumé de Bib Prepa, Résumé de Cherni Fidaa, Résumé de mansourislem75, Résumé de yassomri4",
+   "path": "5. STA/Résumés"
+  },
+  "sta/resumes/resume-de": {
+   "title": "Résumé de",
+   "desc": "Auto, sta",
+   "path": "5. STA/Résumés/Résumé de"
+  },
+  "sta/resumes/resume-de-ahmestiri21": {
+   "title": "Résumé de ahmestiri21",
+   "desc": "STA (Auto), STA (MSI)",
+   "path": "5. STA/Résumés/Résumé de ahmestiri21"
+  },
+  "sta/resumes/resume-de-bib-prepa": {
+   "title": "Résumé de Bib Prepa",
+   "desc": "CFM, MSI &amp; Auto",
+   "path": "5. STA/Résumés/Résumé de Bib Prepa"
+  },
+  "sta/resumes/resume-de-bib-prepa/cfm": {
+   "title": "CFM",
+   "desc": "cm, prod 1er, souce",
+   "path": "5. STA/Résumés/Résumé de Bib Prepa/CFM"
+  },
+  "sta/resumes/resume-de-bib-prepa/msi-et-auto": {
+   "title": "MSI &amp; Auto",
+   "desc": "Livre Sta, Résumé auto 2ème, Résumé auto conception 1er, souce",
+   "path": "5. STA/Résumés/Résumé de Bib Prepa/MSI &amp; Auto"
+  },
+  "sta/resumes/resume-de-cherni-fidaa": {
+   "title": "Résumé de Cherni Fidaa",
+   "desc": "Auto, CM, MG",
+   "path": "5. STA/Résumés/Résumé de Cherni Fidaa"
+  },
+  "sta/resumes/resume-de-mansourislem75": {
+   "title": "Résumé de mansourislem75",
+   "desc": "Mansourislem Résumé automatique",
+   "path": "5. STA/Résumés/Résumé de mansourislem75"
+  },
+  "sta/resumes/resume-de-yassomri4": {
+   "title": "Résumé de yassomri4",
+   "desc": "Auto, automatique, MSI, Résumé auto conception 1er, résumé STA",
+   "path": "5. STA/Résumés/Résumé de yassomri4"
+  }
+ }
+}
