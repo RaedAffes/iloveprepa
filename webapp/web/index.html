@@ -47,6 +47,15 @@
   <link rel="preload" as="image" href="favicon.png?v=5">
   <link rel="preload" as="image" href="apple-touch-icon.png">
 
+  <!-- The header Contact icon and the floating Donate button use these two
+       tiny PNGs. Preloading them right here (in parallel with the Wasm
+       download) means the bytes are already in the browser cache by the time
+       the main page paints, so both icons are drawn on the very first frame
+       the user sees — never a visible "icons appear now" flicker after the
+       splash fades. No extra work at runtime, boot time untouched. -->
+  <link rel="preload" as="image" href="assets/icon/contact.png">
+  <link rel="preload" as="image" href="assets/icon/don.png">
+
   <!-- Warm the connections a fast opening needs before they are actually
        used, the same resource-hint technique mcmaster.com uses: the API that
        serves the document list (DNS + TLS happen while the app binary

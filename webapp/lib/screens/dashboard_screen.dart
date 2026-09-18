@@ -101,7 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _contactEpoch = 0;
 
   /// Whether the one-time "Support Us" callout is visible next to the
-  /// floating Donate button. It appears 1s after the app opens, then
+  /// floating Donate button. It appears 2s after the app opens, then
   /// auto-hides after [_kDonCalloutShowSeconds].
   bool _showSupportCallout = false;
   Timer? _supportCalloutShowTimer;
@@ -116,8 +116,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _analytics.logAppOpen();
     _analytics.logScreenView('dashboard');
     unawaited(_precacheContactIllustration());
+    unawaited(_precacheHeaderIcons());
     _supportCalloutShowTimer = Timer(
-      const Duration(milliseconds: 1000),
+      const Duration(milliseconds: 2000),
       () {
         if (!mounted) return;
         setState(() => _showSupportCallout = true);
@@ -267,6 +268,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await Future.wait(_contactArtAssets.map(
         (asset) => SvgAssetLoader(asset).loadBytes(null),
       ));
+    } catch (_) {
+      // Preloading is a best-effort optimization; rendering handles failures.
+    }
+  }
+
+  /// Decodes the header Contact icon and the floating Donate button icon
+  /// ahead of first paint (the HTML already preloads their bytes), so both
+  /// are drawn on the very first frame of the main page — the user never
+  /// sees them "appear" after the splash fades.
+  Future<void> _precacheHeaderIcons() async {
+    try {
+      await Future.wait([
+        precacheImage(const AssetImage('assets/icon/contact.png'), context),
+        precacheImage(const AssetImage('assets/icon/don.png'), context),
+      ]);
     } catch (_) {
       // Preloading is a best-effort optimization; rendering handles failures.
     }
