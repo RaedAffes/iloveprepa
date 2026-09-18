@@ -52,9 +52,12 @@
        download) means the bytes are already in the browser cache by the time
        the main page paints, so both icons are drawn on the very first frame
        the user sees — never a visible "icons appear now" flicker after the
-       splash fades. No extra work at runtime, boot time untouched. -->
-  <link rel="preload" as="image" href="assets/icon/contact.png">
-  <link rel="preload" as="image" href="assets/icon/don.png">
+       splash fades. No extra work at runtime, boot time untouched.
+       NOTE: the web build nests app assets under an extra "assets/" segment
+       (referenced as assets/assets/...), so the preload must use that exact
+       URL or it silently misses and the icons load too late. -->
+  <link rel="preload" as="image" href="assets/assets/icon/contact.png">
+  <link rel="preload" as="image" href="assets/assets/icon/don.png">
 
   <!-- Warm the connections a fast opening needs before they are actually
        used, the same resource-hint technique mcmaster.com uses: the API that

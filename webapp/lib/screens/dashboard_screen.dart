@@ -182,12 +182,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // void. This is the event the splash waits for on first loads. It waits
       // for the two header/FAB icons to finish decoding so they are already
       // drawn the frame the page appears — never a visible pop-in right after.
+      // _precacheHeaderIcons() catches every error, so _headerIconsReady always
+      // completes and this can never delay the boot.
       Future.delayed(const Duration(milliseconds: 80), () async {
         if (!mounted) return;
-        await _headerIconsReady.timeout(
-          const Duration(seconds: 2),
-          onTimeout: () {},
-        );
+        await _headerIconsReady;
         if (!mounted) return;
         web.document.dispatchEvent(web.Event('iloveprepa-first-frame'));
       });
@@ -225,10 +224,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  void _emitBootReady() {
+  /// Emits "iloveprepa-data-ready" — the splash's other fade trigger. Waits
+  /// for the header/donate icons to be decoded first so the page can never
+  /// appear without them, no matter which path (first-frame vs. ready) fades
+  /// the splash. _precacheHeaderIcons() catches every error, so awaiting
+  /// [_headerIconsReady] here can never block the boot.
+  Future<void> _emitBootReady() async {
     if (_bootEmitted) return;
     _bootEmitted = true;
     _bootFallback?.cancel();
+    if (!mounted) return;
+    await _headerIconsReady;
     if (!mounted) return;
     web.document.dispatchEvent(web.Event('iloveprepa-data-ready'));
   }
