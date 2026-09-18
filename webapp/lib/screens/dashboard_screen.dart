@@ -116,7 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _analytics.logAppOpen();
     _analytics.logScreenView('dashboard');
     unawaited(_precacheContactIllustration());
-    unawaited(_precacheHeaderIcons());
+    _headerIconsReady = _precacheHeaderIcons();
     _supportCalloutShowTimer = Timer(
       const Duration(milliseconds: 2000),
       () {
@@ -179,8 +179,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // Tell the browser the instant this first frame is actually on screen
       // (before the data round-trip completes) so the blue splash fades onto
       // a real Flutter frame — the loading skeleton — instead of a white
-      // void. This is the event the splash waits for on first loads.
-      Future.delayed(const Duration(milliseconds: 80), () {
+      // void. This is the event the splash waits for on first loads. It waits
+      // for the two header/FAB icons to finish decoding so they are already
+      // drawn the frame the page appears — never a visible pop-in right after.
+      Future.delayed(const Duration(milliseconds: 80), () async {
+        if (!mounted) return;
+        await _headerIconsReady.timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {},
+        );
         if (!mounted) return;
         web.document.dispatchEvent(web.Event('iloveprepa-first-frame'));
       });
@@ -192,6 +199,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _bootEmitted = false;
   bool _seoDeepLinkHandled = false;
   Timer? _bootFallback;
+
+  /// Completes once the header Contact icon and the Donate button icon are
+  /// decoded into the image cache. The splash fade waits on it so both icons
+  /// are already drawn the exact frame the main page appears.
+  late Future<void> _headerIconsReady;
 
   void _maybeEmitBootReady() {
     if (_bootEmitted || !_firstFrameDone) return;
