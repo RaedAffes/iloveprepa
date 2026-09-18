@@ -25,11 +25,13 @@ import json
 import re
 import sys
 import unicodedata
+import urllib.parse
 import urllib.request
 from datetime import date
 from pathlib import Path
 
 API_URL = "https://iloveprepa-r2.ilovepreparatoire.workers.dev/api/files"
+VIEW_BASE = "https://iloveprepa-r2.ilovepreparatoire.workers.dev/api/view/"
 WEBAPP = Path(__file__).resolve().parent.parent
 TOOLS_DIR = WEBAPP / "tools"
 WEB_DIR = WEBAPP / "web"
@@ -184,6 +186,26 @@ def build_desc(node):
     return text
 
 
+def doc_links(node):
+    """The folder's own documents as {title, url} pairs, so the prerendered
+    page can expose the real files to non-JS crawlers (ChatGPT/Google bots).
+    The URL is the same pretty view link the app opens a document with."""
+    docs = []
+    for raw in sorted(node.files, key=str.lower):
+        title = display_name(raw)
+        if not title:
+            continue
+        base = raw.split("/")[-1]
+        url = (
+            VIEW_BASE
+            + urllib.parse.quote(base, safe="")
+            + "?f="
+            + urllib.parse.quote(raw, safe="")
+        )
+        docs.append({"title": title, "url": url})
+    return docs
+
+
 def keyword_slugs():
     """The 47 keyword URL slugs, straight from tools/keyword_meta.json."""
     if not KEYWORD_META.exists():
@@ -225,6 +247,7 @@ def generate():
             "title": html.escape(clean_label(path[-1]), quote=True),
             "desc": html.escape(build_desc(node), quote=True),
             "path": html.escape(real, quote=True),
+            "docs": doc_links(node),
         }
         routes.append({"path": real, "slug": slug})
         raw_paths.append(path)
