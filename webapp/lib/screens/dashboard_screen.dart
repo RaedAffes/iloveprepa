@@ -100,10 +100,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// rebuilt from scratch (fresh blank form instead of the last success view).
   int _contactEpoch = 0;
 
-  /// Whether the one-time "Support Us" callout is still visible next to the
-  /// floating Donate button. Shown once when the app loads, auto-hides after
-  /// [_kDonCalloutShowSeconds].
-  bool _showSupportCallout = true;
+  /// Whether the one-time "Support Us" callout is visible next to the
+  /// floating Donate button. It appears 1s after the app opens, then
+  /// auto-hides after [_kDonCalloutShowSeconds].
+  bool _showSupportCallout = false;
+  Timer? _supportCalloutShowTimer;
   Timer? _supportCalloutTimer;
 
   @override
@@ -115,10 +116,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _analytics.logAppOpen();
     _analytics.logScreenView('dashboard');
     unawaited(_precacheContactIllustration());
-    _supportCalloutTimer = Timer(
-      const Duration(seconds: _kDonCalloutShowSeconds),
+    _supportCalloutShowTimer = Timer(
+      const Duration(milliseconds: 1000),
       () {
-        if (mounted) setState(() => _showSupportCallout = false);
+        if (!mounted) return;
+        setState(() => _showSupportCallout = true);
+        _supportCalloutTimer = Timer(
+          const Duration(seconds: _kDonCalloutShowSeconds),
+          () {
+            if (mounted) setState(() => _showSupportCallout = false);
+          },
+        );
       },
     );
   }
@@ -285,6 +293,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void dispose() {
     _supportCalloutTimer?.cancel();
+    _supportCalloutShowTimer?.cancel();
     _searchController.dispose();
     _treeScroll.dispose();
     _contentScroll.dispose();
