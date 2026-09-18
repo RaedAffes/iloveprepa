@@ -3,3 +3,10 @@
 # The 47 keyword URLs are now real static pages and Pages serves them
 # directly, so no redirect rule is needed (and none may exist: a 200-rewrite
 # would shadow the static file).
+
+# Documents are exposed on the SEO pages as iprepa.tn links, so crawlers
+# (ChatGPT/Google) see them as coming from the site. This rule 302s the clean
+# URL to the worker's /api/view/ endpoint with the full R2 key (percent-
+# encoded, slashes included) in the path; the worker resolves it as the exact
+# key (its legacy no-?f= branch) and serves the PDF.
+/view/* https://iloveprepa-r2.ilovepreparatoire.workers.dev/api/view/:splat 302

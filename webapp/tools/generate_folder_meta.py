@@ -31,7 +31,7 @@ from datetime import date
 from pathlib import Path
 
 API_URL = "https://iloveprepa-r2.ilovepreparatoire.workers.dev/api/files"
-VIEW_BASE = "https://iloveprepa-r2.ilovepreparatoire.workers.dev/api/view/"
+VIEW_BASE = "https://iprepa.tn/view/"
 WEBAPP = Path(__file__).resolve().parent.parent
 TOOLS_DIR = WEBAPP / "tools"
 WEB_DIR = WEBAPP / "web"
@@ -186,22 +186,22 @@ def build_desc(node):
     return text
 
 
-def doc_links(node):
+def doc_links(node, prefix):
     """The folder's own documents as {title, url} pairs, so the prerendered
     page can expose the real files to non-JS crawlers (ChatGPT/Google bots).
-    The URL is the same pretty view link the app opens a document with."""
+    Prefix carries the folder's full R2 path — files store only their bare
+    name, and the worker needs the whole key to serve them exactly."""
+    root_key = "/".join(prefix)
     docs = []
     for raw in sorted(node.files, key=str.lower):
         title = display_name(raw)
         if not title:
             continue
-        base = raw.split("/")[-1]
-        url = (
-            VIEW_BASE
-            + urllib.parse.quote(base, safe="")
-            + "?f="
-            + urllib.parse.quote(raw, safe="")
-        )
+        key = f"{root_key}/{raw}" if root_key else raw
+        # iprepa.tn/view/<encoded full key> — the web/_redirects rule 302s it
+        # to the worker as /api/view/<full key>, which the worker serves as an
+        # exact R2 key (legacy no-?f= branch). No query round-trip needed.
+        url = VIEW_BASE + urllib.parse.quote(key, safe="")
         docs.append({"title": title, "url": url})
     return docs
 
@@ -247,7 +247,7 @@ def generate():
             "title": html.escape(clean_label(path[-1]), quote=True),
             "desc": html.escape(build_desc(node), quote=True),
             "path": html.escape(real, quote=True),
-            "docs": doc_links(node),
+            "docs": doc_links(node, path),
         }
         routes.append({"path": real, "slug": slug})
         raw_paths.append(path)

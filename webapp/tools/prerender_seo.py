@@ -54,7 +54,7 @@ def inject_docs(html_doc, docs, canonical):
         return html_doc
 
     items = "\n            ".join(
-        f'<li><a rel="nofollow" href="{d["url"]}">'
+        f'<li><a href="{d["url"]}">'
         f"{html.escape(d['title'], quote=True)}"
         "</a></li>"
         for d in docs
