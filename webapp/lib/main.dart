@@ -28,7 +28,7 @@ class IloveprepaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'IlovePrepa',
+      title: 'iPrepa',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       home: DashboardScreen(
