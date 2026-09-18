@@ -46,6 +46,29 @@ class _DonViewState extends State<DonView> {
         fit: StackFit.expand,
         children: [
           const IgnorePointer(child: CustomPaint(painter: _DoodlePainter())),
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => Navigator.of(context).maybePop(),
+                borderRadius: BorderRadius.circular(24),
+                hoverColor: const Color(0x14FF923C),
+                child: const Tooltip(
+                  message: 'Fermer',
+                  child: Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 26,
+                      color: Color(0xFF838788),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           Align(
             alignment: Alignment.center,
             child: SingleChildScrollView(

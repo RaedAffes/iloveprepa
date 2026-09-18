@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -99,7 +100,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// rebuilt from scratch (fresh blank form instead of the last success view).
   int _contactEpoch = 0;
 
-  bool _showDon = false;
+  /// Whether the one-time "Support Us" callout is still visible next to the
+  /// floating Donate button. Shown once when the app loads, auto-hides after
+  /// [_kDonCalloutShowSeconds].
+  bool _showSupportCallout = true;
+  Timer? _supportCalloutTimer;
 
   @override
   void initState() {
@@ -110,6 +115,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _analytics.logAppOpen();
     _analytics.logScreenView('dashboard');
     unawaited(_precacheContactIllustration());
+    _supportCalloutTimer = Timer(
+      const Duration(seconds: _kDonCalloutShowSeconds),
+      () {
+        if (mounted) setState(() => _showSupportCallout = false);
+      },
+    );
   }
 
   /// Browser back/forward and in-app folder clicks no longer change the URL.
@@ -273,6 +284,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    _supportCalloutTimer?.cancel();
     _searchController.dispose();
     _treeScroll.dispose();
     _contentScroll.dispose();
@@ -311,19 +323,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _showContactForm = true;
       _contactEpoch++;
-      _showDon = false;
     });
   }
 
+  /// Opens the donation panel anchored directly above the floating Donate
+  /// button (bottom-right corner), like a native app popover. Fades and
+  /// slides up; tapping the panel-adjacent barrier (or the button) closes it.
   void _openDonForm() {
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.of(context).maybePop();
     }
-    _resetScroll();
-    setState(() {
-      _showDon = true;
-      _showContactForm = false;
-    });
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Fermer',
+      barrierColor: Colors.black38,
+      transitionDuration: const Duration(milliseconds: 240),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.06),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return const _DonPopover(child: DonView());
+      },
+    );
+  }
+
+  /// The floating donate button and its optional "Support Us" callout. The
+  /// callout sits immediately to the left of the circular button, vertically
+  /// centered, and fades out after it has been on screen for 5 seconds. The
+  /// button itself never moves: this widget always occupies exactly
+  /// [_kDonFabSize] ^ 2.
+  Widget _buildDonFab() {
+    return SizedBox(
+      width: _kDonFabSize,
+      height: _kDonFabSize,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _DonateFab(onPressed: _openDonForm),
+          Positioned(
+            right: _kDonFabSize + _kDonCalloutGap,
+            top: (_kDonFabSize - _kDonCalloutHeight) / 2,
+            width: _kDonCalloutWidth,
+            height: _kDonCalloutHeight,
+            child: IgnorePointer(
+              ignoring: !_showSupportCallout,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                child: _showSupportCallout
+                    ? _SupportCallout(
+                        key: const ValueKey('support-callout'),
+                        onTap: _openDonForm,
+                      )
+                    : const SizedBox(
+                        key: ValueKey('support-callout-hidden'),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Returns the shared scroll to the top before switching pages, so every
@@ -342,7 +418,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _analytics.logFolderOpen(path.isEmpty ? 'root' : path.join(' / '));
     setState(() {
       _showContactForm = false;
-      _showDon = false;
       _currentPath = List.of(path);
       // Anchor the main-page accordion on this folder: only its branch stays
       // expanded, every other section starts collapsed.
@@ -375,7 +450,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _restoreFolder(List<String> path) {
     setState(() {
       _showContactForm = false;
-      _showDon = false;
       _query = '';
       _searchController.clear();
       if (path.isEmpty) {
@@ -435,7 +509,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _goHome() {
     setState(() {
       _showContactForm = false;
-      _showDon = false;
       _currentPath = const [];
       _query = '';
       _searchController.clear();
@@ -448,7 +521,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _goToLanding() {
     setState(() {
       _showContactForm = false;
-      _showDon = false;
       _currentPath = const [];
       _query = '';
       _searchController.clear();
@@ -578,6 +650,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onMenu: () => Navigator.of(context).maybePop(),
         ),
       ),
+      // The donate button floats at the bottom-right corner of the page,
+      // like a native mobile app, always reachable while browsing. It keeps
+      // its exact position: the temporary "Support Us" callout to its left
+      // never moves or resizes the button.
+      floatingActionButton: _buildDonFab(),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -611,7 +688,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               : () => Scaffold.of(context).openDrawer(),
                           onHome: _goHome,
                           onContact: _openContactForm,
-                          onDon: _openDonForm,
                           onNavigate: _openFolder,
                           onBrandTap: _goToLanding,
                         ),
@@ -656,9 +732,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onBack: _closeContactForm,
         ),
       );
-    }
-    if (_showDon) {
-      return const DonView();
     }
 
     // Always show content from _all immediately (populated from cache by
@@ -816,7 +889,6 @@ class _TopBar extends StatelessWidget {
     required this.onMenu,
     required this.onHome,
     required this.onContact,
-    required this.onDon,
     required this.onNavigate,
     required this.onBrandTap,
   });
@@ -834,9 +906,6 @@ class _TopBar extends StatelessWidget {
 
   /// Opens the contact form in the main content area.
   final VoidCallback onContact;
-
-  /// Opens the donation screen in the main content area.
-  final VoidCallback onDon;
 
   final void Function(List<String> path) onNavigate;
 
@@ -886,14 +955,6 @@ _HeaderIconButton(
             color: const Color(0xFF3B5998),
             size: 40,
             onPressed: onContact,
-          ),
-          SizedBox(width: wide ? 36 : 20),
-          _HeaderIconButton(
-            tooltip: 'Don',
-            image: 'assets/icon/don.png',
-            color: const Color(0xFFFF923C),
-            size: 48,
-            onPressed: onDon,
           ),
         ],
       ),
@@ -979,6 +1040,193 @@ class _HeaderIconButtonState extends State<_HeaderIconButton>
               widget.image,
               height: widget.size,
               fit: BoxFit.contain,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Sizes / spacing shared by the floating Donate button and its popover, so
+/// the panel always sits directly above the button with a small gap.
+const double _kDonFabSize = 64;
+const double _kDonFabMargin = 16;
+const double _kDonGap = 16;
+
+/// The one-time "Support Us" callout shown next to the floating Donate button
+/// when the app loads.
+const double _kDonCalloutWidth = 155;
+const double _kDonCalloutHeight = 75;
+const double _kDonCalloutGap = 10;
+const int _kDonCalloutShowSeconds = 5;
+
+/// The donation panel anchored above the floating Donate button at the
+/// bottom-right corner of the viewport. Fixed-position (laid out on a
+/// full-screen barrier), never part of the page flow: it does not push or
+/// resize the website's content. White surface, ~16px rounded corners and a
+/// subtle shadow, ~450 x 660 on desktop and clamped to smaller screens.
+class _DonPopover extends StatelessWidget {
+  const _DonPopover({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final screen = MediaQuery.sizeOf(context);
+    final width = math.min(450.0, screen.width - _kDonFabMargin * 2);
+    final maxHeight =
+        screen.height - (_kDonFabMargin + _kDonFabSize + _kDonGap) - 8;
+    final height = math.min(660.0, maxHeight);
+    return SizedBox.expand(
+      child: Stack(
+        children: [
+          Positioned(
+            right: _kDonFabMargin,
+            bottom: _kDonFabMargin + _kDonFabSize + _kDonGap,
+            width: width,
+            height: height,
+            child: Material(
+              color: Colors.white,
+              elevation: 24,
+              shadowColor: Colors.black45,
+              borderRadius: const BorderRadius.all(Radius.circular(16)),
+              clipBehavior: Clip.antiAlias,
+              child: child,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The one-time "Support Us" callout that appears to the left of the floating
+/// Donate button when the app loads. White surface, subtle border/shadow,
+/// rounded corners, dark text; tapping it opens the donation panel.
+class _SupportCallout extends StatelessWidget {
+  const _SupportCallout({super.key, required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+        hoverColor: const Color(0x0F1B3FA0),
+        child: Container(
+          width: _kDonCalloutWidth,
+          height: _kDonCalloutHeight,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.all(Radius.circular(16)),
+            border: Border.all(color: const Color(0x1F1C2340)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1F000000),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Text(
+            'Support Us',
+            style: TextStyle(
+              color: Color(0xFF1C2340),
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DonateFab extends StatefulWidget {
+  const _DonateFab({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  State<_DonateFab> createState() => _DonateFabState();
+}
+
+/// Floating donate button pinned to the bottom-right corner of the page, like
+/// a native mobile app, always reachable while browsing. Same orange identity
+/// and hover behaviour as the rest of the donate surface.
+class _DonateFabState extends State<_DonateFab>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  bool get _active => _controller.value > 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _setActive(bool active) {
+    if (active == _active) return;
+    if (active) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => _setActive(true),
+      onExit: (_) => _setActive(false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onPressed,
+        onTapDown: (_) => _setActive(true),
+        onTapCancel: () => _setActive(false),
+        child: Tooltip(
+          message: 'Faire un don',
+          waitDuration: const Duration(milliseconds: 300),
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final t = Curves.easeOutCubic.transform(_controller.value);
+              return Transform.scale(
+                scale: 1 + 0.08 * t,
+                child: child,
+              );
+            },
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFFF923C),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Image.asset(
+                  'assets/icon/don.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
             ),
           ),
         ),
