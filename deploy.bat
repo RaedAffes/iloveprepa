@@ -10,7 +10,7 @@ call firebase deploy --only hosting
 if errorlevel 1 goto :error
 popd
 
-echo.
+echo. 
 echo Done! The app is live. New files uploaded to Backblaze appear automatically.
 goto :eof
 
