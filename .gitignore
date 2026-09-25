@@ -15,7 +15,7 @@ worker/node_modules/
 scripts/node_modules/ 
 
 # Wrangler / Cloudflare local state
-worker/.wrangler/
+worker/.wrangler/ 
 
 # Large data folders (too big for GitHub, stored in Cloudflare R2)
 Prépa/
