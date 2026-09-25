@@ -1,7 +1,7 @@
 @echo off
 setlocal
 echo [1/2] Building Flutter web app...
-pushd webapp
+pushd webapp 
 call flutter build web --release --dart-define=API_BASE_URL=https://iloveprepa-r2.ilovepreparatoire.workers.dev
 if errorlevel 1 goto :error
 
