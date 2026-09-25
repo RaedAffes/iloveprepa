@@ -12,7 +12,7 @@ webapp/.firebase/
 # Node
 node_modules/
 worker/node_modules/
-scripts/node_modules/
+scripts/node_modules/ 
 
 # Wrangler / Cloudflare local state
 worker/.wrangler/
