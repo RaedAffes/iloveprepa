@@ -5,7 +5,7 @@ Desktop.ini
 # Dart / Flutter
 webapp/.dart_tool/
 webapp/build/
-webapp/.flutter-plugins*
+webapp/.flutter-plugins* 
 webapp/.packages
 webapp/.firebase/
 
