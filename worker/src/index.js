@@ -302,10 +302,13 @@ async function handleValidateEmail(url, env) {
   }
 }
 
-// Keeps the running visits/downloads counters scoped to the current calendar
-// month (UTC, key "YYYY-MM"). On the first request of a new month the finished
-// month's totals are archived into `monthly_counts` and the running counters
-// are reset to zero, so each month's numbers are preserved in D1.
+// `counters` holds the ALL-TIME visits/downloads totals returned by /api/stats:
+// they are never reset, so the numbers served to the footer only ever grow.
+// `counters.month` (UTC key "YYYY-MM") is just the month whose share is still
+// accumulating. On the first request after a month change the finished month's
+// own slice — all-time total minus everything already archived — is written to
+// `monthly_counts` and the stamp moves forward; the all-time counters stay as
+// they are.
 async function ensureMonth(env) {
   const db = env.iloveprepa_db;
   if (!db) return;
@@ -315,9 +318,17 @@ async function ensureMonth(env) {
   if (row && row.month === month) return;
   const nowIso = now.toISOString();
   if (row && row.month) {
-    // A new month started: snapshot the finished month into the archive,
-    // then reset the running counters for the fresh month.
-    const prev = await db
+    // A new month started: archive the finished month's own figures only.
+    // `month < row.month` keeps the baseline to the months strictly before it
+    // so an out-of-order archive can never inflate the subtraction.
+    const archived = await db
+      .prepare(
+        `SELECT COALESCE(SUM(visits), 0) AS visits, COALESCE(SUM(downloads), 0) AS downloads
+         FROM monthly_counts WHERE month < ?`,
+      )
+      .bind(row.month)
+      .first();
+    const cur = await db
       .prepare('SELECT visits, downloads FROM counters WHERE id = 1')
       .first();
     await db
@@ -329,17 +340,20 @@ async function ensureMonth(env) {
            downloads = excluded.downloads,
            updated_at = excluded.updated_at`,
       )
-      .bind(row.month, prev.visits || 0, prev.downloads || 0, nowIso)
+      .bind(
+        row.month,
+        Math.max(0, (cur.visits || 0) - (archived.visits || 0)),
+        Math.max(0, (cur.downloads || 0) - (archived.downloads || 0)),
+        nowIso,
+      )
       .run();
     await db
-      .prepare(
-        'UPDATE counters SET visits = 0, downloads = 0, month = ?, updated_at = ? WHERE id = 1',
-      )
+      .prepare('UPDATE counters SET month = ?, updated_at = ? WHERE id = 1')
       .bind(month, nowIso)
       .run();
   } else if (row) {
-    // Migration: stamp the current month onto the pre-existing row without
-    // clearing the counters accumulated so far.
+    // Row predating the month stamp: stamp it and leave the all-time totals
+    // untouched (nothing to archive for a month that was never tracked).
     await db
       .prepare('UPDATE counters SET month = ?, updated_at = ? WHERE id = 1')
       .bind(month, nowIso)
