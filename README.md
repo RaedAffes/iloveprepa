@@ -6,7 +6,7 @@ A platform for preparatory school (prépa) content in Tunisia - sharing and host
 
 This project provides a web application to browse and access educational content organized hierarchically. It includes:
 - **Next.js frontend** (in `next/`) - Modern web app with SSR/SSG capabilities
-- **Flutter web app** (in `webapp/`) - Alternative Flutter-based web client
+- **Flutter web app** (in `webapp/`) - Alternative Flutter-based web client 
 - **Cloudflare Worker** (in `worker/`) - API proxy for accessing content from Cloudflare R2 storage
 - **Deployment tooling** - Build, prerendering, and deployment scripts for Cloudflare Pages
 
