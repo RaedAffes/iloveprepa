@@ -28,6 +28,9 @@ export async function handleAuth(request, env, url) {
     if (url.pathname === '/api/auth/callback' && request.method === 'GET') {
       return finishGoogle(request, env, url);
     }
+    if (url.pathname === '/api/auth/firebase' && request.method === 'POST') {
+      return signInWithFirebase(request, env);
+    }
     if (url.pathname === '/api/auth/me' && request.method === 'GET') {
       return currentUser(request, env);
     }
@@ -126,56 +129,25 @@ async function finishGoogle(request, env, url) {
   const sub = String(profile.sub || '');
   if (!sub || !email) return failRedirect(returnTo, 'profile', request);
 
-  const db = env.iloveprepa_db;
-  if (!db) return failRedirect(returnTo, 'server', request);
+  if (!env.iloveprepa_db) return failRedirect(returnTo, 'server', request);
 
-  const now = new Date();
-  const nowIso = now.toISOString();
+  let rawToken;
   try {
-    await db
-      .prepare(
-        `INSERT INTO users (
-           id, email, email_verified, name, given_name, family_name, picture, locale,
-           created_at, updated_at, last_login_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(id) DO UPDATE SET
-           email = excluded.email,
-           email_verified = excluded.email_verified,
-           name = excluded.name,
-           given_name = excluded.given_name,
-           family_name = excluded.family_name,
-           picture = excluded.picture,
-           locale = excluded.locale,
-           updated_at = excluded.updated_at,
-           last_login_at = excluded.last_login_at`,
-      )
-      .bind(
-        sub,
-        email,
-        profile.email_verified ? 1 : 0,
-        textOrNull(profile.name),
-        textOrNull(profile.given_name),
-        textOrNull(profile.family_name),
-        textOrNull(profile.picture),
-        textOrNull(profile.locale),
-        nowIso,
-        nowIso,
-        nowIso,
-      )
-      .run();
+    const session = await saveUserAndSession(env, {
+      id: sub,
+      email,
+      emailVerified: profile.email_verified === true,
+      name: textOrNull(profile.name),
+      givenName: textOrNull(profile.given_name),
+      familyName: textOrNull(profile.family_name),
+      picture: textOrNull(profile.picture),
+      locale: textOrNull(profile.locale),
+    });
+    rawToken = session.token;
   } catch (err) {
     console.error('user upsert failed:', err && err.message ? err.message : err);
     return failRedirect(returnTo, 'email_in_use', request);
   }
-
-  const rawToken = randomToken(32);
-  const sessionId = await sha256Hex(rawToken);
-  const expires = new Date(now.getTime() + SESSION_MS).toISOString();
-  await db.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(nowIso).run();
-  await db
-    .prepare('INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)')
-    .bind(sessionId, sub, expires, nowIso)
-    .run();
 
   const dest = new URL(returnTo);
   dest.hash = `auth_session=${rawToken}`;
@@ -184,6 +156,159 @@ async function finishGoogle(request, env, url) {
   headers.set('Cache-Control', 'no-store');
   headers.append('Set-Cookie', clearOauthCookie(request));
   return new Response(null, { status: 302, headers });
+}
+
+async function signInWithFirebase(request, env) {
+  if (!env.FIREBASE_API_KEY || !env.iloveprepa_db) {
+    return authJson({ error: 'not_configured' }, 503);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return authJson({ error: 'invalid' }, 400);
+  }
+  const idToken = String((body && body.idToken) || '').trim();
+  if (!idToken) return authJson({ error: 'invalid' }, 400);
+
+  const lookup = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(env.FIREBASE_API_KEY)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    },
+  );
+  if (!lookup.ok) {
+    console.error('Firebase token lookup failed:', lookup.status);
+    return authJson({ error: 'token' }, 401);
+  }
+  const data = await lookup.json();
+  const account = data && Array.isArray(data.users) ? data.users[0] : null;
+  const email = String((account && account.email) || '').trim().toLowerCase();
+  const id = String((account && account.localId) || '');
+  if (!account || !id || !email) return authJson({ error: 'profile' }, 401);
+
+  const display = textOrNull(account.displayName);
+  const parts = display ? display.split(/\s+/) : [];
+  const signup = body.signup === true;
+  const givenName = textOrNull(body.givenName) || parts[0] || null;
+  const familyName = textOrNull(body.familyName) || (parts.length > 1 ? parts.slice(1).join(' ') : null);
+  const faculty = clip(textOrNull(body.faculty), 120);
+  const phoneInput = textOrNull(body.phone);
+  const phone = phoneInput ? tunisianPhone(body.phone) : null;
+  if (signup && (!givenName || !familyName)) return authJson({ error: 'name' }, 400);
+  if (phoneInput && !phone) return authJson({ error: 'phone' }, 400);
+  const fullName = [givenName, familyName].filter(Boolean).join(' ') || display;
+  const verified = account.emailVerified === true;
+  try {
+    const session = await saveUserAndSession(env, {
+      id,
+      email,
+      emailVerified: verified,
+      name: fullName,
+      givenName,
+      familyName,
+      picture: textOrNull(account.photoUrl),
+      locale: null,
+      faculty,
+      phone,
+    }, { session: verified });
+    if (!verified) return authJson({ error: 'email_unverified', email }, 403);
+    return authJson(session, 200);
+  } catch (err) {
+    console.error('firebase user upsert failed:', err && err.message ? err.message : err);
+    return authJson({ error: 'email_in_use' }, 409);
+  }
+}
+
+async function saveUserAndSession(env, profile, options = {}) {
+  const db = env.iloveprepa_db;
+  const now = new Date();
+  const nowIso = now.toISOString();
+  await db
+    .prepare(
+      `INSERT INTO users (
+         id, email, email_verified, name, given_name, family_name, picture, locale,
+         faculty, phone, created_at, updated_at, last_login_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         email = excluded.email,
+         email_verified = excluded.email_verified,
+         name = COALESCE(excluded.name, users.name),
+         given_name = COALESCE(excluded.given_name, users.given_name),
+         family_name = COALESCE(excluded.family_name, users.family_name),
+         picture = COALESCE(excluded.picture, users.picture),
+         locale = COALESCE(excluded.locale, users.locale),
+         faculty = COALESCE(excluded.faculty, users.faculty),
+         phone = COALESCE(excluded.phone, users.phone),
+         updated_at = excluded.updated_at,
+         last_login_at = excluded.last_login_at`,
+    )
+    .bind(
+      profile.id,
+      profile.email,
+      profile.emailVerified ? 1 : 0,
+      profile.name,
+      profile.givenName,
+      profile.familyName,
+      profile.picture,
+      profile.locale,
+      profile.faculty || null,
+      profile.phone || null,
+      nowIso,
+      nowIso,
+      nowIso,
+    )
+    .run();
+
+  if (options.session === false) {
+    const row = await db
+      .prepare(
+        `SELECT id, email, email_verified, name, given_name, family_name, picture, locale,
+                faculty, phone, created_at, last_login_at
+         FROM users WHERE id = ?`,
+      )
+      .bind(profile.id)
+      .first();
+    return { user: publicUser(row) };
+  }
+
+  const rawToken = randomToken(32);
+  const sessionId = await sha256Hex(rawToken);
+  const expires = new Date(now.getTime() + SESSION_MS).toISOString();
+  await db.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(nowIso).run();
+  await db
+    .prepare('INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)')
+    .bind(sessionId, profile.id, expires, nowIso)
+    .run();
+
+  const row = await db
+    .prepare(
+      `SELECT id, email, email_verified, name, given_name, family_name, picture, locale,
+              faculty, phone, created_at, last_login_at
+       FROM users WHERE id = ?`,
+    )
+    .bind(profile.id)
+    .first();
+  return { token: rawToken, user: publicUser(row) };
+}
+
+function publicUser(row) {
+  return {
+    id: row.id,
+    email: row.email,
+    emailVerified: row.email_verified === 1,
+    name: row.name,
+    givenName: row.given_name,
+    familyName: row.family_name,
+    picture: row.picture,
+    locale: row.locale,
+    faculty: row.faculty,
+    phone: row.phone,
+    createdAt: row.created_at,
+    lastLoginAt: row.last_login_at,
+  };
 }
 
 async function currentUser(request, env) {
@@ -211,7 +336,8 @@ async function userFromRequest(request, env) {
   const row = await db
     .prepare(
       `SELECT u.id, u.email, u.email_verified, u.name, u.given_name, u.family_name,
-              u.picture, u.locale, u.created_at, u.last_login_at, s.expires_at
+              u.picture, u.locale, u.faculty, u.phone, u.created_at, u.last_login_at,
+              s.expires_at
        FROM sessions s
        JOIN users u ON u.id = s.user_id
        WHERE s.id = ?`,
@@ -223,18 +349,7 @@ async function userFromRequest(request, env) {
     await db.prepare('DELETE FROM sessions WHERE id = ?').bind(sessionId).run();
     return null;
   }
-  return {
-    id: row.id,
-    email: row.email,
-    emailVerified: row.email_verified === 1,
-    name: row.name,
-    givenName: row.given_name,
-    familyName: row.family_name,
-    picture: row.picture,
-    locale: row.locale,
-    createdAt: row.created_at,
-    lastLoginAt: row.last_login_at,
-  };
+  return publicUser(row);
 }
 
 function bearerToken(request) {
@@ -433,6 +548,21 @@ function textOrNull(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
+}
+
+function clip(value, max) {
+  if (!value) return null;
+  return value.length > max ? value.slice(0, max) : value;
+}
+
+function tunisianPhone(value) {
+  if (typeof value !== 'string') return null;
+  let digits = value.replace(/[^\d+]/g, '');
+  if (digits.startsWith('+')) digits = digits.slice(1);
+  if (digits.startsWith('00216')) digits = digits.slice(5);
+  else if (digits.startsWith('216') && digits.length === 11) digits = digits.slice(3);
+  if (!/^[234579]\d{7}$/.test(digits)) return null;
+  return `+216${digits}`;
 }
 
 function authJson(payload, status) {

@@ -5,8 +5,10 @@ import '../core/theme/app_radius.dart';
 import '../core/theme/app_spacing.dart';
 import '../core/theme/app_typography.dart';
 import '../models/document_item.dart';
+import '../services/auth_user.dart';
 import '../models/library_folder.dart';
 import '../models/library_index.dart';
+import 'auth_button.dart';
 import 'iloveprepa_brand.dart';
 import 'landing/landing_colors.dart' as landing;
 import 'notion_folder_icon.dart';
@@ -38,6 +40,7 @@ class LibrarySidebar extends StatelessWidget {
     this.treeScrollController,
     this.onMenu,
     this.onBrandTap,
+    this.onOpenProfile,
   });
 
   final LibraryFolder root;
@@ -64,6 +67,9 @@ class LibrarySidebar extends StatelessWidget {
 
   /// Returns to the landing page when the brand mark is tapped.
   final VoidCallback? onBrandTap;
+
+  /// Opens the profile in the main area. The sidebar stays open.
+  final void Function(AuthUser user)? onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +143,7 @@ class LibrarySidebar extends StatelessWidget {
                   )
                 : ListView(
                     controller: treeScrollController,
-                    padding: const EdgeInsets.fromLTRB(10, 20, 10, 24),
+                    padding: const EdgeInsets.fromLTRB(10, 20, 10, 12),
                     children: [
                       for (final subject in subjects)
                         Padding(
@@ -174,6 +180,16 @@ class LibrarySidebar extends StatelessWidget {
                     ],
                   ),
           ),
+          const Divider(height: 1, color: Color(0x33FFFFFF)),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.md + MediaQuery.paddingOf(context).bottom,
+            ),
+            child: AuthButton(onOpenProfile: onOpenProfile),
+          ),
         ],
       ),
     );
@@ -196,7 +212,7 @@ class _SearchResultsList extends StatelessWidget {
     final roots = _buildSearchTree(results);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(10, 4, 10, 24),
+      padding: const EdgeInsets.fromLTRB(10, 4, 10, 12),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),

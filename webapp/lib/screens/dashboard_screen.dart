@@ -12,12 +12,13 @@ import '../core/theme/app_spacing.dart';
 import '../models/document_item.dart';
 import '../models/library_folder.dart';
 import '../models/library_index.dart';
+import '../screens/profile_screen.dart';
 import '../services/analytics_service.dart';
+import '../services/auth_user.dart';
 import '../services/api_service.dart';
 import '../services/stats_service.dart';
 import '../utils/web_download.dart';
 import '../widgets/app_footer.dart';
-import '../widgets/auth_button.dart';
 import '../widgets/document_viewer.dart';
 import '../widgets/folder_content_view.dart';
 import '../widgets/iloveprepa_brand.dart';
@@ -96,6 +97,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Whether the contact form replaces the main content area.
   bool _showContactForm = false;
+  AuthUser? _profileUser;
 
   /// Bumped every time the Contact button is pressed so the contact form is
   /// rebuilt from scratch (fresh blank form instead of the last success view).
@@ -366,6 +368,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _resetScroll();
     setState(() {
       _showContactForm = true;
+      _profileUser = null;
       _contactEpoch++;
     });
   }
@@ -462,6 +465,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _analytics.logFolderOpen(path.isEmpty ? 'root' : path.join(' / '));
     setState(() {
       _showContactForm = false;
+      _profileUser = null;
       _currentPath = List.of(path);
       // Anchor the main-page accordion on this folder: only its branch stays
       // expanded, every other section starts collapsed.
@@ -553,6 +557,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _goHome() {
     setState(() {
       _showContactForm = false;
+      _profileUser = null;
       _currentPath = const [];
       _query = '';
       _searchController.clear();
@@ -565,6 +570,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _goToLanding() {
     setState(() {
       _showContactForm = false;
+      _profileUser = null;
       _currentPath = const [];
       _query = '';
       _searchController.clear();
@@ -765,10 +771,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
       treeScrollController: _treeScroll,
       onMenu: onMenu,
       onBrandTap: _goToLanding,
+      onOpenProfile: (user) => setState(() {
+        _showContactForm = false;
+        _profileUser = user;
+      }),
     );
   }
 
   Widget _buildContent() {
+    final profile = _profileUser;
+    if (profile != null) {
+      return ProfileScreen(
+        user: profile,
+        onBack: () => setState(() => _profileUser = null),
+      );
+    }
     if (_showContactForm) {
       return _viewPage(
         child: ContactFormView(
@@ -993,9 +1010,7 @@ return Container(
               onTap: onBrandTap,
             ),
           const Spacer(),
-          AuthButton(compact: !wide),
-          const SizedBox(width: AppSpacing.sm),
-_HeaderIconButton(
+          _HeaderIconButton(
             tooltip: 'Contact',
             image: 'assets/icon/contact.png',
             color: const Color(0xFF3B5998),

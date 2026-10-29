@@ -1,4 +1,4 @@
-/// Google account stored in D1 and returned by `/api/auth/me`.
+/// Account stored in D1 and returned by `/api/auth/me`.
 class AuthUser {
   const AuthUser({
     required this.id,
@@ -9,6 +9,8 @@ class AuthUser {
     this.familyName,
     this.picture,
     this.locale,
+    this.faculty,
+    this.phone,
     this.createdAt,
     this.lastLoginAt,
   });
@@ -21,6 +23,8 @@ class AuthUser {
   final String? familyName;
   final String? picture;
   final String? locale;
+  final String? faculty;
+  final String? phone;
   final String? createdAt;
   final String? lastLoginAt;
 
@@ -40,8 +44,19 @@ class AuthUser {
       familyName: json['familyName'] as String?,
       picture: json['picture'] as String?,
       locale: json['locale'] as String?,
+      faculty: json['faculty'] as String?,
+      phone: json['phone'] as String?,
       createdAt: json['createdAt'] as String?,
       lastLoginAt: json['lastLoginAt'] as String?,
     );
   }
+}
+
+class AuthResult {
+  const AuthResult({this.user, this.error, this.notice, this.needsVerification = false});
+
+  final AuthUser? user;
+  final String? error;
+  final String? notice;
+  final bool needsVerification;
 }

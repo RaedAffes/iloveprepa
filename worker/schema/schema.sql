@@ -41,8 +41,8 @@ UPDATE counters SET
   downloads = COALESCE((SELECT SUM(downloads) FROM monthly_counts), 0)
 WHERE id = 1;
 
--- Google accounts. `id` is the Google subject (`sub`), stable for the life of
--- the Google account. Profile columns are refreshed on every sign-in.
+-- Firebase accounts. `id` is the Firebase local id. Profile columns are
+-- refreshed on every sign-in. `phone` is stored as +216 followed by 8 digits.
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
@@ -52,6 +52,8 @@ CREATE TABLE IF NOT EXISTS users (
   family_name TEXT,
   picture TEXT,
   locale TEXT,
+  faculty TEXT,
+  phone TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   last_login_at TEXT NOT NULL
