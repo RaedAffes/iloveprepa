@@ -41,6 +41,8 @@ class LibrarySidebar extends StatelessWidget {
     this.onMenu,
     this.onBrandTap,
     this.onOpenProfile,
+    this.onManageAccess,
+    this.onSignedOut,
   });
 
   final LibraryFolder root;
@@ -70,6 +72,12 @@ class LibrarySidebar extends StatelessWidget {
 
   /// Opens the profile in the main area. The sidebar stays open.
   final void Function(AuthUser user)? onOpenProfile;
+
+  /// Admin-only: opens the "Manage access" screen in the main area.
+  final void Function(AuthUser user)? onManageAccess;
+
+  /// Closes profile and manage-access when the account signs out.
+  final VoidCallback? onSignedOut;
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +196,11 @@ class LibrarySidebar extends StatelessWidget {
               AppSpacing.md,
               AppSpacing.md + MediaQuery.paddingOf(context).bottom,
             ),
-            child: AuthButton(onOpenProfile: onOpenProfile),
+            child: AuthButton(
+              onOpenProfile: onOpenProfile,
+              onManageAccess: onManageAccess,
+              onSignedOut: onSignedOut,
+            ),
           ),
         ],
       ),

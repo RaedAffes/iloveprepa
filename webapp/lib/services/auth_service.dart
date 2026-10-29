@@ -42,4 +42,8 @@ class AuthService {
   static Future<AuthUser?> currentUser() => browser.currentUser();
 
   static Future<void> logout() => browser.logout();
+
+  /// Raw bearer token for authenticated calls made outside this service
+  /// (e.g. the admin "Manage access" screen).
+  static Future<String?> authToken() => browser.authToken();
 }

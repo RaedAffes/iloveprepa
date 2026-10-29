@@ -317,6 +317,14 @@ String _firebaseError(String code) {
   }
 }
 
+/// The raw bearer token, for callers (like the admin screen) that need to
+/// attach `Authorization: Bearer <token>` to their own requests.
+Future<String?> authToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString(_tokenKey);
+  return (token == null || token.isEmpty) ? null : token;
+}
+
 Future<AuthUser?> currentUser() async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString(_tokenKey);

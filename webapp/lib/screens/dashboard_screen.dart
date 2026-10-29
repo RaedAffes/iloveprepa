@@ -12,6 +12,7 @@ import '../core/theme/app_spacing.dart';
 import '../models/document_item.dart';
 import '../models/library_folder.dart';
 import '../models/library_index.dart';
+import '../screens/admin_access_screen.dart';
 import '../screens/profile_screen.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_user.dart';
@@ -98,6 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Whether the contact form replaces the main content area.
   bool _showContactForm = false;
   AuthUser? _profileUser;
+  bool _showManageAccess = false;
 
   /// Bumped every time the Contact button is pressed so the contact form is
   /// rebuilt from scratch (fresh blank form instead of the last success view).
@@ -368,6 +370,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _resetScroll();
     setState(() {
       _showContactForm = true;
+      _showManageAccess = false;
       _profileUser = null;
       _contactEpoch++;
     });
@@ -465,6 +468,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _analytics.logFolderOpen(path.isEmpty ? 'root' : path.join(' / '));
     setState(() {
       _showContactForm = false;
+      _showManageAccess = false;
       _profileUser = null;
       _currentPath = List.of(path);
       // Anchor the main-page accordion on this folder: only its branch stays
@@ -498,6 +502,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _restoreFolder(List<String> path) {
     setState(() {
       _showContactForm = false;
+      _showManageAccess = false;
       _query = '';
       _searchController.clear();
       if (path.isEmpty) {
@@ -557,6 +562,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _goHome() {
     setState(() {
       _showContactForm = false;
+      _showManageAccess = false;
       _profileUser = null;
       _currentPath = const [];
       _query = '';
@@ -570,6 +576,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _goToLanding() {
     setState(() {
       _showContactForm = false;
+      _showManageAccess = false;
       _profileUser = null;
       _currentPath = const [];
       _query = '';
@@ -773,12 +780,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onBrandTap: _goToLanding,
       onOpenProfile: (user) => setState(() {
         _showContactForm = false;
+        _showManageAccess = false;
         _profileUser = user;
+      }),
+      onManageAccess: (user) => setState(() {
+        _showContactForm = false;
+        _profileUser = null;
+        _showManageAccess = true;
+      }),
+      onSignedOut: () => setState(() {
+        _showManageAccess = false;
+        _profileUser = null;
       }),
     );
   }
 
   Widget _buildContent() {
+    if (_showManageAccess) {
+      return AdminAccessScreen(
+        onBack: () => setState(() => _showManageAccess = false),
+      );
+    }
     final profile = _profileUser;
     if (profile != null) {
       return ProfileScreen(

@@ -15,7 +15,7 @@ String accountInitial(String label) {
   return trimmed.characters.first.toUpperCase();
 }
 
-enum AccountMenuAction { profile, logout }
+enum AccountMenuAction { profile, manageAccess, logout }
 
 Future<AccountMenuAction?> showAccountMenu(BuildContext anchorContext, AuthUser user) {
   final box = anchorContext.findRenderObject();
@@ -164,7 +164,7 @@ class _AccountCard extends StatelessWidget {
                               style: AppTypography.tileTitle(),
                             ),
                             Text(
-                              'Gratuit',
+                              user.planLabel,
                               style: AppTypography.metadata(),
                             ),
                           ],
@@ -178,6 +178,15 @@ class _AccountCard extends StatelessWidget {
                   label: 'Profil',
                   onTap: () => Navigator.of(context).pop(AccountMenuAction.profile),
                 ),
+                if (user.isAdmin) ...[
+                  const Divider(height: 1, thickness: 1, color: AppColors.border),
+                  _MenuRow(
+                    icon: Icons.admin_panel_settings_outlined,
+                    label: 'Gérer les accès',
+                    onTap: () =>
+                        Navigator.of(context).pop(AccountMenuAction.manageAccess),
+                  ),
+                ],
                 const Divider(height: 1, thickness: 1, color: AppColors.border),
                 _MenuRow(
                   icon: Icons.logout_rounded,
@@ -274,9 +283,21 @@ class _AuthSession extends ChangeNotifier {
 
 /// Account row pinned to the bottom of the library sidebar.
 class AuthButton extends StatefulWidget {
-  const AuthButton({super.key, this.onOpenProfile});
+  const AuthButton({
+    super.key,
+    this.onOpenProfile,
+    this.onManageAccess,
+    this.onSignedOut,
+  });
 
   final void Function(AuthUser user)? onOpenProfile;
+
+  /// Admin-only entry point for the "Manage access" screen.
+  final void Function(AuthUser user)? onManageAccess;
+
+  /// Closes account-only screens (profile, manage access) the moment the
+  /// session ends, so they do not stay visible until a page reload.
+  final VoidCallback? onSignedOut;
 
   @override
   State<AuthButton> createState() => _AuthButtonState();
@@ -313,8 +334,12 @@ class _AuthButtonState extends State<AuthButton> {
     if (user == null || !mounted) return;
     setState(() => _open = true);
     final action = await showAccountMenu(context, user);
-    if (action == AccountMenuAction.logout) await _AuthSession.instance.logout();
+    if (action == AccountMenuAction.logout) {
+      await _AuthSession.instance.logout();
+      widget.onSignedOut?.call();
+    }
     if (action == AccountMenuAction.profile) widget.onOpenProfile?.call(user);
+    if (action == AccountMenuAction.manageAccess) widget.onManageAccess?.call(user);
     if (mounted) setState(() => _open = false);
   }
 
@@ -392,7 +417,7 @@ class _AuthButtonState extends State<AuthButton> {
                       ),
                     ),
                     Text(
-                      'Gratuit',
+                      user.planLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.metadata(Colors.white70).copyWith(height: 1.2),
