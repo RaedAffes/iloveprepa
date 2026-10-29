@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/profile_screen.dart';
+import '../services/auth_user.dart';
 
 /// A wrapper to keep the original API expected by the rest of the app 
 /// while using the new ProfileLift implementation.

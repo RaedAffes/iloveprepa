@@ -263,15 +263,15 @@ async function saveUserAndSession(env, profile, options = {}) {
     .run();
 
   if (options.session === false) {
-    const row = await db
-      .prepare(
-        `SELECT id, email, email_verified, name, given_name, family_name, picture, locale,
-                faculty, phone, created_at, last_login_at
+  const row = await db
+    .prepare(
+      `SELECT id, email, email_verified, name, given_name, family_name, picture, locale,
+                faculty, phone, role, created_at, last_login_at
          FROM users WHERE id = ?`,
       )
       .bind(profile.id)
       .first();
-    return { user: publicUser(row) };
+    return { user: await hydrateUser(db, row) };
   }
 
   const rawToken = randomToken(32);
@@ -286,12 +286,12 @@ async function saveUserAndSession(env, profile, options = {}) {
   const row = await db
     .prepare(
       `SELECT id, email, email_verified, name, given_name, family_name, picture, locale,
-              faculty, phone, created_at, last_login_at
+              faculty, phone, role, created_at, last_login_at
        FROM users WHERE id = ?`,
     )
     .bind(profile.id)
     .first();
-  return { token: rawToken, user: publicUser(row) };
+  return { token: rawToken, user: await hydrateUser(db, row) };
 }
 
 function publicUser(row) {
@@ -306,9 +306,29 @@ function publicUser(row) {
     locale: row.locale,
     faculty: row.faculty,
     phone: row.phone,
+    role: row.role || 'free',
     createdAt: row.created_at,
     lastLoginAt: row.last_login_at,
   };
+}
+
+/// Attaches the user's currently active entitlements (premium semesters) to
+/// the public user payload sent to the app.
+export async function hydrateUser(db, row) {
+  const user = publicUser(row);
+  user.entitlements = await activeEntitlements(db, row.id);
+  return user;
+}
+
+export async function activeEntitlements(db, userId) {
+  const rows = await db
+    .prepare(
+      `SELECT DISTINCT product_code FROM entitlement_grants
+       WHERE user_id = ? AND revoked_at IS NULL`,
+    )
+    .bind(userId)
+    .all();
+  return (rows.results || []).map((r) => r.product_code);
 }
 
 async function currentUser(request, env) {
@@ -327,7 +347,7 @@ async function logout(request, env) {
   return authJson({ ok: true }, 200);
 }
 
-async function userFromRequest(request, env) {
+export async function userFromRequest(request, env) {
   const token = bearerToken(request);
   const db = env.iloveprepa_db;
   if (!token || !db) return null;
@@ -336,7 +356,7 @@ async function userFromRequest(request, env) {
   const row = await db
     .prepare(
       `SELECT u.id, u.email, u.email_verified, u.name, u.given_name, u.family_name,
-              u.picture, u.locale, u.faculty, u.phone, u.created_at, u.last_login_at,
+              u.picture, u.locale, u.faculty, u.phone, u.role, u.created_at, u.last_login_at,
               s.expires_at
        FROM sessions s
        JOIN users u ON u.id = s.user_id
@@ -349,7 +369,7 @@ async function userFromRequest(request, env) {
     await db.prepare('DELETE FROM sessions WHERE id = ?').bind(sessionId).run();
     return null;
   }
-  return publicUser(row);
+  return hydrateUser(db, row);
 }
 
 function bearerToken(request) {

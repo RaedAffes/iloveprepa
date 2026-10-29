@@ -1,0 +1,166 @@
+// Admin-only endpoints: search users and grant/revoke premium entitlements
+// (one per semester product). Every call requires a valid session for a user
+// whose `role` is 'admin' — checked on every request, never cached.
+
+import { userFromRequest } from './auth.js';
+
+const ADMIN_CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma, Authorization',
+  'Access-Control-Max-Age': '86400',
+  'Cache-Control': 'no-store',
+  'Content-Type': 'application/json',
+};
+
+export const PRODUCT_CODES = new Set(['y1_s1', 'y1_s2', 'y2_s1', 'y2_s2']);
+
+export async function handleAdmin(request, env, url) {
+  try {
+    const admin = await requireAdmin(request, env);
+    if (admin.error) return adminJson({ error: admin.error }, admin.status);
+
+    if (url.pathname === '/api/admin/users' && request.method === 'GET') {
+      return listUsers(env, url);
+    }
+    if (url.pathname === '/api/admin/entitlements' && request.method === 'POST') {
+      return setEntitlement(request, env, admin.user);
+    }
+    return adminJson({ error: 'Not found' }, 404);
+  } catch (err) {
+    console.error('admin request failed:', err && err.message ? err.message : err);
+    return adminJson({ error: 'Admin request failed' }, 500);
+  }
+}
+
+async function requireAdmin(request, env) {
+  if (!env.iloveprepa_db) return { error: 'server', status: 503 };
+  const user = await userFromRequest(request, env);
+  if (!user) return { error: 'unauthorized', status: 401 };
+  if (user.role !== 'admin') return { error: 'forbidden', status: 403 };
+  return { user };
+}
+
+async function listUsers(env, url) {
+  const db = env.iloveprepa_db;
+  const q = (url.searchParams.get('q') || '').trim().toLowerCase();
+  const limit = Math.min(
+    Math.max(parseInt(url.searchParams.get('limit') || '30', 10) || 30, 1),
+    100,
+  );
+
+  // Digits-only form so "20 123 456", "20123456" and "+21620123456" all match
+  // the stored +216XXXXXXXX value.
+  const digits = q.replace(/\D/g, '');
+  const rows = q
+    ? await db
+        .prepare(
+          `SELECT id, email, name, phone, role, created_at, last_login_at FROM users
+           WHERE lower(email) LIKE ? OR lower(name) LIKE ?
+              OR lower(COALESCE(phone, '')) LIKE ?
+              OR (? != '' AND replace(COALESCE(phone, ''), '+', '') LIKE ?)
+           ORDER BY created_at DESC LIMIT ?`,
+        )
+        .bind(`%${q}%`, `%${q}%`, `%${q}%`, digits, `%${digits}%`, limit)
+        .all()
+    : await db
+        .prepare(
+          `SELECT id, email, name, phone, role, created_at, last_login_at FROM users
+           ORDER BY created_at DESC LIMIT ?`,
+        )
+        .bind(limit)
+        .all();
+
+  const users = rows.results || [];
+  const entitlementsByUser = await loadEntitlements(
+    db,
+    users.map((u) => u.id),
+  );
+
+  return adminJson(
+    {
+      users: users.map((u) => ({
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        phone: u.phone,
+        role: u.role || 'free',
+        createdAt: u.created_at,
+        lastLoginAt: u.last_login_at,
+        entitlements: entitlementsByUser[u.id] || [],
+      })),
+    },
+    200,
+  );
+}
+
+async function loadEntitlements(db, userIds) {
+  const map = {};
+  if (userIds.length === 0) return map;
+  const placeholders = userIds.map(() => '?').join(',');
+  const rows = await db
+    .prepare(
+      `SELECT user_id, product_code FROM entitlement_grants
+       WHERE revoked_at IS NULL AND user_id IN (${placeholders})`,
+    )
+    .bind(...userIds)
+    .all();
+  for (const row of rows.results || []) {
+    (map[row.user_id] ??= []).push(row.product_code);
+  }
+  return map;
+}
+
+async function setEntitlement(request, env, admin) {
+  const db = env.iloveprepa_db;
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return adminJson({ error: 'invalid' }, 400);
+  }
+  const userId = String((body && body.userId) || '').trim();
+  const productCode = String((body && body.productCode) || '').trim();
+  const action = String((body && body.action) || '').trim();
+  if (!userId || !PRODUCT_CODES.has(productCode) || !['grant', 'revoke'].includes(action)) {
+    return adminJson({ error: 'invalid' }, 400);
+  }
+
+  const target = await db.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first();
+  if (!target) return adminJson({ error: 'user_not_found' }, 404);
+
+  const now = new Date().toISOString();
+  if (action === 'grant') {
+    const existing = await db
+      .prepare(
+        `SELECT id FROM entitlement_grants
+         WHERE user_id = ? AND product_code = ? AND revoked_at IS NULL`,
+      )
+      .bind(userId, productCode)
+      .first();
+    if (!existing) {
+      await db
+        .prepare(
+          `INSERT INTO entitlement_grants (user_id, product_code, granted_by, granted_at)
+           VALUES (?, ?, ?, ?)`,
+        )
+        .bind(userId, productCode, admin.id, now)
+        .run();
+    }
+  } else {
+    await db
+      .prepare(
+        `UPDATE entitlement_grants SET revoked_at = ?, revoked_by = ?
+         WHERE user_id = ? AND product_code = ? AND revoked_at IS NULL`,
+      )
+      .bind(now, admin.id, userId, productCode)
+      .run();
+  }
+
+  const entitlements = await loadEntitlements(db, [userId]);
+  return adminJson({ ok: true, entitlements: entitlements[userId] || [] }, 200);
+}
+
+function adminJson(payload, status) {
+  return new Response(JSON.stringify(payload), { status, headers: ADMIN_CORS });
+}

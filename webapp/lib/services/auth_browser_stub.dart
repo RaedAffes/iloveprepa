@@ -35,4 +35,6 @@ Future<AuthResult> sendPasswordReset(String email) async {
 
 Future<AuthUser?> currentUser() async => null;
 
+Future<String?> authToken() async => null;
+
 Future<void> logout() async {}
