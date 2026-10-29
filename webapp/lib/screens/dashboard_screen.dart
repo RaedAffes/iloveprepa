@@ -1010,14 +1010,37 @@ return Container(
               onTap: onBrandTap,
             ),
           const Spacer(),
-          _HeaderIconButton(
-            tooltip: 'Contact',
-            image: 'assets/icon/contact.png',
-            color: const Color(0xFF3B5998),
-            size: 40,
-            onPressed: onContact,
-          ),
+          _FancyContactButton(onPressed: onContact),
         ],
+      ),
+    );
+  }
+}
+
+class _FancyContactButton extends StatelessWidget {
+  const _FancyContactButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF262626),
+          borderRadius: BorderRadius.circular(40),
+        ),
+        child: const Text(
+          'CONTACT',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
+        ),
       ),
     );
   }

@@ -5,9 +5,230 @@ import '../core/theme/app_motion.dart';
 import '../core/theme/app_radius.dart';
 import '../core/theme/app_spacing.dart';
 import '../core/theme/app_typography.dart';
-import '../screens/profile_screen.dart';
 import '../services/auth_service.dart';
 import 'landing/landing_colors.dart' as landing;
+import '../screens/profile_screen.dart' show AccountAvatar, accountInitial;
+
+String accountInitial(String label) {
+  final trimmed = label.trim();
+  if (trimmed.isEmpty) return '?';
+  return trimmed.characters.first.toUpperCase();
+}
+
+enum AccountMenuAction { profile, logout }
+
+Future<AccountMenuAction?> showAccountMenu(BuildContext anchorContext, AuthUser user) {
+  final box = anchorContext.findRenderObject();
+  if (box is! RenderBox || !box.attached || !box.hasSize) return Future.value();
+  final origin = box.localToGlobal(Offset.zero);
+  final anchorSize = box.size;
+
+  return showGeneralDialog<AccountMenuAction>(
+    context: anchorContext,
+    barrierDismissible: true,
+    barrierLabel: 'Fermer',
+    barrierColor: const Color(0x01000000),
+    transitionDuration: AppMotion.normal,
+    pageBuilder: (context, animation, secondary) {
+      return _AccountMenuOverlay(
+        origin: origin,
+        anchorSize: anchorSize,
+        user: user,
+      );
+    },
+    transitionBuilder: (context, animation, secondary, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: AppMotion.easeOut,
+        reverseCurve: Curves.easeIn,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.015),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
+class _AccountMenuOverlay extends StatelessWidget {
+  const _AccountMenuOverlay({
+    required this.origin,
+    required this.anchorSize,
+    required this.user,
+  });
+
+  final Offset origin;
+  final Size anchorSize;
+  final AuthUser user;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.sizeOf(context);
+    final padding = MediaQuery.paddingOf(context);
+    const gap = AppSpacing.sm;
+
+    var width = anchorSize.width.clamp(220.0, 280.0).toDouble();
+    final maxWidth = media.width - AppSpacing.lg;
+    if (width > maxWidth) width = maxWidth;
+    var left = origin.dx;
+    if (left + width > media.width - AppSpacing.sm) {
+      left = media.width - AppSpacing.sm - width;
+    }
+    if (left < AppSpacing.sm) left = AppSpacing.sm;
+
+    final spaceAbove = origin.dy - padding.top - gap;
+    final spaceBelow =
+        media.height - (origin.dy + anchorSize.height) - padding.bottom - gap;
+    final openAbove = spaceAbove >= 180 || spaceAbove >= spaceBelow;
+    final maxHeight = (openAbove ? spaceAbove : spaceBelow).clamp(140.0, 480.0);
+
+    return SizedBox.expand(
+      child: Stack(
+        children: [
+          Positioned(
+            left: left,
+            width: width,
+            bottom: openAbove ? media.height - origin.dy + gap : null,
+            top: openAbove ? null : origin.dy + anchorSize.height + gap,
+            child: _AccountCard(user: user, maxHeight: maxHeight),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountCard extends StatelessWidget {
+  const _AccountCard({required this.user, required this.maxHeight});
+
+  final AuthUser user;
+  final double maxHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1F000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: AppColors.surface,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.button),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    AppSpacing.md,
+                  ),
+                  child: Row(
+                    children: [
+                      AccountAvatar(
+                        initial: accountInitial(user.label),
+                        picture: user.picture,
+                        size: 36,
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.tileTitle(),
+                            ),
+                            Text(
+                              'Gratuit',
+                              style: AppTypography.metadata(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _MenuRow(
+                  icon: Icons.person_outline,
+                  label: 'Profil',
+                  onTap: () => Navigator.of(context).pop(AccountMenuAction.profile),
+                ),
+                const Divider(height: 1, thickness: 1, color: AppColors.border),
+                _MenuRow(
+                  icon: Icons.logout_rounded,
+                  label: 'Se déconnecter',
+                  onTap: () => Navigator.of(context).pop(AccountMenuAction.logout),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.navR,
+        hoverColor: AppColors.hover,
+        splashColor: AppColors.hover,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: AppColors.ink),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                label,
+                style: AppTypography.body(AppColors.ink).copyWith(
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// One session for every sidebar copy (the drawer and the wide rail).
 class _AuthSession extends ChangeNotifier {
