@@ -22,6 +22,7 @@ import '../utils/web_download.dart';
 import '../widgets/app_footer.dart';
 import '../widgets/document_viewer.dart';
 import '../widgets/folder_content_view.dart';
+import '../widgets/fancy_contact_button.dart';
 import '../widgets/iloveprepa_brand.dart';
 import '../widgets/contact_form_view.dart';
 import '../widgets/don_view.dart';
@@ -122,19 +123,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _analytics.logScreenView('dashboard');
     unawaited(_precacheContactIllustration());
     _headerIconsReady = _precacheHeaderIcons();
-    _supportCalloutShowTimer = Timer(
-      const Duration(milliseconds: 2000),
-      () {
-        if (!mounted) return;
-        setState(() => _showSupportCallout = true);
-        _supportCalloutTimer = Timer(
-          const Duration(seconds: _kDonCalloutShowSeconds),
-          () {
-            if (mounted) setState(() => _showSupportCallout = false);
-          },
-        );
-      },
-    );
+    _supportCalloutShowTimer = Timer(const Duration(milliseconds: 2000), () {
+      if (!mounted) return;
+      setState(() => _showSupportCallout = true);
+      _supportCalloutTimer = Timer(
+        const Duration(seconds: _kDonCalloutShowSeconds),
+        () {
+          if (mounted) setState(() => _showSupportCallout = false);
+        },
+      );
+    });
   }
 
   /// Browser back/forward and in-app folder clicks no longer change the URL.
@@ -146,28 +144,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// response is written to [_all] and triggers a rebuild; a failure is
   /// captured in [_apiError] and only shown if no cached data exists.
   void _loadDocuments() {
-    _api.fetchDocuments().then((docs) {
-      try {
-        web.window.localStorage.setItem(
-          'flutter.cached_documents',
-          jsonEncode(docs.map((d) => d.toJson()).toList()),
-        );
-      } catch (_) {}
-      if (mounted) {
-        _apiSettled = true;
-        setState(() { _all = docs; _apiError = null; });
-        _maybeOpenSeoDeepLink();
-        _maybeEmitBootReady();
-      }
-      return docs;
-    }).catchError((e) {
-      if (mounted) {
-        _apiSettled = true;
-        setState(() => _apiError = e);
-        _maybeEmitBootReady();
-      }
-      return <DocumentItem>[];
-    });
+    _api
+        .fetchDocuments()
+        .then((docs) {
+          try {
+            web.window.localStorage.setItem(
+              'flutter.cached_documents',
+              jsonEncode(docs.map((d) => d.toJson()).toList()),
+            );
+          } catch (_) {}
+          if (mounted) {
+            _apiSettled = true;
+            setState(() {
+              _all = docs;
+              _apiError = null;
+            });
+            _maybeOpenSeoDeepLink();
+            _maybeEmitBootReady();
+          }
+          return docs;
+        })
+        .catchError((e) {
+          if (mounted) {
+            _apiSettled = true;
+            setState(() => _apiError = e);
+            _maybeEmitBootReady();
+          }
+          return <DocumentItem>[];
+        });
   }
 
   /// Hides the boot splash only once the first frame has rendered AND the
@@ -217,8 +221,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final drawerOpened = _drawerOpenAt;
       var remaining = Duration.zero;
       if (_isMobileWeb && drawerOpened != null) {
-        final sinceOpen =
-            DateTime.now().difference(drawerOpened).inMilliseconds;
+        final sinceOpen = DateTime.now()
+            .difference(drawerOpened)
+            .inMilliseconds;
         remaining = Duration(milliseconds: 280 - sinceOpen);
       }
       if (remaining > Duration.zero) {
@@ -288,9 +293,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _precacheContactIllustration() async {
     try {
-      await Future.wait(_contactArtAssets.map(
-        (asset) => SvgAssetLoader(asset).loadBytes(null),
-      ));
+      await Future.wait(
+        _contactArtAssets.map((asset) => SvgAssetLoader(asset).loadBytes(null)),
+      );
     } catch (_) {
       // Preloading is a best-effort optimization; rendering handles failures.
     }
@@ -441,9 +446,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         key: const ValueKey('support-callout'),
                         onTap: _openDonForm,
                       )
-                    : const SizedBox(
-                        key: ValueKey('support-callout-hidden'),
-                      ),
+                    : const SizedBox(key: ValueKey('support-callout-hidden')),
               ),
             ),
           ),
@@ -642,10 +645,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _open(DocumentItem item) async {
     try {
       if (kIsWeb && !_isMobileWeb) {
-        await launchUrl(
-          _api.viewUri(item),
-          webOnlyWindowName: '_blank',
-        );
+        await launchUrl(_api.viewUri(item), webOnlyWindowName: '_blank');
       } else {
         await showDocumentViewer(
           context: context,
@@ -665,20 +665,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_busy != null) return;
     setState(() => _busy = item.name);
     try {
-      final ok = await triggerWebDownload(
-        _api.downloadUri(item).toString(),
-      );
+      final ok = await triggerWebDownload(_api.downloadUri(item).toString());
       if (!ok && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible de télécharger le document.')),
+          const SnackBar(
+            content: Text('Impossible de télécharger le document.'),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(e is ApiException ? e.message : 'Une erreur est survenue.'),
+            content: Text(
+              e is ApiException ? e.message : 'Une erreur est survenue.',
+            ),
           ),
         );
       }
@@ -703,9 +704,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       key: _scaffoldKey,
       drawer: Drawer(
         width: 320,
-        child: _buildSidebar(
-          onMenu: () => Navigator.of(context).maybePop(),
-        ),
+        child: _buildSidebar(onMenu: () => Navigator.of(context).maybePop()),
       ),
       // The donate button floats at the bottom-right corner of the page,
       // like a native mobile app, always reachable while browsing. It keeps
@@ -727,7 +726,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             return Row(
               children: [
                 if (wide && !_sidebarCollapsed)
-                  SizedBox(width: 320, child: _buildSidebar(onMenu: _toggleSidebar))
+                  SizedBox(
+                    width: 320,
+                    child: _buildSidebar(onMenu: _toggleSidebar),
+                  )
                 else
                   const SizedBox.shrink(),
                 Expanded(
@@ -872,53 +874,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required Object? error,
     required VoidCallback onReload,
   }) {
-    return Builder(builder: (context) {
-      final isOverview =
-          !loading && error == null && docs.isNotEmpty && _currentPath.isEmpty;
-      return Padding(
-        padding: EdgeInsets.fromLTRB(
-          24,
-          isOverview ? AppSpacing.lg : AppSpacing.giant + AppSpacing.xxl,
-          24,
-          AppSpacing.huge,
-        ),
-        child: Builder(builder: (context) {
-        if (loading) {
-          // Real skeleton on the Flutter first frame — the browser preview
-          // already faded out, so the user must never stare at a blank page
-          // between the text preview and the loaded library.
-          return const _LoadingSkeleton();
-        }
-        if (error != null) {
-          // Every type of backend error (quota exceeded, throttling, timeout,
-          // unreachable server) shows the same "come back later" page.
-          return ComeBackLaterView(onRetry: onReload);
-        }
-        if (docs.isEmpty) {
-          return EmptyView(onRefresh: onReload);
-        }
-        if (_currentPath.isEmpty) {
-          return OverviewView(
-            folders: _root.children.values.toList(),
-            onOpenFolder: _openFolder,
-          );
-        }
-        final folder = _root.descend(_currentPath);
-        if (folder == null) {
-          return EmptyView(onRefresh: onReload);
-        }
-        return FolderContentView(
-          folder: folder,
-          currentPath: _currentPath,
-          expanded: _expanded,
-          busy: _busy,
-          onView: _open,
-          onDownload: _download,
-          onToggle: _toggleSection,
+    return Builder(
+      builder: (context) {
+        final isOverview =
+            !loading &&
+            error == null &&
+            docs.isNotEmpty &&
+            _currentPath.isEmpty;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            isOverview ? AppSpacing.lg : AppSpacing.giant + AppSpacing.xxl,
+            24,
+            AppSpacing.huge,
+          ),
+          child: Builder(
+            builder: (context) {
+              if (loading) {
+                // Real skeleton on the Flutter first frame — the browser preview
+                // already faded out, so the user must never stare at a blank page
+                // between the text preview and the loaded library.
+                return const _LoadingSkeleton();
+              }
+              if (error != null) {
+                // Every type of backend error (quota exceeded, throttling, timeout,
+                // unreachable server) shows the same "come back later" page.
+                return ComeBackLaterView(onRetry: onReload);
+              }
+              if (docs.isEmpty) {
+                return EmptyView(onRefresh: onReload);
+              }
+              if (_currentPath.isEmpty) {
+                return OverviewView(
+                  folders: _root.children.values.toList(),
+                  onOpenFolder: _openFolder,
+                );
+              }
+              final folder = _root.descend(_currentPath);
+              if (folder == null) {
+                return EmptyView(onRefresh: onReload);
+              }
+              return FolderContentView(
+                folder: folder,
+                currentPath: _currentPath,
+                expanded: _expanded,
+                busy: _busy,
+                onView: _open,
+                onDownload: _download,
+                onToggle: _toggleSection,
+              );
+            },
+          ),
         );
-      }),
+      },
     );
-  });
   }
 
   /// Renders a full-page view (contact / donate) without the shared stats
@@ -931,9 +940,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: child,
               ),
             ),
@@ -995,11 +1002,11 @@ class _TopBar extends StatelessWidget {
   /// Returns to the landing page when the brand mark is tapped.
   final VoidCallback onBrandTap;
 
-@override
+  @override
   Widget build(BuildContext context) {
-return Container(
+    return Container(
       height: 68,
-      padding: EdgeInsets.fromLTRB(wide ? 40 : 4, 0, wide ? 40 : 20, 0),
+      padding: EdgeInsets.fromLTRB(wide ? 40 : 4, 0, wide ? 0 : 2, 0),
       decoration: const BoxDecoration(
         color: landing.AppColors.midBlue,
         border: Border(bottom: BorderSide(color: Color(0x33FFFFFF), width: 1)),
@@ -1011,8 +1018,8 @@ return Container(
               onPressed: onMenu,
               tooltip: wide
                   ? (collapsed
-                      ? 'Afficher la barre latérale'
-                      : 'Masquer la barre latérale')
+                        ? 'Afficher la barre latérale'
+                        : 'Masquer la barre latérale')
                   : 'Menu',
               icon: const Icon(Icons.menu_rounded, size: 24),
               color: Colors.white,
@@ -1032,37 +1039,24 @@ return Container(
               onTap: onBrandTap,
             ),
           const Spacer(),
-          _FancyContactButton(onPressed: onContact),
-        ],
-      ),
-    );
-  }
-}
-
-class _FancyContactButton extends StatelessWidget {
-  const _FancyContactButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF262626),
-          borderRadius: BorderRadius.circular(40),
-        ),
-        child: const Text(
-          'CONTACT',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
+          SizedBox(
+            width: 240,
+            height: 96,
+            child: Transform.translate(
+              offset: const Offset(0, -6),
+              child: Transform.scale(
+                scale: 1.7,
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: FancyContactButton(
+                    label: 'CONTACT',
+                    onPressed: onContact,
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1137,10 +1131,7 @@ class _HeaderIconButtonState extends State<_HeaderIconButton>
             animation: _controller,
             builder: (context, child) {
               final t = Curves.easeOutCubic.transform(_controller.value);
-              return Transform.scale(
-                scale: 1 + 0.08 * t,
-                child: child,
-              );
+              return Transform.scale(scale: 1 + 0.08 * t, child: child);
             },
             child: Image.asset(
               widget.image,
@@ -1314,10 +1305,7 @@ class _DonateFabState extends State<_DonateFab>
             animation: _controller,
             builder: (context, child) {
               final t = Curves.easeOutCubic.transform(_controller.value);
-              return Transform.scale(
-                scale: 1 + 0.08 * t,
-                child: child,
-              );
+              return Transform.scale(scale: 1 + 0.08 * t, child: child);
             },
             child: Container(
               width: 64,
@@ -1328,10 +1316,7 @@ class _DonateFabState extends State<_DonateFab>
               ),
               child: Padding(
                 padding: const EdgeInsets.all(14),
-                child: Image.asset(
-                  'assets/icon/don.png',
-                  fit: BoxFit.contain,
-                ),
+                child: Image.asset('assets/icon/don.png', fit: BoxFit.contain),
               ),
             ),
           ),
@@ -1357,5 +1342,3 @@ class _LoadingSkeleton extends StatelessWidget {
     );
   }
 }
-
-

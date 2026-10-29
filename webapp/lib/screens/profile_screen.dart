@@ -2,19 +2,95 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../services/auth_user.dart';
-import '../widgets/landing/landing_colors.dart' as landing;
 
-/// Global notifier to sync avatar changes instantly across the entire app
-class AvatarNotifier extends ChangeNotifier {
-  AvatarNotifier._();
-  static final instance = AvatarNotifier._();
+const profileAvatarChoices = [
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-1&backgroundColor=b6e3f4',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-2&backgroundColor=c0aede',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-3&backgroundColor=ffd5dc',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-4&backgroundColor=d1d4f9',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-5&backgroundColor=ffdfbf',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-6&backgroundColor=decbe4',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-7&backgroundColor=f4d150',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-8&backgroundColor=a7f3d0',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-9&backgroundColor=ffd6a5',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-10&backgroundColor=bae6fd',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-11&backgroundColor=fbcfe8',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-12&backgroundColor=bbf7d0',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-13&backgroundColor=fde68a',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-14&backgroundColor=ddd6fe',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-15&backgroundColor=fdba74',
+  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-16&backgroundColor=99f6e4',
+];
 
-  int _selectedAvatar = 1;
-  int get selectedAvatar => _selectedAvatar;
+class ProfileAvatarNotifier extends ChangeNotifier {
+  String selected = profileAvatarChoices.first;
 
-  void setAvatar(int id) {
-    _selectedAvatar = id;
+  void select(String avatar) {
+    selected = avatar;
     notifyListeners();
+  }
+}
+
+final profileAvatarNotifier = ProfileAvatarNotifier();
+
+String accountInitial(String label) {
+  final trimmed = label.trim();
+  if (trimmed.isEmpty) return '?';
+  return trimmed.characters.first.toUpperCase();
+}
+
+InputDecoration _profileInputDecoration(String label) {
+  return InputDecoration(
+    labelText: label,
+    filled: true,
+    fillColor: Colors.white.withOpacity(0.72),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: const BorderSide(color: Color(0xFF8CB9D8), width: 1.4),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: const BorderSide(color: Color(0xFF8CB9D8), width: 1.4),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: const BorderSide(color: Color(0xFFE58B4A), width: 2.2),
+    ),
+  );
+}
+
+class _EditableProfileField extends StatelessWidget {
+  const _EditableProfileField({
+    required this.controller,
+    required this.label,
+    required this.editing,
+    required this.onEdit,
+    this.keyboardType,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final bool editing;
+  final VoidCallback onEdit;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      readOnly: !editing,
+      keyboardType: keyboardType,
+      decoration: _profileInputDecoration(label).copyWith(
+        suffixIcon: IconButton(
+          onPressed: onEdit,
+          tooltip: editing ? 'Terminer la modification' : 'Modifier',
+          icon: Icon(
+            editing ? Icons.check_rounded : Icons.edit_rounded,
+            color: const Color(0xFF3B82C4),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -29,53 +105,56 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  late TextEditingController _nameController;
+  late TextEditingController _givenNameController;
+  late TextEditingController _familyNameController;
   late TextEditingController _facultyController;
+  late TextEditingController _phoneController;
+  String? _selectedAvatar;
+  bool _editingGivenName = false;
+  bool _editingFamilyName = false;
+  bool _editingFaculty = false;
+  bool _editingPhone = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.user.label);
+    _givenNameController = TextEditingController(
+      text: widget.user.givenName ?? '',
+    );
+    _familyNameController = TextEditingController(
+      text: widget.user.familyName ?? '',
+    );
     _facultyController = TextEditingController(text: widget.user.faculty ?? '');
+    _phoneController = TextEditingController(text: widget.user.phone ?? '');
+    _selectedAvatar = profileAvatarNotifier.selected;
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _givenNameController.dispose();
+    _familyNameController.dispose();
     _facultyController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
-  void _openAvatarDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          backgroundColor: const Color(0xFFF5EBDD),
-          child: Container(
-            width: 480,
-            padding: const EdgeInsets.all(24),
-            child: SingleChildScrollView(
-              child: _AdvancedAvatarSelector(
-                initialSelection: AvatarNotifier.instance.selectedAvatar,
-                onSelected: (id) {
-                  AvatarNotifier.instance.setAvatar(id);
-                  Navigator.of(context).pop();
-                  setState(() {});
-                },
-              ),
-            ),
-          ),
-        );
-      },
-    );
+  bool get _isGoogleUser {
+    final picture = widget.user.picture?.trim();
+    return picture != null && picture.isNotEmpty;
   }
 
-  void _resetPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Un e-mail de réinitialisation de mot de passe a été envoyé.')),
-    );
+  void _chooseAvatar() {
+    showDialog<String>(
+      context: context,
+      builder: (context) => _AvatarChoiceDialog(
+        selectedAvatar: _selectedAvatar ?? profileAvatarChoices.first,
+      ),
+    ).then((avatar) {
+      if (avatar != null && mounted) {
+        profileAvatarNotifier.select(avatar);
+        setState(() => _selectedAvatar = avatar);
+      }
+    });
   }
 
   @override
@@ -84,19 +163,31 @@ class _ProfilePageState extends State<ProfilePage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          CustomPaint(painter: ArtisticBackground()),
+          const Positioned.fill(
+            child: CustomPaint(painter: PainterlyBackground()),
+          ),
           SafeArea(
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF263C3D)),
-                        onPressed: widget.onBack,
-                      ),
-                    ],
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    color: const Color(0xFFF5EBDD),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_rounded,
+                            color: Color(0xFF263C3D),
+                          ),
+                          onPressed: widget.onBack,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Expanded(
@@ -105,119 +196,74 @@ class _ProfilePageState extends State<ProfilePage> {
                       padding: const EdgeInsets.all(24),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 460),
-                        child: ListenableBuilder(
-                          listenable: AvatarNotifier.instance,
-                          builder: (context, _) {
-                            final avatarId = AvatarNotifier.instance.selectedAvatar;
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'MON PROFIL',
-                                  style: TextStyle(
-                                    letterSpacing: 5,
-                                    fontSize: 11,
-                                    color: Color(0xFF34565A),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 28),
-                                GestureDetector(
-                                  onTap: _openAvatarDialog,
-                                  child: Stack(
-                                    alignment: Alignment.bottomRight,
-                                    children: [
-                                      Container(
-                                        width: 126,
-                                        height: 126,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: backgrounds[(avatarId - 1) % backgrounds.length],
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(0xFF234F50).withOpacity(0.18),
-                                              blurRadius: 35,
-                                              spreadRadius: 4,
-                                            ),
-                                          ],
-                                        ),
-                                        child: ClipOval(
-                                          child: CustomPaint(
-                                            painter: _AvatarPainter(avatarId: avatarId),
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: const BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Color(0xFF345F5A),
-                                        ),
-                                        child: const Icon(Icons.edit, color: Colors.white, size: 16),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 28),
-                                TextField(
-                                  controller: _nameController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Nom et Prénom',
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.7),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: const BorderSide(color: Color(0xFF6C8980)),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: const BorderSide(color: Color(0xFF6C8980)),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextField(
-                                  controller: TextEditingController(text: widget.user.email),
-                                  enabled: false,
-                                  decoration: InputDecoration(
-                                    labelText: 'E-mail',
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.4),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: const BorderSide(color: Color(0xFF6C8980)),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextField(
-                                  controller: _facultyController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Faculté / Établissement',
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.7),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: const BorderSide(color: Color(0xFF6C8980)),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: const BorderSide(color: Color(0xFF6C8980)),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 30),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ArtistButton(
-                                    label: 'Réinitialiser le mot de passe  ↗',
-                                    style: ArtistButtonStyle.outlined,
-                                    onPressed: _resetPassword,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'MON PROFIL',
+                              style: TextStyle(
+                                letterSpacing: 5,
+                                fontSize: 11,
+                                color: Color(0xFF34565A),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            _ProfileAvatar(
+                              initial: accountInitial(widget.user.label),
+                              picture: _isGoogleUser
+                                  ? widget.user.picture
+                                  : _selectedAvatar,
+                              canEdit: !_isGoogleUser,
+                              onEdit: _chooseAvatar,
+                            ),
+                            const SizedBox(height: 18),
+                            const SizedBox(height: 24),
+                            _EditableProfileField(
+                              controller: _givenNameController,
+                              label: 'Prénom',
+                              editing: _editingGivenName,
+                              onEdit: () => setState(
+                                () => _editingGivenName = !_editingGivenName,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _EditableProfileField(
+                              controller: _familyNameController,
+                              label: 'Nom',
+                              editing: _editingFamilyName,
+                              onEdit: () => setState(
+                                () => _editingFamilyName = !_editingFamilyName,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: TextEditingController(
+                                text: widget.user.email,
+                              ),
+                              enabled: false,
+                              decoration: _profileInputDecoration('E-mail'),
+                            ),
+                            const SizedBox(height: 16),
+                            _EditableProfileField(
+                              controller: _facultyController,
+                              label: 'Faculté / Établissement',
+                              editing: _editingFaculty,
+                              onEdit: () => setState(
+                                () => _editingFaculty = !_editingFaculty,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _EditableProfileField(
+                              controller: _phoneController,
+                              label: 'Numéro de téléphone',
+                              keyboardType: TextInputType.phone,
+                              editing: _editingPhone,
+                              onEdit: () => setState(
+                                () => _editingPhone = !_editingPhone,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -260,18 +306,20 @@ class AccountAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: AvatarNotifier.instance,
+      listenable: profileAvatarNotifier,
       builder: (context, _) {
-        final avatarId = AvatarNotifier.instance.selectedAvatar;
+        final imageUrl = (picture?.trim().isNotEmpty ?? false)
+            ? picture!.trim()
+            : profileAvatarNotifier.selected;
         return ClipOval(
           child: SizedBox(
             width: size,
             height: size,
-            child: Container(
-              color: backgrounds[(avatarId - 1) % backgrounds.length],
-              child: CustomPaint(
-                painter: _AvatarPainter(avatarId: avatarId),
-              ),
+            child: _RemoteAvatarImage(
+              url: imageUrl,
+              fallback: profileAvatarChoices.contains(imageUrl)
+                  ? const _AvatarPlaceholder()
+                  : _InitialAvatar(initial: initial, inverted: inverted),
             ),
           ),
         );
@@ -280,39 +328,403 @@ class AccountAvatar extends StatelessWidget {
   }
 }
 
+class _AvatarFallback extends StatelessWidget {
+  const _AvatarFallback({
+    required this.avatarId,
+    required this.initial,
+    required this.inverted,
+  });
+
+  final int avatarId;
+  final String initial;
+  final bool inverted;
+
+  @override
+  Widget build(BuildContext context) {
+    final background = [
+      const Color(0xFFB6E3F4),
+      const Color(0xFFC0AEDE),
+      const Color(0xFFFFD5DC),
+      const Color(0xFFD1D4F9),
+      const Color(0xFFFFDFBF),
+      const Color(0xFFDECBE4),
+      const Color(0xFFF4D150),
+      const Color(0xFFA7F3D0),
+    ][(avatarId - 1) % 8];
+    return ColoredBox(
+      color: inverted ? const Color(0xFFF5EBDD) : background,
+      child: CustomPaint(
+        painter: _AvatarPainter(avatarId: avatarId),
+        child: Center(
+          child: avatarId == 1
+              ? Text(
+                  initial,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                  ),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarPlaceholder extends StatelessWidget {
+  const _AvatarPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: const Color(0xFFE7DEFF),
+      child: Center(
+        child: Icon(
+          Icons.person_rounded,
+          size: 38,
+          color: const Color(0xFF3B82C4).withOpacity(0.7),
+        ),
+      ),
+    );
+  }
+}
+
+class _RemoteAvatarImage extends StatelessWidget {
+  const _RemoteAvatarImage({required this.url, required this.fallback});
+
+  final String url;
+  final Widget fallback;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        fallback,
+        Image.network(
+          url,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return const SizedBox.shrink();
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _InitialAvatar extends StatelessWidget {
+  const _InitialAvatar({required this.initial, required this.inverted});
+
+  final String initial;
+  final bool inverted;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: inverted ? const Color(0xFFF5EBDD) : const Color(0xFF3B82C4),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            color: inverted ? const Color(0xFF3B82C4) : Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({
+    required this.initial,
+    required this.picture,
+    required this.canEdit,
+    required this.onEdit,
+  });
+
+  final String initial;
+  final String? picture;
+  final bool canEdit;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        AccountAvatar(initial: initial, picture: picture, size: 126),
+        if (canEdit)
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Material(
+              color: const Color(0xFF3B82C4),
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: onEdit,
+                customBorder: const CircleBorder(),
+                child: const Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(
+                    Icons.edit_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _AvatarChoiceDialog extends StatelessWidget {
+  const _AvatarChoiceDialog({required this.selectedAvatar});
+
+  final String selectedAvatar;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AvatarChoiceDialogContent(selectedAvatar: selectedAvatar);
+  }
+}
+
+class _AvatarChoiceDialogContent extends StatefulWidget {
+  const _AvatarChoiceDialogContent({required this.selectedAvatar});
+
+  final String selectedAvatar;
+
+  @override
+  State<_AvatarChoiceDialogContent> createState() =>
+      _AvatarChoiceDialogContentState();
+}
+
+class _AvatarChoiceDialogContentState
+    extends State<_AvatarChoiceDialogContent> {
+  late String selectedAvatar = widget.selectedAvatar;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFFF5EBDD),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      title: const Text(
+        'Choisir votre avatar',
+        style: TextStyle(color: Color(0xFF263C3D), fontWeight: FontWeight.w800),
+      ),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Sélectionnez un style qui vous ressemble.',
+                style: TextStyle(color: Color(0xFF5C7070)),
+              ),
+              const SizedBox(height: 18),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: profileAvatarChoices.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.82,
+                ),
+                itemBuilder: (context, index) {
+                  final avatar = profileAvatarChoices[index];
+                  final isSelected = avatar == selectedAvatar;
+                  return InkWell(
+                    onTap: () => setState(() => selectedAvatar = avatar),
+                    borderRadius: BorderRadius.circular(18),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: EdgeInsets.all(isSelected ? 3 : 0),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFFE58B4A)
+                                  : Colors.white.withOpacity(0.55),
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: isSelected
+                                  ? const [
+                                      BoxShadow(
+                                        color: Color(0x38E58B4A),
+                                        blurRadius: 12,
+                                        offset: Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: _RemoteAvatarImage(
+                                url: avatar,
+                                fallback: const _AvatarPlaceholder(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Style ${index + 1}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: isSelected
+                                ? FontWeight.w800
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? const Color(0xFFB96831)
+                                : const Color(0xFF5C7070),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF3B82C4),
+            foregroundColor: Colors.white,
+          ),
+          onPressed: () => Navigator.of(context).pop(selectedAvatar),
+          child: const Text('Utiliser cet avatar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _VroidAvatarGallery extends StatelessWidget {
+  const _VroidAvatarGallery();
+
+  static const _avatars = [
+    'https://api.dicebear.com/9.x/notionists/png?seed=study-1&backgroundColor=b6e3f4',
+    'https://api.dicebear.com/9.x/notionists/png?seed=study-2&backgroundColor=c0aede',
+    'https://api.dicebear.com/9.x/notionists/png?seed=study-3&backgroundColor=ffd5dc',
+    'https://api.dicebear.com/9.x/notionists/png?seed=study-4&backgroundColor=d1d4f9',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'AVATARS 3D',
+          style: TextStyle(
+            color: Color(0xFF34565A),
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 58,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _avatars.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              return ClipOval(
+                child: Container(
+                  width: 58,
+                  height: 58,
+                  color: Colors.white.withOpacity(0.65),
+                  child: _RemoteAvatarImage(
+                    url: _avatars[index],
+                    fallback: const _AvatarPlaceholder(),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // 12 High-Quality Educational Avatars (Student, Graduate, Engineer, Scientist, etc.)
 final List<Color> skins = [
-  const Color(0xFFF5C9A5), const Color(0xFF9B6043), const Color(0xFFE8B58D),
-  const Color(0xFF70432F), const Color(0xFFFFD7B5), const Color(0xFFC58B63),
-  const Color(0xFFE9BC91), const Color(0xFF86583F), const Color(0xFFF2C6A0),
-  const Color(0xFFAD7654), const Color(0xFFFCE3C2), const Color(0xFF613B24),
+  const Color(0xFFF5C9A5),
+  const Color(0xFF9B6043),
+  const Color(0xFFE8B58D),
+  const Color(0xFF70432F),
+  const Color(0xFFFFD7B5),
+  const Color(0xFFC58B63),
+  const Color(0xFFE9BC91),
+  const Color(0xFF86583F),
+  const Color(0xFFF2C6A0),
+  const Color(0xFFAD7654),
+  const Color(0xFFFCE3C2),
+  const Color(0xFF613B24),
 ];
 
 final List<Color> hairs = [
-  const Color(0xFF38251F), const Color(0xFF241B18), const Color(0xFF7A4527),
-  const Color(0xFF171719), const Color(0xFFDEAA42), const Color(0xFF493027),
-  const Color(0xFF30201B), const Color(0xFF24202B), const Color(0xFFB86B32),
-  const Color(0xFF35241D), const Color(0xFFE6C79C), const Color(0xFF100E13),
+  const Color(0xFF38251F),
+  const Color(0xFF241B18),
+  const Color(0xFF7A4527),
+  const Color(0xFF171719),
+  const Color(0xFFDEAA42),
+  const Color(0xFF493027),
+  const Color(0xFF30201B),
+  const Color(0xFF24202B),
+  const Color(0xFFB86B32),
+  const Color(0xFF35241D),
+  const Color(0xFFE6C79C),
+  const Color(0xFF100E13),
 ];
 
 final List<Color> backgrounds = [
-  const Color(0xFFE7DEFF), const Color(0xFFD5F5ED), const Color(0xFFFFE3D7),
-  const Color(0xFFDCEBFF), const Color(0xFFFFE8AE), const Color(0xFFFFDDEB),
-  const Color(0xFFD9F0FF), const Color(0xFFE8DDFB), const Color(0xFFFFE1C5),
-  const Color(0xFFD6F4E2), const Color(0xFFFAD2E1), const Color(0xFFDFE1F5),
+  const Color(0xFFE7DEFF),
+  const Color(0xFFD5F5ED),
+  const Color(0xFFFFE3D7),
+  const Color(0xFFDCEBFF),
+  const Color(0xFFFFE8AE),
+  const Color(0xFFFFDDEB),
+  const Color(0xFFD9F0FF),
+  const Color(0xFFE8DDFB),
+  const Color(0xFFFFE1C5),
+  const Color(0xFFD6F4E2),
+  const Color(0xFFFAD2E1),
+  const Color(0xFFDFE1F5),
 ];
 
 class _AdvancedAvatarSelector extends StatefulWidget {
   final ValueChanged<int>? onSelected;
   final int initialSelection;
 
-  const _AdvancedAvatarSelector({
-    this.onSelected,
-    this.initialSelection = 1,
-  });
+  const _AdvancedAvatarSelector({this.onSelected, this.initialSelection = 1});
 
   @override
-  State<_AdvancedAvatarSelector> createState() => _AdvancedAvatarSelectorState();
+  State<_AdvancedAvatarSelector> createState() =>
+      _AdvancedAvatarSelectorState();
 }
 
 class _AdvancedAvatarSelectorState extends State<_AdvancedAvatarSelector> {
@@ -370,13 +782,13 @@ class _AdvancedAvatarSelectorState extends State<_AdvancedAvatarSelector> {
                   color: backgrounds[index],
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFF345F5A) : Colors.transparent,
+                    color: isSelected
+                        ? const Color(0xFF345F5A)
+                        : Colors.transparent,
                     width: 3,
                   ),
                 ),
-                child: CustomPaint(
-                  painter: _AvatarPainter(avatarId: id),
-                ),
+                child: CustomPaint(painter: _AvatarPainter(avatarId: id)),
               ),
             );
           },
@@ -408,11 +820,19 @@ class _AvatarPainter extends CustomPainter {
     // Ears
     final skinPaint = Paint()..color = skin;
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(cx - (size.width * 0.26), cy + 2), width: size.width * 0.1, height: size.height * 0.16),
+      Rect.fromCenter(
+        center: Offset(cx - (size.width * 0.26), cy + 2),
+        width: size.width * 0.1,
+        height: size.height * 0.16,
+      ),
       skinPaint,
     );
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(cx + (size.width * 0.26), cy + 2), width: size.width * 0.1, height: size.height * 0.16),
+      Rect.fromCenter(
+        center: Offset(cx + (size.width * 0.26), cy + 2),
+        width: size.width * 0.1,
+        height: size.height * 0.16,
+      ),
       skinPaint,
     );
 
@@ -421,7 +841,11 @@ class _AvatarPainter extends CustomPainter {
 
     // Neck & Collar
     canvas.drawRect(
-      Rect.fromCenter(center: Offset(cx, cy + (size.height * 0.35)), width: size.width * 0.22, height: size.height * 0.18),
+      Rect.fromCenter(
+        center: Offset(cx, cy + (size.height * 0.35)),
+        width: size.width * 0.22,
+        height: size.height * 0.18,
+      ),
       skinPaint,
     );
 
@@ -446,16 +870,35 @@ class _AvatarPainter extends CustomPainter {
 
     final hairPaint = Paint()..color = hair;
     final hairPath = Path();
-    hairPath.addOval(Rect.fromCenter(center: Offset(cx, cy - (size.height * 0.12)), width: size.width * 0.54, height: size.height * 0.38));
+    hairPath.addOval(
+      Rect.fromCenter(
+        center: Offset(cx, cy - (size.height * 0.12)),
+        width: size.width * 0.54,
+        height: size.height * 0.38,
+      ),
+    );
     canvas.drawPath(hairPath, hairPaint);
 
     final eyePaint = Paint()..color = const Color(0xFF263C3D);
-    canvas.drawCircle(Offset(cx - (size.width * 0.11), cy), size.width * 0.045, eyePaint);
-    canvas.drawCircle(Offset(cx + (size.width * 0.11), cy), size.width * 0.045, eyePaint);
+    canvas.drawCircle(
+      Offset(cx - (size.width * 0.11), cy),
+      size.width * 0.045,
+      eyePaint,
+    );
+    canvas.drawCircle(
+      Offset(cx + (size.width * 0.11), cy),
+      size.width * 0.045,
+      eyePaint,
+    );
 
     final smile = Path()
       ..moveTo(cx - (size.width * 0.08), cy + (size.height * 0.14))
-      ..quadraticBezierTo(cx, cy + (size.height * 0.22), cx + (size.width * 0.08), cy + (size.height * 0.14));
+      ..quadraticBezierTo(
+        cx,
+        cy + (size.height * 0.22),
+        cx + (size.width * 0.08),
+        cy + (size.height * 0.14),
+      );
     canvas.drawPath(
       smile,
       Paint()
@@ -467,7 +910,70 @@ class _AvatarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _AvatarPainter oldDelegate) => oldDelegate.avatarId != avatarId;
+  bool shouldRepaint(covariant _AvatarPainter oldDelegate) =>
+      oldDelegate.avatarId != avatarId;
+}
+
+class PainterlyBackground extends CustomPainter {
+  const PainterlyBackground();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRect(rect, Paint()..color = const Color(0xFFF5EBDD));
+
+    canvas.save();
+    canvas.clipRect(rect);
+
+    final circles = Paint()..style = PaintingStyle.fill;
+    final circleData = [
+      (
+        Offset(size.width * 0.1, size.height * 0.2),
+        size.width * 0.035,
+        const Color(0xFFE8D5B8),
+        0.42,
+      ),
+      (
+        Offset(size.width * 0.9, size.height * 0.2),
+        size.width * 0.028,
+        const Color(0xFFD8C5A9),
+        0.38,
+      ),
+      (
+        Offset(size.width * 0.07, size.height * 0.78),
+        size.width * 0.052,
+        const Color(0xFFE2CDB0),
+        0.34,
+      ),
+      (
+        Offset(size.width * 0.93, size.height * 0.78),
+        size.width * 0.052,
+        const Color(0xFFE2CDB0),
+        0.34,
+      ),
+      (
+        Offset(size.width * 0.16, size.height * 0.86),
+        size.width * 0.018,
+        const Color(0xFFCDB28F),
+        0.45,
+      ),
+      (
+        Offset(size.width * 0.84, size.height * 0.86),
+        size.width * 0.018,
+        const Color(0xFFCDB28F),
+        0.45,
+      ),
+    ];
+    for (final (center, radius, color, opacity) in circleData) {
+      circles.color = color.withOpacity(opacity);
+      canvas.drawCircle(center, radius, circles);
+    }
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant PainterlyBackground oldDelegate) => false;
 }
 
 // Artistic background
@@ -510,7 +1016,11 @@ class ArtisticBackground extends CustomPainter {
       final y = random.nextDouble() * h;
       if (x > w * 0.25 && x < w * 0.75 && y > h * 0.2 && y < h * 0.8) continue;
       final radius = random.nextDouble() * 2.5 + 0.5;
-      canvas.drawCircle(Offset(x, y), radius, Paint()..color = colors[i % colors.length].withOpacity(0.5));
+      canvas.drawCircle(
+        Offset(x, y),
+        radius,
+        Paint()..color = colors[i % colors.length].withOpacity(0.5),
+      );
     }
   }
 
