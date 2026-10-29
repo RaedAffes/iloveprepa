@@ -129,9 +129,7 @@ class _AdminAccessScreenState extends State<AdminAccessScreen> {
               ),
               IconButton(
                 tooltip: 'Actualiser',
-                onPressed: _loading
-                    ? null
-                    : () => _search(_searchController.text),
+                onPressed: _loading ? null : () => _search(_searchController.text),
                 icon: const Icon(Icons.refresh_rounded),
               ),
             ],

@@ -3,6 +3,7 @@
 // whose `role` is 'admin' — checked on every request, never cached.
 
 import { userFromRequest } from './auth.js';
+import { grantOrder, publicOrder } from './orders.js';
 
 const ADMIN_CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +26,12 @@ export async function handleAdmin(request, env, url) {
     }
     if (url.pathname === '/api/admin/entitlements' && request.method === 'POST') {
       return setEntitlement(request, env, admin.user);
+    }
+    if (url.pathname === '/api/admin/orders' && request.method === 'GET') {
+      return listOrders(env);
+    }
+    if (url.pathname === '/api/admin/orders/validate' && request.method === 'POST') {
+      return validateOrder(request, env, admin.user);
     }
     return adminJson({ error: 'Not found' }, 404);
   } catch (err) {
@@ -159,6 +166,38 @@ async function setEntitlement(request, env, admin) {
 
   const entitlements = await loadEntitlements(db, [userId]);
   return adminJson({ ok: true, entitlements: entitlements[userId] || [] }, 200);
+}
+
+async function listOrders(env) {
+  const rows = await env.iloveprepa_db
+    .prepare(
+      `SELECT o.id, o.plan_code, o.product_codes, o.amount_dt, o.payer_phone, o.status,
+              o.created_at, u.email, u.name
+       FROM orders o JOIN users u ON u.id = o.user_id
+       WHERE o.status IN ('pending_payment', 'payment_claimed')
+       ORDER BY o.created_at DESC LIMIT 50`,
+    )
+    .all();
+  return adminJson({ orders: (rows.results || []).map(publicOrder) }, 200);
+}
+
+async function validateOrder(request, env, admin) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return adminJson({ error: 'invalid' }, 400);
+  }
+  const id = String((body && body.orderId) || '');
+  const order = await env.iloveprepa_db
+    .prepare('SELECT * FROM orders WHERE id = ?')
+    .bind(id)
+    .first();
+  if (!order || (order.status !== 'pending_payment' && order.status !== 'payment_claimed')) {
+    return adminJson({ error: 'not_found' }, 404);
+  }
+  await grantOrder(env.iloveprepa_db, order, admin.id);
+  return adminJson({ ok: true }, 200);
 }
 
 function adminJson(payload, status) {

@@ -42,6 +42,8 @@ class LibrarySidebar extends StatelessWidget {
     this.onBrandTap,
     this.onOpenProfile,
     this.onManageAccess,
+    this.onManageOrders,
+    this.onOpenOrders,
     this.onSignedOut,
   });
 
@@ -75,6 +77,10 @@ class LibrarySidebar extends StatelessWidget {
 
   /// Admin-only: opens the "Manage access" screen in the main area.
   final void Function(AuthUser user)? onManageAccess;
+
+  final VoidCallback? onManageOrders;
+
+  final VoidCallback? onOpenOrders;
 
   /// Closes profile and manage-access when the account signs out.
   final VoidCallback? onSignedOut;
@@ -199,6 +205,8 @@ class LibrarySidebar extends StatelessWidget {
             child: AuthButton(
               onOpenProfile: onOpenProfile,
               onManageAccess: onManageAccess,
+              onManageOrders: onManageOrders,
+              onOpenOrders: onOpenOrders,
               onSignedOut: onSignedOut,
             ),
           ),

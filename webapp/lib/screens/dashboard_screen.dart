@@ -13,6 +13,9 @@ import '../models/document_item.dart';
 import '../models/library_folder.dart';
 import '../models/library_index.dart';
 import '../screens/admin_access_screen.dart';
+import '../screens/admin_orders_screen.dart';
+import '../screens/orders_screen.dart';
+import '../screens/plans_screen.dart';
 import '../screens/profile_screen.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_user.dart';
@@ -100,6 +103,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _showContactForm = false;
   AuthUser? _profileUser;
   bool _showManageAccess = false;
+  bool _showAdminOrders = false;
+  bool _showPlans = false;
+  bool _showOrders = false;
 
   /// Bumped every time the Contact button is pressed so the contact form is
   /// rebuilt from scratch (fresh blank form instead of the last success view).
@@ -371,8 +377,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _showContactForm = true;
       _showManageAccess = false;
+      _showAdminOrders = false;
+      _showPlans = false;
+      _showOrders = false;
       _profileUser = null;
       _contactEpoch++;
+    });
+  }
+
+  void _openPlans() {
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.of(context).maybePop();
+    }
+    _resetScroll();
+    setState(() {
+      _showPlans = true;
+      _showOrders = false;
+      _showContactForm = false;
+      _showManageAccess = false;
+      _showAdminOrders = false;
+      _profileUser = null;
+      _sidebarCollapsed = true;
+    });
+  }
+
+  void _closePlans() {
+    setState(() {
+      _showPlans = false;
+      _showOrders = false;
+      _sidebarCollapsed = false;
     });
   }
 
@@ -424,7 +457,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          _DonateFab(onPressed: _openDonForm),
+          _DonateFab(onPressed: _openPlans),
           Positioned(
             right: _kDonFabSize + _kDonCalloutGap,
             top: (_kDonFabSize - _kDonCalloutHeight) / 2,
@@ -439,7 +472,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: _showSupportCallout
                     ? _SupportCallout(
                         key: const ValueKey('support-callout'),
-                        onTap: _openDonForm,
+                        onTap: _openPlans,
                       )
                     : const SizedBox(
                         key: ValueKey('support-callout-hidden'),
@@ -469,6 +502,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _showContactForm = false;
       _showManageAccess = false;
+      _showAdminOrders = false;
+      _showPlans = false;
+      _showOrders = false;
       _profileUser = null;
       _currentPath = List.of(path);
       // Anchor the main-page accordion on this folder: only its branch stays
@@ -503,6 +539,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _showContactForm = false;
       _showManageAccess = false;
+      _showAdminOrders = false;
+      _showPlans = false;
+      _showOrders = false;
       _query = '';
       _searchController.clear();
       if (path.isEmpty) {
@@ -563,6 +602,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _showContactForm = false;
       _showManageAccess = false;
+      _showAdminOrders = false;
+      _showPlans = false;
+      _showOrders = false;
       _profileUser = null;
       _currentPath = const [];
       _query = '';
@@ -577,6 +619,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _showContactForm = false;
       _showManageAccess = false;
+      _showAdminOrders = false;
+      _showPlans = false;
+      _showOrders = false;
       _profileUser = null;
       _currentPath = const [];
       _query = '';
@@ -711,7 +756,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // like a native mobile app, always reachable while browsing. It keeps
       // its exact position: the temporary "Support Us" callout to its left
       // never moves or resizes the button.
-      floatingActionButton: _buildDonFab(),
+      floatingActionButton: _showPlans ? null : _buildDonFab(),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -781,21 +826,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onOpenProfile: (user) => setState(() {
         _showContactForm = false;
         _showManageAccess = false;
+      _showAdminOrders = false;
+        _showPlans = false;
+      _showOrders = false;
         _profileUser = user;
       }),
       onManageAccess: (user) => setState(() {
         _showContactForm = false;
+        _showAdminOrders = false;
+        _showPlans = false;
+      _showOrders = false;
         _profileUser = null;
         _showManageAccess = true;
       }),
+      onManageOrders: () => setState(() {
+        _showContactForm = false;
+        _showManageAccess = false;
+        _showPlans = false;
+        _showOrders = false;
+        _profileUser = null;
+        _showAdminOrders = true;
+      }),
+      onOpenOrders: () => setState(() {
+        _showContactForm = false;
+        _showManageAccess = false;
+      _showAdminOrders = false;
+        _showPlans = false;
+        _profileUser = null;
+        _showOrders = true;
+      }),
       onSignedOut: () => setState(() {
         _showManageAccess = false;
+      _showAdminOrders = false;
+        _showPlans = false;
+      _showOrders = false;
         _profileUser = null;
       }),
     );
   }
 
   Widget _buildContent() {
+    if (_showPlans) {
+      return PlansScreen(
+        onBack: _closePlans,
+        onPlaced: () => setState(() {
+          _showPlans = false;
+          _showOrders = true;
+        }),
+      );
+    }
+    if (_showOrders) {
+      return OrdersScreen(onBack: () => setState(() => _showOrders = false));
+    }
+    if (_showAdminOrders) {
+      return AdminOrdersScreen(onBack: () => setState(() => _showAdminOrders = false));
+    }
     if (_showManageAccess) {
       return AdminAccessScreen(
         onBack: () => setState(() => _showManageAccess = false),
@@ -1240,7 +1325,7 @@ class _SupportCallout extends StatelessWidget {
             ],
           ),
           child: const Text(
-            'Support Us',
+            'Formules',
             style: TextStyle(
               color: Color(0xFF1C2340),
               fontSize: 17,
@@ -1308,7 +1393,7 @@ class _DonateFabState extends State<_DonateFab>
         onTapDown: (_) => _setActive(true),
         onTapCancel: () => _setActive(false),
         child: Tooltip(
-          message: 'Faire un don',
+          message: 'Voir les formules',
           waitDuration: const Duration(milliseconds: 300),
           child: AnimatedBuilder(
             animation: _controller,
@@ -1326,12 +1411,10 @@ class _DonateFabState extends State<_DonateFab>
                 shape: BoxShape.circle,
                 color: Color(0xFFFF923C),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Image.asset(
-                  'assets/icon/don.png',
-                  fit: BoxFit.contain,
-                ),
+              child: const Icon(
+                Icons.workspace_premium_rounded,
+                color: Colors.white,
+                size: 30,
               ),
             ),
           ),
