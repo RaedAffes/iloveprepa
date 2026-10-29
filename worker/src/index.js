@@ -1,7 +1,9 @@
+import { handleAuth } from './auth.js';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma',
+  'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma, Authorization',
   'Access-Control-Max-Age': '86400',
   'Cache-Control': 'no-store',
 };
@@ -86,6 +88,10 @@ export default {
 
     if (url.pathname === '/api/validate-email') {
       return handleValidateEmail(url, env);
+    }
+
+    if (url.pathname.startsWith('/api/auth/')) {
+      return handleAuth(request, env, url);
     }
 
     // The cached KV read only gates the library operations below — the stats,

@@ -40,3 +40,30 @@ UPDATE counters SET
   visits = COALESCE((SELECT SUM(visits) FROM monthly_counts), 0),
   downloads = COALESCE((SELECT SUM(downloads) FROM monthly_counts), 0)
 WHERE id = 1;
+
+-- Google accounts. `id` is the Google subject (`sub`), stable for the life of
+-- the Google account. Profile columns are refreshed on every sign-in.
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  email_verified INTEGER NOT NULL DEFAULT 0,
+  name TEXT,
+  given_name TEXT,
+  family_name TEXT,
+  picture TEXT,
+  locale TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  last_login_at TEXT NOT NULL
+);
+
+-- Opaque session tokens are stored only as a SHA-256 hex digest (`id`).
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);

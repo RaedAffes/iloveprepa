@@ -17,6 +17,7 @@ import '../services/api_service.dart';
 import '../services/stats_service.dart';
 import '../utils/web_download.dart';
 import '../widgets/app_footer.dart';
+import '../widgets/auth_button.dart';
 import '../widgets/document_viewer.dart';
 import '../widgets/folder_content_view.dart';
 import '../widgets/iloveprepa_brand.dart';
@@ -992,6 +993,8 @@ return Container(
               onTap: onBrandTap,
             ),
           const Spacer(),
+          AuthButton(compact: !wide),
+          const SizedBox(width: AppSpacing.sm),
 _HeaderIconButton(
             tooltip: 'Contact',
             image: 'assets/icon/contact.png',

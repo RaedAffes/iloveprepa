@@ -206,6 +206,25 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    // Save the Google session before Flutter starts. The worker returns the
+    // token in the URL fragment, and Flutter's startup can replace that
+    // fragment before Dart code runs.
+    (function () {
+      var hash = location.hash.replace(/^#/, '');
+      if (!hash) return;
+      var params = new URLSearchParams(hash);
+      var token = params.get('auth_session');
+      var error = params.get('auth_error');
+      if (token) {
+        localStorage.setItem('flutter.iprepa_session', JSON.stringify(token));
+      }
+      if (error) sessionStorage.setItem('iprepa_auth_error', error);
+      if (token || error) {
+        history.replaceState(null, '', location.pathname + location.search);
+      }
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
