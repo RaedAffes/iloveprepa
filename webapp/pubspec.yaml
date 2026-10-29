@@ -37,6 +37,7 @@ dependencies:
   shared_preferences: ^2.5.5
   web: ^1.1.1
   flutter_svg: ^2.3.0
+  qr_flutter: ^4.1.0
   firebase_core: ^5.1.0
   firebase_auth: ^7.0.1
   profile_lift: ^0.0.1

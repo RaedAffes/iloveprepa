@@ -1,5 +1,6 @@
 import { handleAuth } from './auth.js';
 import { handleAdmin } from './admin.js';
+import { handleOrders } from './orders.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -97,6 +98,10 @@ export default {
 
     if (url.pathname.startsWith('/api/admin/')) {
       return handleAdmin(request, env, url);
+    }
+
+    if (url.pathname.startsWith('/api/orders')) {
+      return handleOrders(request, env, url);
     }
 
     // The cached KV read only gates the library operations below — the stats,

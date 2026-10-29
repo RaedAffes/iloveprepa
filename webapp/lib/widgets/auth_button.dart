@@ -15,7 +15,7 @@ String accountInitial(String label) {
   return trimmed.characters.first.toUpperCase();
 }
 
-enum AccountMenuAction { profile, manageAccess, logout }
+enum AccountMenuAction { profile, orders, manageAccess, manageOrders, logout }
 
 Future<AccountMenuAction?> showAccountMenu(BuildContext anchorContext, AuthUser user) {
   final box = anchorContext.findRenderObject();
@@ -178,6 +178,11 @@ class _AccountCard extends StatelessWidget {
                   label: 'Profil',
                   onTap: () => Navigator.of(context).pop(AccountMenuAction.profile),
                 ),
+                _MenuRow(
+                  icon: Icons.receipt_long_outlined,
+                  label: 'Mes commandes',
+                  onTap: () => Navigator.of(context).pop(AccountMenuAction.orders),
+                ),
                 if (user.isAdmin) ...[
                   const Divider(height: 1, thickness: 1, color: AppColors.border),
                   _MenuRow(
@@ -185,6 +190,12 @@ class _AccountCard extends StatelessWidget {
                     label: 'Gérer les accès',
                     onTap: () =>
                         Navigator.of(context).pop(AccountMenuAction.manageAccess),
+                  ),
+                  _MenuRow(
+                    icon: Icons.fact_check_outlined,
+                    label: 'Gérer les commandes',
+                    onTap: () =>
+                        Navigator.of(context).pop(AccountMenuAction.manageOrders),
                   ),
                 ],
                 const Divider(height: 1, thickness: 1, color: AppColors.border),
@@ -287,6 +298,8 @@ class AuthButton extends StatefulWidget {
     super.key,
     this.onOpenProfile,
     this.onManageAccess,
+    this.onManageOrders,
+    this.onOpenOrders,
     this.onSignedOut,
   });
 
@@ -294,6 +307,10 @@ class AuthButton extends StatefulWidget {
 
   /// Admin-only entry point for the "Manage access" screen.
   final void Function(AuthUser user)? onManageAccess;
+
+  final VoidCallback? onManageOrders;
+
+  final VoidCallback? onOpenOrders;
 
   /// Closes account-only screens (profile, manage access) the moment the
   /// session ends, so they do not stay visible until a page reload.
@@ -339,7 +356,9 @@ class _AuthButtonState extends State<AuthButton> {
       widget.onSignedOut?.call();
     }
     if (action == AccountMenuAction.profile) widget.onOpenProfile?.call(user);
+    if (action == AccountMenuAction.orders) widget.onOpenOrders?.call();
     if (action == AccountMenuAction.manageAccess) widget.onManageAccess?.call(user);
+    if (action == AccountMenuAction.manageOrders) widget.onManageOrders?.call();
     if (mounted) setState(() => _open = false);
   }
 
