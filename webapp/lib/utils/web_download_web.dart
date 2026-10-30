@@ -4,10 +4,10 @@ import 'package:web/web.dart' as web;
 /// server answers with `Content-Disposition: attachment`, so the file always
 /// downloads — no tab switch, no popup blocker. This is the same mechanism
 /// real apps use and works on desktop and mobile browsers.
-Future<bool> triggerWebDownload(String url) async {
+Future<bool> triggerWebDownload(String url, {String fileName = ''}) async {
   final anchor = web.HTMLAnchorElement()
     ..href = url
-    ..download = ''
+    ..download = fileName
     ..style.display = 'none';
   web.document.body?.appendChild(anchor);
   anchor.click();

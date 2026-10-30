@@ -41,6 +41,9 @@ class LibrarySidebar extends StatelessWidget {
     this.onMenu,
     this.onBrandTap,
     this.onOpenProfile,
+    this.onOpenPlans,
+    this.onOpenPremiumExams,
+    this.premiumExamsActive = false,
     this.onManageAccess,
     this.onManageOrders,
     this.onOpenOrders,
@@ -74,6 +77,14 @@ class LibrarySidebar extends StatelessWidget {
 
   /// Opens the profile in the main area. The sidebar stays open.
   final void Function(AuthUser user)? onOpenProfile;
+
+  /// Opens the plans page for a free account.
+  final VoidCallback? onOpenPlans;
+
+  /// Opens the premium exams page. The wide sidebar stays open.
+  final VoidCallback? onOpenPremiumExams;
+
+  final bool premiumExamsActive;
 
   /// Admin-only: opens the "Manage access" screen in the main area.
   final void Function(AuthUser user)? onManageAccess;
@@ -194,7 +205,27 @@ class LibrarySidebar extends StatelessWidget {
                     ],
                   ),
           ),
-          const Divider(height: 1, color: Color(0x33FFFFFF)),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Divider(height: 1, thickness: 1, color: Color(0x33FFFFFF)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: _SidebarPlanSection(
+              examsActive: premiumExamsActive,
+              onUpgrade: onOpenPlans,
+              onOpenExams: onOpenPremiumExams,
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Divider(height: 1, thickness: 1, color: Color(0x33FFFFFF)),
+          ),
           Padding(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.md,
@@ -212,6 +243,122 @@ class LibrarySidebar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SidebarPlanSection extends StatelessWidget {
+  const _SidebarPlanSection({
+    required this.examsActive,
+    required this.onUpgrade,
+    required this.onOpenExams,
+  });
+
+  final bool examsActive;
+  final VoidCallback? onUpgrade;
+  final VoidCallback? onOpenExams;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AuthSession.instance,
+      builder: (context, _) {
+        final session = AuthSession.instance;
+        if (!session.ready) return const SizedBox.shrink();
+        final user = session.user;
+        if (user != null && (user.isPremium || user.isAdmin)) {
+          return _PremiumSpace(active: examsActive, onOpenExams: onOpenExams);
+        }
+        return _UpgradeButton(onPressed: onUpgrade);
+      },
+    );
+  }
+}
+
+class _UpgradeButton extends StatelessWidget {
+  const _UpgradeButton({required this.onPressed});
+
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: landing.AppColors.orange,
+      borderRadius: BorderRadius.circular(AppRadius.button),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'Passer à Premium',
+                style: AppTypography.label(Colors.white).copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumSpace extends StatelessWidget {
+  const _PremiumSpace({required this.active, required this.onOpenExams});
+
+  final bool active;
+  final VoidCallback? onOpenExams;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.sm, 0, AppSpacing.sm, AppSpacing.sm),
+          child: Text(
+            'ESPACE PREMIUM',
+            style: AppTypography.eyebrow(landing.AppColors.orange),
+          ),
+        ),
+        Material(
+          color: active ? Colors.white.withValues(alpha: 0.12) : Colors.transparent,
+          borderRadius: AppRadius.navR,
+          child: InkWell(
+            onTap: onOpenExams,
+            borderRadius: AppRadius.navR,
+            hoverColor: Colors.white12,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.assignment_outlined,
+                    size: 18,
+                    color: active ? Colors.white : landing.AppColors.orange,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      'Examens corrigés',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(Colors.white).copyWith(
+                        fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

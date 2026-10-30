@@ -155,6 +155,59 @@ export function publicOrder(row) {
   };
 }
 
+/// The student declared a payment that was not received. The order goes back
+/// to "en attente de paiement" so they can declare it again.
+export async function unclaimOrder(db, order) {
+  if (order.status !== 'payment_claimed') return false;
+  await db
+    .prepare(
+      `UPDATE orders SET status = 'pending_payment', updated_at = ?
+       WHERE id = ? AND status = 'payment_claimed'`,
+    )
+    .bind(new Date().toISOString(), order.id)
+    .run();
+  return true;
+}
+
+export async function rejectOrder(db, order) {
+  if (order.status !== 'pending_payment' && order.status !== 'payment_claimed') return false;
+  await db
+    .prepare(
+      `UPDATE orders SET status = 'rejected', updated_at = ?
+       WHERE id = ? AND status IN ('pending_payment', 'payment_claimed')`,
+    )
+    .bind(new Date().toISOString(), order.id)
+    .run();
+  return true;
+}
+
+/// Undoes a validation: access granted by that validation is revoked, and the
+/// order returns to "en attente de paiement". The student must declare payment again.
+export async function unvalidateOrder(db, order, adminId) {
+  if (order.status !== 'validated') return false;
+  const products = JSON.parse(order.product_codes);
+  const now = new Date().toISOString();
+  for (const code of products) {
+    await db
+      .prepare(
+        `UPDATE entitlement_grants
+         SET revoked_at = ?, revoked_by = ?
+         WHERE user_id = ? AND product_code = ? AND granted_by = ?
+           AND granted_at = ? AND revoked_at IS NULL`,
+      )
+      .bind(now, adminId, order.user_id, code, order.validated_by, order.updated_at)
+      .run();
+  }
+  await db
+    .prepare(
+      `UPDATE orders SET status = 'pending_payment', validated_by = NULL, updated_at = ?
+       WHERE id = ? AND status = 'validated'`,
+    )
+    .bind(now, order.id)
+    .run();
+  return true;
+}
+
 export async function grantOrder(db, order, adminId) {
   const products = JSON.parse(order.product_codes);
   const now = new Date().toISOString();

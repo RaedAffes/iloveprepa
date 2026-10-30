@@ -15,13 +15,16 @@ const String _pdfJsBase = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38';
 /// page navigation, zoom controls, fullscreen and download. A Flutter spinner
 /// covers the view until the viewer signals it is ready.
 class PdfEmbed extends StatefulWidget {
-  const PdfEmbed({super.key, required this.url, this.downloadUrl});
+  const PdfEmbed({super.key, required this.url, this.downloadUrl, this.fileName});
 
   final String url;
 
   /// Force-download URL (Content-Disposition: attachment) for the toolbar's
   /// download button. Falls back to [url] when omitted.
   final String? downloadUrl;
+
+  /// Saved file name for the toolbar download. Used when [url] is a local blob.
+  final String? fileName;
 
   @override
   State<PdfEmbed> createState() => _PdfEmbedState();
@@ -45,6 +48,7 @@ class _PdfEmbedState extends State<PdfEmbed> {
 
     final url = widget.url;
     final downloadUrl = widget.downloadUrl ?? url;
+    final fileName = widget.fileName ?? '';
     ui_web.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
       final container = web.HTMLDivElement()
         ..style.position = 'absolute'
@@ -59,6 +63,7 @@ class _PdfEmbedState extends State<PdfEmbed> {
         ..textContent = _viewerScript(
           url: url,
           downloadUrl: downloadUrl,
+          fileName: fileName,
           pdfJsBase: _pdfJsBase,
           readySignal: _readySignal,
         );
@@ -132,18 +137,26 @@ const String _viewerHtml = '''
 </div>
 ''';
 
+String _js(String value) => value
+    .replaceAll('\\', '\\\\')
+    .replaceAll("'", "\\'")
+    .replaceAll('\n', '')
+    .replaceAll('\r', '');
+
 String _viewerScript({
   required String url,
   required String downloadUrl,
+  required String fileName,
   required String pdfJsBase,
   required String readySignal,
 }) {
   return '''
 (async () => {
-const PDFJS_URL = '$pdfJsBase';
-const FILE_URL = '$url';
-const DL_URL = '$downloadUrl';
-const READY = '$readySignal';
+const PDFJS_URL = '${_js(pdfJsBase)}';
+const FILE_URL = '${_js(url)}';
+const DL_URL = '${_js(downloadUrl)}';
+const FILE_NAME = '${_js(fileName)}';
+const READY = '${_js(readySignal)}';
 
 function signalReady() {
   try { window[READY] && window[READY](); } catch (_) {}
@@ -419,7 +432,7 @@ fullBtn.onclick = () => {
 dlBtn.onclick = () => {
   const a = document.createElement('a');
   a.href = DL_URL;
-  a.download = '';
+  a.download = FILE_NAME;
   document.body.append(a);
   a.click();
   a.remove();

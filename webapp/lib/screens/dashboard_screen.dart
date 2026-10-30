@@ -16,6 +16,7 @@ import '../screens/admin_access_screen.dart';
 import '../screens/admin_orders_screen.dart';
 import '../screens/orders_screen.dart';
 import '../screens/plans_screen.dart';
+import '../screens/premium_library_page.dart';
 import '../screens/profile_screen.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_user.dart';
@@ -107,6 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _showAdminOrders = false;
   bool _showPlans = false;
   bool _showOrders = false;
+  bool _showPremiumExams = false;
 
   /// Bumped every time the Contact button is pressed so the contact form is
   /// rebuilt from scratch (fresh blank form instead of the last success view).
@@ -385,8 +387,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _showAdminOrders = false;
       _showPlans = false;
       _showOrders = false;
+      _showPremiumExams = false;
       _profileUser = null;
       _contactEpoch++;
+    });
+  }
+
+  void _openPremiumExams() {
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.of(context).maybePop();
+    }
+    _resetScroll();
+    setState(() {
+      _showPremiumExams = true;
+      _showContactForm = false;
+      _showManageAccess = false;
+      _showAdminOrders = false;
+      _showPlans = false;
+      _showOrders = false;
+      _profileUser = null;
     });
   }
 
@@ -410,6 +429,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _showPlans = false;
       _showOrders = false;
+      _showPremiumExams = false;
       _sidebarCollapsed = false;
     });
   }
@@ -508,6 +528,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _showAdminOrders = false;
       _showPlans = false;
       _showOrders = false;
+      _showPremiumExams = false;
       _profileUser = null;
       _currentPath = List.of(path);
       // Anchor the main-page accordion on this folder: only its branch stays
@@ -545,6 +566,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _showAdminOrders = false;
       _showPlans = false;
       _showOrders = false;
+      _showPremiumExams = false;
       _query = '';
       _searchController.clear();
       if (path.isEmpty) {
@@ -608,6 +630,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _showAdminOrders = false;
       _showPlans = false;
       _showOrders = false;
+      _showPremiumExams = false;
       _profileUser = null;
       _currentPath = const [];
       _query = '';
@@ -625,6 +648,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _showAdminOrders = false;
       _showPlans = false;
       _showOrders = false;
+      _showPremiumExams = false;
       _profileUser = null;
       _currentPath = const [];
       _query = '';
@@ -825,12 +849,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       treeScrollController: _treeScroll,
       onMenu: onMenu,
       onBrandTap: _goToLanding,
+      onOpenPlans: _openPlans,
+      onOpenPremiumExams: _openPremiumExams,
+      premiumExamsActive: _showPremiumExams,
       onOpenProfile: (user) => setState(() {
         _showContactForm = false;
         _showManageAccess = false;
       _showAdminOrders = false;
         _showPlans = false;
       _showOrders = false;
+      _showPremiumExams = false;
         _profileUser = user;
       }),
       onManageAccess: (user) => setState(() {
@@ -838,6 +866,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _showAdminOrders = false;
         _showPlans = false;
       _showOrders = false;
+      _showPremiumExams = false;
         _profileUser = null;
         _showManageAccess = true;
       }),
@@ -846,6 +875,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _showManageAccess = false;
         _showPlans = false;
         _showOrders = false;
+        _showPremiumExams = false;
         _profileUser = null;
         _showAdminOrders = true;
       }),
@@ -854,6 +884,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _showManageAccess = false;
       _showAdminOrders = false;
         _showPlans = false;
+        _showPremiumExams = false;
         _profileUser = null;
         _showOrders = true;
       }),
@@ -862,6 +893,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _showAdminOrders = false;
         _showPlans = false;
       _showOrders = false;
+      _showPremiumExams = false;
         _profileUser = null;
       }),
     );
@@ -873,6 +905,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onBack: _closePlans,
         onPlaced: () => setState(() {
           _showPlans = false;
+          _showPremiumExams = false;
           _showOrders = true;
         }),
       );
@@ -893,6 +926,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return ProfileScreen(
         user: profile,
         onBack: () => setState(() => _profileUser = null),
+      );
+    }
+    if (_showPremiumExams) {
+      return PremiumLibraryPage(
+        onBack: () => setState(() => _showPremiumExams = false),
       );
     }
     if (_showContactForm) {

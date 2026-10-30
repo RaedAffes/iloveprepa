@@ -251,10 +251,10 @@ class _MenuRow extends StatelessWidget {
 }
 
 /// One session for every sidebar copy (the drawer and the wide rail).
-class _AuthSession extends ChangeNotifier {
-  _AuthSession._();
+class AuthSession extends ChangeNotifier {
+  AuthSession._();
 
-  static final instance = _AuthSession._();
+  static final instance = AuthSession._();
 
   AuthUser? user;
   bool ready = false;
@@ -326,9 +326,9 @@ class _AuthButtonState extends State<AuthButton> {
   @override
   void initState() {
     super.initState();
-    _AuthSession.instance.boot().then((_) {
+    AuthSession.instance.boot().then((_) {
       if (!mounted) return;
-      final error = _AuthSession.instance.claimError();
+      final error = AuthSession.instance.claimError();
       if (error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_errorMessage(error))),
@@ -338,21 +338,18 @@ class _AuthButtonState extends State<AuthButton> {
   }
 
   Future<void> _openSignIn() async {
-    final user = await showDialog<AuthUser>(
-      context: context,
-      builder: (context) => const _SignInDialog(),
-    );
+    final user = await showSignInDialog(context);
     if (user == null) return;
-    _AuthSession.instance.setUser(user);
+    AuthSession.instance.setUser(user);
   }
 
   Future<void> _openAccount() async {
-    final user = _AuthSession.instance.user;
+    final user = AuthSession.instance.user;
     if (user == null || !mounted) return;
     setState(() => _open = true);
     final action = await showAccountMenu(context, user);
     if (action == AccountMenuAction.logout) {
-      await _AuthSession.instance.logout();
+      await AuthSession.instance.logout();
       widget.onSignedOut?.call();
     }
     if (action == AccountMenuAction.profile) widget.onOpenProfile?.call(user);
@@ -365,9 +362,9 @@ class _AuthButtonState extends State<AuthButton> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _AuthSession.instance,
+      listenable: AuthSession.instance,
       builder: (context, _) {
-        final session = _AuthSession.instance;
+        final session = AuthSession.instance;
         if (!session.ready) {
           return const SizedBox(height: 48);
         }
@@ -507,6 +504,13 @@ class _SidebarAccountTileState extends State<_SidebarAccountTile> {
       ),
     );
   }
+}
+
+Future<AuthUser?> showSignInDialog(BuildContext context) {
+  return showDialog<AuthUser>(
+    context: context,
+    builder: (context) => const _SignInDialog(),
+  );
 }
 
 class _SignInDialog extends StatefulWidget {

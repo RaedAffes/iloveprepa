@@ -51,7 +51,8 @@ class CourseOrder {
 class OrderService {
   Future<List<CourseOrder>> mine() => _list('/api/orders');
 
-  Future<List<CourseOrder>> pendingForAdmin() => _list('/api/admin/orders');
+  Future<List<CourseOrder>> adminOrders(String status) =>
+      _list('/api/admin/orders?status=$status');
 
   Future<CourseOrder> create({
     required String planCode,
@@ -74,6 +75,18 @@ class OrderService {
 
   Future<void> validate(String orderId) async {
     await _send('/api/admin/orders/validate', {'orderId': orderId});
+  }
+
+  Future<void> reject(String orderId) async {
+    await _send('/api/admin/orders/reject', {'orderId': orderId});
+  }
+
+  Future<void> unclaim(String orderId) async {
+    await _send('/api/admin/orders/unclaim', {'orderId': orderId});
+  }
+
+  Future<void> unvalidate(String orderId) async {
+    await _send('/api/admin/orders/unvalidate', {'orderId': orderId});
   }
 
   Future<List<CourseOrder>> _list(String path) async {
