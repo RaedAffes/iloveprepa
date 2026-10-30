@@ -19,11 +19,13 @@ import '../screens/plans_screen.dart';
 import '../screens/premium_library_page.dart';
 import '../screens/profile_screen.dart';
 import '../services/analytics_service.dart';
+import '../services/auth_service.dart';
 import '../services/auth_user.dart';
 import '../services/api_service.dart';
 import '../services/stats_service.dart';
 import '../utils/web_download.dart';
 import '../widgets/app_footer.dart';
+import '../widgets/auth_button.dart' show AuthSession;
 import '../widgets/document_viewer.dart';
 import '../widgets/folder_content_view.dart';
 import '../widgets/fancy_contact_button.dart';
@@ -855,18 +857,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onOpenProfile: (user) => setState(() {
         _showContactForm = false;
         _showManageAccess = false;
-      _showAdminOrders = false;
+        _showAdminOrders = false;
         _showPlans = false;
-      _showOrders = false;
-      _showPremiumExams = false;
+        _showOrders = false;
+        _showPremiumExams = false;
         _profileUser = user;
       }),
       onManageAccess: (user) => setState(() {
         _showContactForm = false;
         _showAdminOrders = false;
         _showPlans = false;
-      _showOrders = false;
-      _showPremiumExams = false;
+        _showOrders = false;
+        _showPremiumExams = false;
         _profileUser = null;
         _showManageAccess = true;
       }),
@@ -882,7 +884,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onOpenOrders: () => setState(() {
         _showContactForm = false;
         _showManageAccess = false;
-      _showAdminOrders = false;
+        _showAdminOrders = false;
         _showPlans = false;
         _showPremiumExams = false;
         _profileUser = null;
@@ -890,10 +892,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }),
       onSignedOut: () => setState(() {
         _showManageAccess = false;
-      _showAdminOrders = false;
+        _showAdminOrders = false;
         _showPlans = false;
-      _showOrders = false;
-      _showPremiumExams = false;
+        _showOrders = false;
+        _showPremiumExams = false;
         _profileUser = null;
       }),
     );
@@ -914,7 +916,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return OrdersScreen(onBack: () => setState(() => _showOrders = false));
     }
     if (_showAdminOrders) {
-      return AdminOrdersScreen(onBack: () => setState(() => _showAdminOrders = false));
+      return AdminOrdersScreen(
+        onBack: () => setState(() => _showAdminOrders = false),
+      );
     }
     if (_showManageAccess) {
       return AdminAccessScreen(
@@ -926,6 +930,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return ProfileScreen(
         user: profile,
         onBack: () => setState(() => _profileUser = null),
+        onSaved: (updatedUser) {
+          AuthSession.instance.setUser(updatedUser);
+          setState(() => _profileUser = updatedUser);
+        },
       );
     }
     if (_showPremiumExams) {

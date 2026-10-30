@@ -68,6 +68,7 @@ flutter:
     - assets/folder.png
     - assets/icon/contact.png
     - assets/icon/don.png
+    - assets/avatars/
     - assets/illustrations/contact_art.svg
     - assets/illustrations/contact_envelope.svg
     - assets/illustrations/contact_star1.svg

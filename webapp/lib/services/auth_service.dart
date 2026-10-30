@@ -1,5 +1,6 @@
 import 'auth_browser_stub.dart'
-    if (dart.library.js_interop) 'auth_browser_web.dart' as browser;
+    if (dart.library.js_interop) 'auth_browser_web.dart'
+    as browser;
 import 'auth_user.dart';
 
 export 'auth_user.dart';
@@ -21,25 +22,32 @@ class AuthService {
     String? familyName,
     String? faculty,
     String? phone,
-  }) =>
-      browser.signInWithEmail(
-        email,
-        password,
-        createAccount,
-        givenName,
-        familyName,
-        faculty,
-        phone,
-      );
+  }) => browser.signInWithEmail(
+    email,
+    password,
+    createAccount,
+    givenName,
+    familyName,
+    faculty,
+    phone,
+  );
 
   static Future<AuthResult> confirmEmail() => browser.confirmEmail();
 
-  static Future<AuthResult> resendVerification() => browser.resendVerification();
+  static Future<AuthResult> resendVerification() =>
+      browser.resendVerification();
 
   static Future<AuthResult> sendPasswordReset(String email) =>
       browser.sendPasswordReset(email);
 
   static Future<AuthUser?> currentUser() => browser.currentUser();
+
+  static Future<AuthResult> updateProfile({
+    required String givenName,
+    required String familyName,
+    required String faculty,
+    required String phone,
+  }) => browser.updateProfile(givenName, familyName, faculty, phone);
 
   static Future<void> logout() => browser.logout();
 
