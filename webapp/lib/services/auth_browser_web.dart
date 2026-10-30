@@ -40,7 +40,9 @@ Future<AuthResult> signInWithGoogle() async {
   if (!FirebaseConfig.isConfigured) return _firebaseNotConfigured();
   try {
     await _ensureFirebase();
-    final credential = await FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider());
+    final credential = await FirebaseAuth.instance.signInWithPopup(
+      GoogleAuthProvider(),
+    );
     return await _openSession(credential.user);
   } on FirebaseAuthException catch (err) {
     return AuthResult(error: _firebaseError(err.code));
@@ -63,13 +65,19 @@ Future<AuthResult> signInWithEmail(
     await _ensureFirebase();
     final auth = FirebaseAuth.instance;
     final credential = createAccount
-        ? await auth.createUserWithEmailAndPassword(email: email, password: password)
-        : await auth.signInWithEmailAndPassword(email: email, password: password);
+        ? await auth.createUserWithEmailAndPassword(
+            email: email,
+            password: password,
+          )
+        : await auth.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
     final account = credential.user;
-    final displayName = [givenName?.trim(), familyName?.trim()]
-        .whereType<String>()
-        .where((part) => part.isNotEmpty)
-        .join(' ');
+    final displayName = [
+      givenName?.trim(),
+      familyName?.trim(),
+    ].whereType<String>().where((part) => part.isNotEmpty).join(' ');
     if (createAccount && account != null && displayName.isNotEmpty) {
       await account.updateDisplayName(displayName);
     }
@@ -110,14 +118,17 @@ Future<AuthResult> confirmEmail() async {
     await _ensureFirebase();
     final current = FirebaseAuth.instance.currentUser;
     if (current == null) {
-      return const AuthResult(error: 'Reconnectez-vous, puis confirmez le lien reçu par e-mail.');
+      return const AuthResult(
+        error: 'Reconnectez-vous, puis confirmez le lien reçu par e-mail.',
+      );
     }
     await current.reload();
     final account = FirebaseAuth.instance.currentUser;
     if (account == null || !account.emailVerified) {
       return const AuthResult(
         needsVerification: true,
-        error: "Le lien n'a pas encore été confirmé. Ouvrez l'e-mail, puis réessayez.",
+        error:
+            "Le lien n'a pas encore été confirmé. Ouvrez l'e-mail, puis réessayez.",
       );
     }
     await account.getIdToken(true);
@@ -135,11 +146,15 @@ Future<AuthResult> resendVerification() async {
     await _ensureFirebase();
     final account = FirebaseAuth.instance.currentUser;
     if (account == null) {
-      return const AuthResult(error: 'Reconnectez-vous pour renvoyer l’e-mail.');
+      return const AuthResult(
+        error: 'Reconnectez-vous pour renvoyer l’e-mail.',
+      );
     }
     final sent = await _sendVerification(FirebaseAuth.instance, account);
     return sent ??
-        const AuthResult(notice: 'Un nouvel e-mail de vérification a été envoyé.');
+        const AuthResult(
+          notice: 'Un nouvel e-mail de vérification a été envoyé.',
+        );
   } on FirebaseAuthException catch (err) {
     return AuthResult(error: _firebaseError(err.code));
   } catch (_) {
@@ -150,7 +165,9 @@ Future<AuthResult> resendVerification() async {
 Future<AuthResult> sendPasswordReset(String email) async {
   final address = email.trim();
   if (address.isEmpty) {
-    return const AuthResult(error: 'Entrez votre e-mail pour recevoir le lien.');
+    return const AuthResult(
+      error: 'Entrez votre e-mail pour recevoir le lien.',
+    );
   }
   if (!FirebaseConfig.isConfigured) return _firebaseNotConfigured();
   try {
@@ -159,12 +176,15 @@ Future<AuthResult> sendPasswordReset(String email) async {
     await auth.setLanguageCode('fr');
     await auth.sendPasswordResetEmail(email: address);
     return const AuthResult(
-      notice: 'Un e-mail pour choisir un nouveau mot de passe a été envoyé. Vérifiez aussi les courriers indésirables.',
+      notice:
+          'Un e-mail pour choisir un nouveau mot de passe a été envoyé. Vérifiez aussi les courriers indésirables.',
     );
   } on FirebaseAuthException catch (err) {
     return AuthResult(error: _firebaseError(err.code));
   } catch (_) {
-    return const AuthResult(error: "L'e-mail n'a pas pu être envoyé. Réessayez.");
+    return const AuthResult(
+      error: "L'e-mail n'a pas pu être envoyé. Réessayez.",
+    );
   }
 }
 
@@ -247,7 +267,9 @@ Future<AuthResult> _openSession(
   final user = decoded['user'];
   if (user is Map) {
     return AuthResult(
-      user: AuthUser.fromJson(user.map((key, value) => MapEntry('$key', value))),
+      user: AuthUser.fromJson(
+        user.map((key, value) => MapEntry('$key', value)),
+      ),
     );
   }
   return AuthResult(user: await currentUser());
@@ -339,6 +361,50 @@ Future<AuthUser?> currentUser() async {
   return AuthUser.fromJson(user.map((key, value) => MapEntry('$key', value)));
 }
 
+Future<AuthResult> updateProfile(
+  String givenName,
+  String familyName,
+  String faculty,
+  String phone,
+) async {
+  final token = await authToken();
+  if (token == null) return const AuthResult(error: 'Votre session a expiré.');
+  try {
+    final headers = _jsonHeaders();
+    headers.set('Authorization', 'Bearer $token');
+    final response = await web.window
+        .fetch(
+          '${ApiService.apiBase}/api/auth/profile'.toJS,
+          web.RequestInit(
+            method: 'PUT',
+            headers: headers,
+            credentials: 'omit',
+            body: jsonEncode({
+              'givenName': givenName,
+              'familyName': familyName,
+              'faculty': faculty,
+              'phone': phone,
+            }).toJS,
+          ),
+        )
+        .toDart;
+    final text = (await response.text().toDart).toDart;
+    final decoded = jsonDecode(text);
+    if (!response.ok || decoded is! Map) {
+      return AuthResult(error: _workerError(text));
+    }
+    final user = decoded['user'];
+    if (user is! Map) return const AuthResult(error: 'Profil invalide.');
+    return AuthResult(
+      user: AuthUser.fromJson(
+        user.map((key, value) => MapEntry('$key', value)),
+      ),
+    );
+  } catch (_) {
+    return const AuthResult(error: 'Impossible d’enregistrer le profil.');
+  }
+}
+
 Future<void> logout() async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString(_tokenKey);
@@ -359,7 +425,11 @@ Future<_AuthHttp> _request(
     final response = await web.window
         .fetch(
           '${ApiService.apiBase}$path'.toJS,
-          web.RequestInit(method: method, headers: headers, credentials: 'omit'),
+          web.RequestInit(
+            method: method,
+            headers: headers,
+            credentials: 'omit',
+          ),
         )
         .toDart;
     if (response.status == 401) return const _AuthHttp.unauthorized();
