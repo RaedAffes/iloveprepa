@@ -1,6 +1,6 @@
 -- Cash / D17 orders. Access is not granted on creation. An admin validates
 -- the payment, which writes the entitlement rows.
--- status: pending_payment | payment_claimed | validated | rejected
+-- status: in_progress | validated | cancelled
 
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS orders (
   product_codes TEXT NOT NULL,
   amount_dt INTEGER NOT NULL,
   payer_phone TEXT NOT NULL,
-  status TEXT NOT NULL CHECK (status IN ('pending_payment', 'payment_claimed', 'validated', 'rejected')),
+  status TEXT NOT NULL CHECK (status IN ('in_progress', 'validated', 'cancelled')),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   validated_by TEXT,

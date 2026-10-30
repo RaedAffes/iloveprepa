@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
 import '../services/admin_service.dart';
+import '../services/auth_service.dart';
 import '../services/auth_user.dart';
+import '../widgets/auth_button.dart';
 
 /// Admin-only screen: search for a user and grant/revoke premium access per
 /// semester product. Shown in the main content area in place of the library.
@@ -77,6 +79,9 @@ class _AdminAccessScreenState extends State<AdminAccessScreen> {
         productCode: product.code,
         grant: grant,
       );
+      if (AuthSession.instance.user?.id == user.id) {
+        AuthSession.instance.setUser(await AuthService.currentUser());
+      }
       if (!mounted) return;
       setState(() {
         _users = _users

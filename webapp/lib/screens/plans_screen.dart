@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../services/auth_service.dart';
 import '../widgets/auth_button.dart';
 import '../services/order_service.dart';
-import '../widgets/don_view.dart';
 import '../widgets/landing/landing_colors.dart' as landing;
 
 class _Semester {
@@ -14,10 +12,10 @@ class _Semester {
 }
 
 const _semesters = [
-  _Semester('y1_s1', 'MP — Semestre 1'),
-  _Semester('y1_s2', 'MP — Semestre 2'),
-  _Semester('y2_s1', 'Année 2 — Semestre 1'),
-  _Semester('y2_s2', 'Année 2 — Semestre 2'),
+  _Semester('y1_s1', 'MP1 Semestre 1'),
+  _Semester('y1_s2', 'MP1 Semestre 2'),
+  _Semester('y2_s1', 'MP2 Semestre 1'),
+  _Semester('y2_s2', 'MP2 Semestre 2'),
 ];
 
 class _Checkout {
@@ -38,7 +36,7 @@ class PlansScreen extends StatefulWidget {
   const PlansScreen({super.key, required this.onBack, required this.onPlaced});
 
   final VoidCallback onBack;
-  final VoidCallback onPlaced;
+  final ValueChanged<CourseOrder> onPlaced;
 
   @override
   State<PlansScreen> createState() => _PlansScreenState();
@@ -72,19 +70,19 @@ class _PlansScreenState extends State<PlansScreen> {
     setState(() => _checkout = checkout);
   }
 
-  Future<void> _place(bool payNow) async {
+  Future<void> _place() async {
     final checkout = _checkout;
     if (checkout == null || _busy) return;
     setState(() => _busy = true);
     try {
-      await _orders.create(
+      final order = await _orders.create(
         planCode: checkout.planCode,
         productCode: checkout.productCode,
         payerPhone: _phone.text,
-        payNow: payNow,
+        payNow: false,
       );
       if (!mounted) return;
-      widget.onPlaced();
+      widget.onPlaced(order);
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
@@ -150,9 +148,8 @@ class _PlansScreenState extends State<PlansScreen> {
                             name: 'Accès complet',
                             blurb: 'Les quatre semestres.',
                             amount: 50,
-                            highlighted: true,
-                            badge: 'Accès complet',
-                            features: const ['Année 1 et année 2', 'Tous les semestres'],
+                            highlighted: false,
+                            features: const ['MP Année 1 et MP Année 2', 'Tous les semestres'],
                             onChoose: () => _start(const _Checkout(
                               planCode: 'full',
                               label: 'Accès complet',
@@ -224,21 +221,21 @@ class _PlansScreenState extends State<PlansScreen> {
 
   Widget _yearCard() {
     final isFirst = _year == 'year1';
-    final label = isFirst ? 'Année 1' : 'Année 2';
+    final label = isFirst ? 'MP Année 1' : 'MP Année 2';
     return _shell(
       name: 'Année',
       blurb: 'Les deux semestres d’une année.',
       amount: 29,
-      highlighted: false,
+      highlighted: true,
       features: [
-        isFirst ? 'Semestre 1 et semestre 2 de MP' : 'Semestre 1 et semestre 2 de l’année 2',
+        isFirst ? 'MP1 Semestre 1 et MP1 Semestre 2' : 'MP2 Semestre 1 et MP2 Semestre 2',
       ],
       extra: DropdownButtonFormField<String>(
         initialValue: _year,
         decoration: const InputDecoration(labelText: 'Année', isDense: true),
         items: const [
-          DropdownMenuItem(value: 'year1', child: Text('Année 1 — MP')),
-          DropdownMenuItem(value: 'year2', child: Text('Année 2')),
+          DropdownMenuItem(value: 'year1', child: Text('MP Année 1')),
+          DropdownMenuItem(value: 'year2', child: Text('MP Année 2')),
         ],
         onChanged: (value) {
           if (value != null) setState(() => _year = value);
@@ -299,9 +296,9 @@ class _PlansScreenState extends State<PlansScreen> {
                       foregroundColor: _ink,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: Text('Choisir $name'),
+                    child: const Text('Acheter'),
                   )
-                : OutlinedButton(onPressed: onChoose, child: Text('Choisir $name')),
+                : OutlinedButton(onPressed: onChoose, child: const Text('Acheter')),
           ),
           const SizedBox(height: 16),
           for (final feature in features)
@@ -356,33 +353,19 @@ class _PlansScreenState extends State<PlansScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Votre numéro D17',
                           hintText: '20 123 456',
+                          helperText: 'Le numéro depuis lequel vous allez payer.',
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text('Scannez pour payer sur D17', style: TextStyle(color: _muted)),
-                      const SizedBox(height: 12),
-                      Center(
-                        child: QrImageView(
-                          data: 'D17:$kD17Number:${checkout.amount}',
-                          size: 240,
-                          backgroundColor: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       FilledButton(
-                        onPressed: _busy ? null : () => _place(true),
+                        onPressed: _busy ? null : _place,
                         style: FilledButton.styleFrom(
                           backgroundColor: landing.AppColors.orange,
                           foregroundColor: _ink,
                           minimumSize: const Size.fromHeight(46),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        child: Text(_busy ? 'Patientez…' : 'J’ai payé'),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton(
-                        onPressed: _busy ? null : () => _place(false),
-                        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
-                        child: const Text('Valider la commande'),
+                        child: Text(_busy ? 'Patientez…' : 'Valider la commande'),
                       ),
                     ],
                   ),

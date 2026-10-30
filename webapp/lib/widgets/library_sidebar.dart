@@ -266,7 +266,7 @@ class _SidebarPlanSection extends StatelessWidget {
         final session = AuthSession.instance;
         if (!session.ready) return const SizedBox.shrink();
         final user = session.user;
-        if (user != null && (user.isPremium || user.isAdmin)) {
+        if (user != null && user.isPremium) {
           return _PremiumSpace(active: examsActive, onOpenExams: onOpenExams);
         }
         return _UpgradeButton(onPressed: onUpgrade);

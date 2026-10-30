@@ -6,9 +6,16 @@ import '../widgets/don_view.dart';
 import '../widgets/landing/landing_colors.dart' as landing;
 
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key, required this.onBack});
+  const OrdersScreen({
+    super.key,
+    required this.onBack,
+    this.paymentOrder,
+    this.onPaymentShown,
+  });
 
   final VoidCallback onBack;
+  final CourseOrder? paymentOrder;
+  final VoidCallback? onPaymentShown;
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -22,12 +29,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
   List<CourseOrder> _items = const [];
   bool _loading = true;
   String? _error;
-  String? _claiming;
+  String? _busyId;
 
   @override
   void initState() {
     super.initState();
     _load();
+    final order = widget.paymentOrder;
+    if (order != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        widget.onPaymentShown?.call();
+        _showQr(order);
+      });
+    }
   }
 
   Future<void> _load() async {
@@ -51,59 +66,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  Future<void> _askPaid(CourseOrder order) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Confirmer le paiement'),
-        content: const Text(
-          'Vous déclarez avoir payé en scannant le QR D17.\n\n'
-          'Un administrateur vérifiera ce paiement avant d’activer l’accès. '
-          'Ne confirmez que si le transfert est déjà parti.',
-          style: TextStyle(height: 1.4, color: _ink),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Non, pas encore'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: landing.AppColors.orange,
-              foregroundColor: _ink,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Oui, j’ai payé'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    setState(() => _claiming = order.id);
-    try {
-      await _orders.claimPaid(order.id);
-      await _load();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e'.replaceFirst('ApiException: ', ''))),
-      );
-    } finally {
-      if (mounted) setState(() => _claiming = null);
-    }
-  }
-
   void _showQr(CourseOrder order) {
+    final paying = order.status != 'validated';
     showDialog<void>(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Padding(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 12, 12, 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -126,13 +98,35 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   '${order.amountDt} DT',
                   style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: _ink, height: 1),
                 ),
-                const SizedBox(height: 8),
-                const Text('Scannez ce QR avec D17 pour payer.', style: TextStyle(color: _muted)),
+                const SizedBox(height: 16),
+                const Text(
+                  'Payer depuis le compte D17 lié à ce numéro',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: _muted, fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _prettyPhone(order.payerPhone),
+                  style: const TextStyle(color: _ink, fontSize: 20, fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 16),
                 QrImageView(
                   data: 'D17:$kD17Number:${order.amountDt}',
-                  size: 280,
+                  size: 240,
                   backgroundColor: Colors.white,
+                ),
+                const SizedBox(height: 4),
+                const Text('QR commerçant D17', style: TextStyle(color: _muted, fontSize: 12)),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Text(
+                    paying
+                        ? 'Merci de faire le paiement vers ce QR code. Le service client activera votre accès une fois le paiement reçu, dans un délai maximum de 12 h.'
+                        : 'Votre accès est activé.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: _ink, height: 1.45),
+                  ),
                 ),
               ],
             ),
@@ -166,7 +160,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _ink),
                       ),
                       Text(
-                        'Scannez le QR pour payer, puis déclarez le paiement',
+                        'Le service client active l’accès après le paiement (maximum 12 h)',
                         style: TextStyle(color: _muted, fontSize: 13),
                       ),
                     ],
@@ -206,7 +200,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     if (_error != null && _items.isEmpty) return Center(child: Text(_error!));
     return LayoutBuilder(
       builder: (context, constraints) {
-        const minWidth = 860.0;
+        const minWidth = 940.0;
         final table = Column(
           children: [
             const _Header(),
@@ -225,6 +219,42 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
+  Future<void> _cancel(CourseOrder order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Annuler cette commande'),
+        content: Text(
+          'Annuler « ${order.label} » ?\n\nAucun accès ne sera activé.',
+          style: const TextStyle(height: 1.4, color: _ink),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Retour')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFB42318)),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Annuler la commande'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busyId = order.id);
+    try {
+      await _orders.cancel(order.id);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e'.replaceFirst('ApiException: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
   Widget _rows() {
     if (_items.isEmpty) {
       return const Center(
@@ -238,9 +268,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
         final order = _items[index];
         return _OrderRow(
           order: order,
-          busy: _claiming == order.id,
+          busy: _busyId == order.id,
           onQr: () => _showQr(order),
-          onPaid: () => _askPaid(order),
+          onCancel: order.status == 'in_progress' ? () => _cancel(order) : null,
         );
       },
     );
@@ -263,7 +293,7 @@ class _Header extends StatelessWidget {
             _Cell('Commande', flex: 28, header: true),
             _Cell('Montant', flex: 12, header: true),
             _Cell('Statut', flex: 18, header: true),
-            SizedBox(width: 196),
+            SizedBox(width: 176),
           ],
         ),
       ),
@@ -276,18 +306,17 @@ class _OrderRow extends StatelessWidget {
     required this.order,
     required this.busy,
     required this.onQr,
-    required this.onPaid,
+    required this.onCancel,
   });
 
   final CourseOrder order;
   final bool busy;
   final VoidCallback onQr;
-  final VoidCallback onPaid;
+  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) {
     final ref = order.id.length >= 8 ? order.id.substring(0, 8).toUpperCase() : order.id;
-    final payable = order.status == 'pending_payment';
     return SizedBox(
       height: 52,
       child: Row(
@@ -308,39 +337,39 @@ class _OrderRow extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 196,
-            child: payable
-                ? Row(
+            width: 176,
+            child: order.status != 'in_progress'
+                ? const SizedBox.shrink()
+                : Row(
                     children: [
-                      OutlinedButton(
-                        onPressed: onQr,
-                        style: OutlinedButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          minimumSize: const Size(64, 32),
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          foregroundColor: _OrdersScreenState._ink,
-                          side: const BorderSide(color: Color(0xFFE6E8EF)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('QR', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                      ),
-                      const SizedBox(width: 8),
                       FilledButton(
-                        onPressed: busy ? null : onPaid,
+                        onPressed: busy ? null : onQr,
                         style: FilledButton.styleFrom(
                           backgroundColor: landing.AppColors.orange,
                           foregroundColor: _OrdersScreenState._ink,
                           visualDensity: VisualDensity.compact,
-                          minimumSize: const Size(96, 32),
+                          minimumSize: const Size(64, 32),
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                         ),
-                        child: Text(busy ? '…' : 'J’ai payé'),
+                        child: const Text('QR'),
                       ),
+                      if (onCancel != null) ...[
+                        const SizedBox(width: 4),
+                        TextButton(
+                          onPressed: busy ? null : onCancel,
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFFB42318),
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
+                          child: Text(busy ? '…' : 'Annuler'),
+                        ),
+                      ],
                     ],
-                  )
-                : const SizedBox.shrink(),
+                  ),
           ),
         ],
       ),
@@ -403,12 +432,20 @@ class _StatusPill extends StatelessWidget {
 }
 
 Color _tone(String status) => switch (status) {
-      'pending_payment' => const Color(0xFF9A6200),
-      'payment_claimed' => const Color(0xFF1B3FA0),
-      'validated' => const Color(0xFF1B7F4B),
-      'rejected' => const Color(0xFFC4432F),
+      'in_progress' => landing.AppColors.orange,
+      'validated' => const Color(0xFF1B7A3A),
+      'cancelled' => const Color(0xFFB42318),
       _ => const Color(0xFF5C6578),
     };
+
+String _prettyPhone(String phone) {
+  final digits = phone.replaceAll(RegExp(r'\D'), '');
+  if (digits.length == 11 && digits.startsWith('216')) {
+    final local = digits.substring(3);
+    return '+216 ${local.substring(0, 2)} ${local.substring(2, 5)} ${local.substring(5)}';
+  }
+  return phone;
+}
 
 String _when(String iso) {
   final date = DateTime.tryParse(iso)?.toLocal();

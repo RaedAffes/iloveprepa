@@ -19,6 +19,7 @@ import '../screens/plans_screen.dart';
 import '../screens/premium_library_page.dart';
 import '../screens/profile_screen.dart';
 import '../services/analytics_service.dart';
+import '../services/order_service.dart';
 import '../services/auth_user.dart';
 import '../services/api_service.dart';
 import '../services/stats_service.dart';
@@ -108,6 +109,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _showAdminOrders = false;
   bool _showPlans = false;
   bool _showOrders = false;
+  CourseOrder? _paymentPrompt;
   bool _showPremiumExams = false;
 
   /// Bumped every time the Contact button is pressed so the contact form is
@@ -903,15 +905,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_showPlans) {
       return PlansScreen(
         onBack: _closePlans,
-        onPlaced: () => setState(() {
+        onPlaced: (order) => setState(() {
           _showPlans = false;
           _showPremiumExams = false;
           _showOrders = true;
+          _paymentPrompt = order;
         }),
       );
     }
     if (_showOrders) {
-      return OrdersScreen(onBack: () => setState(() => _showOrders = false));
+      return OrdersScreen(
+        onBack: () => setState(() => _showOrders = false),
+        paymentOrder: _paymentPrompt,
+        onPaymentShown: () {
+          if (_paymentPrompt != null) setState(() => _paymentPrompt = null);
+        },
+      );
     }
     if (_showAdminOrders) {
       return AdminOrdersScreen(onBack: () => setState(() => _showAdminOrders = false));

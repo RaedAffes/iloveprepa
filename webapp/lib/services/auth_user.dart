@@ -86,10 +86,10 @@ extension PremiumProductCode on PremiumProduct {
       };
 
   String get label => switch (this) {
-        PremiumProduct.y1s1 => 'Année 1 — Semestre 1',
-        PremiumProduct.y1s2 => 'Année 1 — Semestre 2',
-        PremiumProduct.y2s1 => 'Année 2 — Semestre 1',
-        PremiumProduct.y2s2 => 'Année 2 — Semestre 2',
+        PremiumProduct.y1s1 => 'MP1 Semestre 1',
+        PremiumProduct.y1s2 => 'MP1 Semestre 2',
+        PremiumProduct.y2s1 => 'MP2 Semestre 1',
+        PremiumProduct.y2s2 => 'MP2 Semestre 2',
       };
 }
 
