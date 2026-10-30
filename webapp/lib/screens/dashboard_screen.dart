@@ -19,11 +19,7 @@ import '../screens/plans_screen.dart';
 import '../screens/premium_library_page.dart';
 import '../screens/profile_screen.dart';
 import '../services/analytics_service.dart';
-<<<<<<< HEAD
 import '../services/order_service.dart';
-=======
-import '../services/auth_service.dart';
->>>>>>> 183080d840abc3cf93a6d5470798fe91deb5385a
 import '../services/auth_user.dart';
 import '../services/api_service.dart';
 import '../services/stats_service.dart';

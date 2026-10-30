@@ -85,6 +85,33 @@ async function createOrder(request, env, user) {
   const phone = tunisianPhone(body && body.payerPhone);
   if (!phone) return orderJson({ error: 'phone' }, 400);
 
+  const pending = await env.iloveprepa_db
+    .prepare(`SELECT id FROM orders WHERE user_id = ? AND status = 'in_progress' LIMIT 1`)
+    .bind(user.id)
+    .first();
+  if (pending) {
+    return orderJson(
+      {
+        error:
+          'Vous avez déjà une commande en cours. Annulez-la ou attendez qu’elle soit validée avant d’en passer une autre.',
+      },
+      409,
+    );
+  }
+
+  const owned = new Set(user.entitlements || []);
+  const overlap = products.filter((code) => owned.has(code));
+  if (overlap.length) {
+    const names = overlap.map((code) => SEMESTERS[code] || code);
+    const list =
+      names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}`;
+    const error =
+      names.length === 1
+        ? `Vous avez déjà l’accès ${list}. Cette commande n’est pas possible.`
+        : `Vous avez déjà les accès ${list}. Cette commande n’est pas possible.`;
+    return orderJson({ error }, 409);
+  }
+
   const now = new Date().toISOString();
   const id = randomId();
   await env.iloveprepa_db
@@ -194,20 +221,7 @@ export async function reopenOrder(db, order) {
 export async function rejectOrder(db, order, adminId) {
   if (order.status !== 'in_progress' && order.status !== 'validated') return false;
   const now = new Date().toISOString();
-  if (order.status === 'validated') {
-    const products = JSON.parse(order.product_codes);
-    for (const code of products) {
-      await db
-        .prepare(
-          `UPDATE entitlement_grants
-           SET revoked_at = ?, revoked_by = ?
-           WHERE user_id = ? AND product_code = ? AND granted_by = ?
-             AND granted_at = ? AND revoked_at IS NULL`,
-        )
-        .bind(now, adminId, order.user_id, code, order.validated_by, order.updated_at)
-        .run();
-    }
-  }
+  if (order.status === 'validated') await revokeOrderAccess(db, order, adminId, now);
   await db
     .prepare(
       `UPDATE orders SET status = 'cancelled', validated_by = NULL, updated_at = ?
@@ -218,23 +232,12 @@ export async function rejectOrder(db, order, adminId) {
   return true;
 }
 
-/// Undoes a validation: access granted by that validation is revoked, and the
-/// order returns to "en cours".
+/// Undoes a validation: access from that order is revoked, and the order
+/// returns to "en cours".
 export async function unvalidateOrder(db, order, adminId) {
   if (order.status !== 'validated') return false;
-  const products = JSON.parse(order.product_codes);
   const now = new Date().toISOString();
-  for (const code of products) {
-    await db
-      .prepare(
-        `UPDATE entitlement_grants
-         SET revoked_at = ?, revoked_by = ?
-         WHERE user_id = ? AND product_code = ? AND granted_by = ?
-           AND granted_at = ? AND revoked_at IS NULL`,
-      )
-      .bind(now, adminId, order.user_id, code, order.validated_by, order.updated_at)
-      .run();
-  }
+  await revokeOrderAccess(db, order, adminId, now);
   await db
     .prepare(
       `UPDATE orders SET status = 'in_progress', validated_by = NULL, updated_at = ?
@@ -245,8 +248,42 @@ export async function unvalidateOrder(db, order, adminId) {
   return true;
 }
 
+/// Removes the semesters of this order. A semester stays if another validated
+/// order for the same client still includes it.
+async function revokeOrderAccess(db, order, adminId, now) {
+  const products = orderProducts(order);
+  const others = await db
+    .prepare(
+      `SELECT product_codes FROM orders
+       WHERE user_id = ? AND status = 'validated' AND id != ?`,
+    )
+    .bind(order.user_id, order.id)
+    .all();
+  const covered = new Set();
+  for (const row of others.results || []) {
+    for (const code of JSON.parse(row.product_codes)) covered.add(code);
+  }
+  for (const code of products) {
+    if (covered.has(code)) continue;
+    await db
+      .prepare(
+        `UPDATE entitlement_grants
+         SET revoked_at = ?, revoked_by = ?
+         WHERE user_id = ? AND product_code = ? AND revoked_at IS NULL`,
+      )
+      .bind(now, adminId, order.user_id, code)
+      .run();
+  }
+}
+
+function orderProducts(order) {
+  if (order.plan_code === 'semester') return JSON.parse(order.product_codes);
+  const plan = PLANS[order.plan_code];
+  return plan && plan.products ? plan.products : JSON.parse(order.product_codes);
+}
+
 export async function grantOrder(db, order, adminId) {
-  const products = JSON.parse(order.product_codes);
+  const products = orderProducts(order);
   const now = new Date().toISOString();
   for (const code of products) {
     const existing = await db

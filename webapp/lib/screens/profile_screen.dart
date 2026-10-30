@@ -93,9 +93,15 @@ class _EditableProfileField extends StatelessWidget {
               ]
             : null,
       ),
-      child: TextField(
+      child: IgnorePointer(
+        ignoring: !editing,
+        child: TextField(
         controller: controller,
         readOnly: !editing,
+        enableInteractiveSelection: editing,
+        showCursor: editing,
+        canRequestFocus: editing,
+        mouseCursor: editing ? SystemMouseCursors.text : SystemMouseCursors.basic,
         keyboardType: keyboardType,
         decoration: _profileInputDecoration(label).copyWith(
           fillColor: editing ? Colors.white : Colors.white.withOpacity(0.72),
@@ -117,6 +123,7 @@ class _EditableProfileField extends StatelessWidget {
               width: editing ? 2.2 : 1.4,
             ),
           ),
+        ),
         ),
       ),
     );
@@ -144,6 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController _familyNameController;
   late TextEditingController _facultyController;
   late TextEditingController _phoneController;
+  late TextEditingController _emailController;
   String? _selectedAvatar;
   bool _editingGivenName = false;
   bool _editingFamilyName = false;
@@ -162,6 +170,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
     _facultyController = TextEditingController(text: widget.user.faculty ?? '');
     _phoneController = TextEditingController(text: widget.user.phone ?? '');
+    _emailController = TextEditingController(text: widget.user.email);
     _selectedAvatar = profileAvatarNotifier.selected;
     _rememberProfileValues();
     _restoreAvatar();
@@ -195,6 +204,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _familyNameController.dispose();
     _facultyController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -310,9 +320,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
+                  child: SingleChildScrollView(
+                    primary: false,
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+                    child: Align(
+                      alignment: Alignment.topCenter,
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 460),
                         child: Column(
@@ -348,12 +360,16 @@ class _ProfilePageState extends State<ProfilePage> {
                               editing: _editingFamilyName,
                             ),
                             const SizedBox(height: 16),
-                            TextField(
-                              controller: TextEditingController(
-                                text: widget.user.email,
+                            IgnorePointer(
+                              child: TextField(
+                                controller: _emailController,
+                                readOnly: true,
+                                enableInteractiveSelection: false,
+                                canRequestFocus: false,
+                                showCursor: false,
+                                mouseCursor: SystemMouseCursors.basic,
+                                decoration: _profileInputDecoration('E-mail'),
                               ),
-                              enabled: false,
-                              decoration: _profileInputDecoration('E-mail'),
                             ),
                             const SizedBox(height: 16),
                             _EditableProfileField(

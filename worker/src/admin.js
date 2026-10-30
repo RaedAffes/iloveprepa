@@ -61,7 +61,7 @@ async function listUsers(env, url) {
   const db = env.iloveprepa_db;
   const q = (url.searchParams.get('q') || '').trim().toLowerCase();
   const limit = Math.min(
-    Math.max(parseInt(url.searchParams.get('limit') || '30', 10) || 30, 1),
+    Math.max(parseInt(url.searchParams.get('limit') || '100', 10) || 100, 1),
     100,
   );
 
@@ -71,7 +71,8 @@ async function listUsers(env, url) {
   const rows = q
     ? await db
         .prepare(
-          `SELECT id, email, name, phone, role, created_at, last_login_at FROM users
+          `SELECT id, email, email_verified, name, given_name, family_name, faculty,
+                  phone, role, created_at, last_login_at FROM users
            WHERE lower(email) LIKE ? OR lower(name) LIKE ?
               OR lower(COALESCE(phone, '')) LIKE ?
               OR (? != '' AND replace(COALESCE(phone, ''), '+', '') LIKE ?)
@@ -81,7 +82,8 @@ async function listUsers(env, url) {
         .all()
     : await db
         .prepare(
-          `SELECT id, email, name, phone, role, created_at, last_login_at FROM users
+          `SELECT id, email, email_verified, name, given_name, family_name, faculty,
+                  phone, role, created_at, last_login_at FROM users
            ORDER BY created_at DESC LIMIT ?`,
         )
         .bind(limit)
@@ -98,7 +100,11 @@ async function listUsers(env, url) {
       users: users.map((u) => ({
         id: u.id,
         email: u.email,
+        emailVerified: u.email_verified === 1,
         name: u.name,
+        givenName: u.given_name,
+        familyName: u.family_name,
+        faculty: u.faculty,
         phone: u.phone,
         role: u.role || 'free',
         createdAt: u.created_at,

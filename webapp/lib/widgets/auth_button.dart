@@ -187,7 +187,7 @@ class _AccountCard extends StatelessWidget {
                   const Divider(height: 1, thickness: 1, color: AppColors.border),
                   _MenuRow(
                     icon: Icons.admin_panel_settings_outlined,
-                    label: 'Gérer les accès',
+                    label: 'Gérer les users',
                     onTap: () =>
                         Navigator.of(context).pop(AccountMenuAction.manageAccess),
                   ),

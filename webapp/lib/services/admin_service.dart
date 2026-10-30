@@ -10,7 +10,13 @@ class AdminUser {
     required this.id,
     required this.email,
     required this.name,
+    this.givenName,
+    this.familyName,
+    this.faculty,
     this.phone,
+    this.emailVerified = false,
+    this.createdAt,
+    this.lastLoginAt,
     required this.role,
     required this.entitlements,
   });
@@ -18,7 +24,13 @@ class AdminUser {
   final String id;
   final String email;
   final String? name;
+  final String? givenName;
+  final String? familyName;
+  final String? faculty;
   final String? phone;
+  final bool emailVerified;
+  final String? createdAt;
+  final String? lastLoginAt;
   final String role;
   final List<String> entitlements;
 
@@ -29,7 +41,13 @@ class AdminUser {
       id: json['id'] as String? ?? '',
       email: json['email'] as String? ?? '',
       name: json['name'] as String?,
+      givenName: json['givenName'] as String?,
+      familyName: json['familyName'] as String?,
+      faculty: json['faculty'] as String?,
       phone: json['phone'] as String?,
+      emailVerified: json['emailVerified'] == true,
+      createdAt: json['createdAt'] as String?,
+      lastLoginAt: json['lastLoginAt'] as String?,
       role: json['role'] as String? ?? 'free',
       entitlements: (json['entitlements'] as List<dynamic>?)
               ?.map((e) => e.toString())
