@@ -1,25 +1,26 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/auth_user.dart';
+import '../services/auth_service.dart';
 
 const profileAvatarChoices = [
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-1&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-2&backgroundColor=c0aede',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-3&backgroundColor=ffd5dc',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-4&backgroundColor=d1d4f9',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-5&backgroundColor=ffdfbf',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-6&backgroundColor=decbe4',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-7&backgroundColor=f4d150',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-8&backgroundColor=a7f3d0',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-9&backgroundColor=ffd6a5',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-10&backgroundColor=bae6fd',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-11&backgroundColor=fbcfe8',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-12&backgroundColor=bbf7d0',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-13&backgroundColor=fde68a',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-14&backgroundColor=ddd6fe',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-15&backgroundColor=fdba74',
-  'https://api.dicebear.com/9.x/notionists/png?seed=vroid-16&backgroundColor=99f6e4',
+  'local-avatar-1',
+  'local-avatar-2',
+  'local-avatar-3',
+  'local-avatar-4',
+  'local-avatar-5',
+  'local-avatar-6',
+  'local-avatar-7',
+  'local-avatar-8',
+  'local-avatar-9',
+  'local-avatar-10',
+  'local-avatar-11',
+  'local-avatar-12',
+  'local-avatar-13',
+  'local-avatar-14',
+  'local-avatar-15',
+  'local-avatar-16',
 ];
 
 class ProfileAvatarNotifier extends ChangeNotifier {
@@ -27,6 +28,9 @@ class ProfileAvatarNotifier extends ChangeNotifier {
 
   void select(String avatar) {
     selected = avatar;
+    SharedPreferences.getInstance().then(
+      (prefs) => prefs.setString('profile_avatar', avatar),
+    );
     notifyListeners();
   }
 }
@@ -54,7 +58,7 @@ InputDecoration _profileInputDecoration(String label) {
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(18),
-      borderSide: const BorderSide(color: Color(0xFFE58B4A), width: 2.2),
+      borderSide: const BorderSide(color: Color(0xFF3B82C4), width: 2.2),
     ),
   );
 }
@@ -64,29 +68,54 @@ class _EditableProfileField extends StatelessWidget {
     required this.controller,
     required this.label,
     required this.editing,
-    required this.onEdit,
     this.keyboardType,
   });
 
   final TextEditingController controller;
   final String label;
   final bool editing;
-  final VoidCallback onEdit;
   final TextInputType? keyboardType;
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      readOnly: !editing,
-      keyboardType: keyboardType,
-      decoration: _profileInputDecoration(label).copyWith(
-        suffixIcon: IconButton(
-          onPressed: onEdit,
-          tooltip: editing ? 'Terminer la modification' : 'Modifier',
-          icon: Icon(
-            editing ? Icons.check_rounded : Icons.edit_rounded,
-            color: const Color(0xFF3B82C4),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: editing
+            ? const [
+                BoxShadow(
+                  color: Color(0x243B82C4),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ]
+            : null,
+      ),
+      child: TextField(
+        controller: controller,
+        readOnly: !editing,
+        keyboardType: keyboardType,
+        decoration: _profileInputDecoration(label).copyWith(
+          fillColor: editing ? Colors.white : Colors.white.withOpacity(0.72),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(
+              color: editing
+                  ? const Color(0xFF3B82C4)
+                  : const Color(0xFF8CB9D8),
+              width: editing ? 2 : 1.4,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(
+              color: editing
+                  ? const Color(0xFFE58B4A)
+                  : const Color(0xFF8CB9D8),
+              width: editing ? 2.2 : 1.4,
+            ),
           ),
         ),
       ),
@@ -95,10 +124,16 @@ class _EditableProfileField extends StatelessWidget {
 }
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key, required this.user, required this.onBack});
+  const ProfilePage({
+    super.key,
+    required this.user,
+    required this.onBack,
+    this.onSaved,
+  });
 
   final AuthUser user;
   final VoidCallback onBack;
+  final ValueChanged<AuthUser>? onSaved;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -114,6 +149,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _editingFamilyName = false;
   bool _editingFaculty = false;
   bool _editingPhone = false;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -127,6 +163,30 @@ class _ProfilePageState extends State<ProfilePage> {
     _facultyController = TextEditingController(text: widget.user.faculty ?? '');
     _phoneController = TextEditingController(text: widget.user.phone ?? '');
     _selectedAvatar = profileAvatarNotifier.selected;
+    _rememberProfileValues();
+    _restoreAvatar();
+  }
+
+  late String _savedGivenName;
+  late String _savedFamilyName;
+  late String _savedFaculty;
+  late String _savedPhone;
+
+  void _rememberProfileValues() {
+    _savedGivenName = _givenNameController.text;
+    _savedFamilyName = _familyNameController.text;
+    _savedFaculty = _facultyController.text;
+    _savedPhone = _phoneController.text;
+  }
+
+  Future<void> _restoreAvatar() async {
+    final prefs = await SharedPreferences.getInstance();
+    final avatar = prefs.getString('profile_avatar');
+    if (avatar == null || !profileAvatarChoices.contains(avatar) || !mounted) {
+      return;
+    }
+    profileAvatarNotifier.select(avatar);
+    setState(() => _selectedAvatar = avatar);
   }
 
   @override
@@ -136,11 +196,6 @@ class _ProfilePageState extends State<ProfilePage> {
     _facultyController.dispose();
     _phoneController.dispose();
     super.dispose();
-  }
-
-  bool get _isGoogleUser {
-    final picture = widget.user.picture?.trim();
-    return picture != null && picture.isNotEmpty;
   }
 
   void _chooseAvatar() {
@@ -155,6 +210,70 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() => _selectedAvatar = avatar);
       }
     });
+  }
+
+  bool get _editingProfile =>
+      _editingGivenName ||
+      _editingFamilyName ||
+      _editingFaculty ||
+      _editingPhone;
+
+  void _startEditing() {
+    setState(() {
+      _editingGivenName = true;
+      _editingFamilyName = true;
+      _editingFaculty = true;
+      _editingPhone = true;
+    });
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      _givenNameController.text = _savedGivenName;
+      _familyNameController.text = _savedFamilyName;
+      _facultyController.text = _savedFaculty;
+      _phoneController.text = _savedPhone;
+      _editingGivenName = false;
+      _editingFamilyName = false;
+      _editingFaculty = false;
+      _editingPhone = false;
+    });
+  }
+
+  Future<void> _saveProfile() async {
+    setState(() => _saving = true);
+    final result = await AuthService.updateProfile(
+      givenName: _givenNameController.text.trim(),
+      familyName: _familyNameController.text.trim(),
+      faculty: _facultyController.text.trim(),
+      phone: _phoneController.text.trim(),
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (result.user != null) {
+      setState(() {
+        _editingGivenName = false;
+        _editingFamilyName = false;
+        _editingFaculty = false;
+        _editingPhone = false;
+        _rememberProfileValues();
+      });
+      widget.onSaved?.call(result.user!);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profil enregistré.')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.error ?? 'Impossible d’enregistrer le profil.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleBack() async {
+    if (_editingProfile) _cancelEditing();
+    if (mounted) widget.onBack();
   }
 
   @override
@@ -184,7 +303,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             Icons.arrow_back_rounded,
                             color: Color(0xFF263C3D),
                           ),
-                          onPressed: widget.onBack,
+                          onPressed: _saving ? null : _handleBack,
                         ),
                       ],
                     ),
@@ -211,10 +330,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             const SizedBox(height: 28),
                             _ProfileAvatar(
                               initial: accountInitial(widget.user.label),
-                              picture: _isGoogleUser
-                                  ? widget.user.picture
-                                  : _selectedAvatar,
-                              canEdit: !_isGoogleUser,
+                              picture: null,
+                              canEdit: true,
                               onEdit: _chooseAvatar,
                             ),
                             const SizedBox(height: 18),
@@ -223,18 +340,12 @@ class _ProfilePageState extends State<ProfilePage> {
                               controller: _givenNameController,
                               label: 'Prénom',
                               editing: _editingGivenName,
-                              onEdit: () => setState(
-                                () => _editingGivenName = !_editingGivenName,
-                              ),
                             ),
                             const SizedBox(height: 16),
                             _EditableProfileField(
                               controller: _familyNameController,
                               label: 'Nom',
                               editing: _editingFamilyName,
-                              onEdit: () => setState(
-                                () => _editingFamilyName = !_editingFamilyName,
-                              ),
                             ),
                             const SizedBox(height: 16),
                             TextField(
@@ -249,9 +360,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               controller: _facultyController,
                               label: 'Faculté / Établissement',
                               editing: _editingFaculty,
-                              onEdit: () => setState(
-                                () => _editingFaculty = !_editingFaculty,
-                              ),
                             ),
                             const SizedBox(height: 16),
                             _EditableProfileField(
@@ -259,9 +367,97 @@ class _ProfilePageState extends State<ProfilePage> {
                               label: 'Numéro de téléphone',
                               keyboardType: TextInputType.phone,
                               editing: _editingPhone,
-                              onEdit: () => setState(
-                                () => _editingPhone = !_editingPhone,
-                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 220),
+                              child: _editingProfile
+                                  ? Row(
+                                      key: const ValueKey('profile-actions'),
+                                      children: [
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: _saving
+                                                ? null
+                                                : _cancelEditing,
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: const Color(
+                                                0xFF3B82C4,
+                                              ),
+                                              backgroundColor: Colors.white,
+                                              side: const BorderSide(
+                                                color: Color(0xFF3B82C4),
+                                                width: 1.5,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 15,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                              ),
+                                            ),
+                                            child: const Text('Annuler'),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: FilledButton(
+                                            onPressed: _saving
+                                                ? null
+                                                : _saveProfile,
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor: const Color(
+                                                0xFF3B82C4,
+                                              ),
+                                              foregroundColor: Colors.white,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 15,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              _saving
+                                                  ? 'Enregistrement...'
+                                                  : 'Enregistrer',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : SizedBox(
+                                      key: const ValueKey('profile-update'),
+                                      width: double.infinity,
+                                      child: FilledButton.icon(
+                                        onPressed: _startEditing,
+                                        icon: const Icon(
+                                          Icons.edit_rounded,
+                                          size: 18,
+                                        ),
+                                        label: const Text(
+                                          'Mettre à jour le profil',
+                                        ),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFF3B82C4,
+                                          ),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 15,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ],
                         ),
@@ -279,13 +475,19 @@ class _ProfilePageState extends State<ProfilePage> {
 }
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key, required this.user, required this.onBack});
+  const ProfileScreen({
+    super.key,
+    required this.user,
+    required this.onBack,
+    this.onSaved,
+  });
   final AuthUser user;
   final VoidCallback onBack;
+  final ValueChanged<AuthUser>? onSaved;
 
   @override
   Widget build(BuildContext context) {
-    return ProfilePage(user: user, onBack: onBack);
+    return ProfilePage(user: user, onBack: onBack, onSaved: onSaved);
   }
 }
 
@@ -308,22 +510,56 @@ class AccountAvatar extends StatelessWidget {
     return ListenableBuilder(
       listenable: profileAvatarNotifier,
       builder: (context, _) {
-        final imageUrl = (picture?.trim().isNotEmpty ?? false)
-            ? picture!.trim()
-            : profileAvatarNotifier.selected;
+        final imageUrl = profileAvatarNotifier.selected;
         return ClipOval(
           child: SizedBox(
             width: size,
             height: size,
-            child: _RemoteAvatarImage(
-              url: imageUrl,
-              fallback: profileAvatarChoices.contains(imageUrl)
-                  ? const _AvatarPlaceholder()
-                  : _InitialAvatar(initial: initial, inverted: inverted),
-            ),
+            child: imageUrl.startsWith('local-avatar-')
+                ? _LocalAvatar(
+                    avatarId: _localAvatarId(imageUrl),
+                    initial: initial,
+                    inverted: inverted,
+                  )
+                : _RemoteAvatarImage(
+                    url: imageUrl,
+                    fallback: _InitialAvatar(
+                      initial: initial,
+                      inverted: inverted,
+                    ),
+                  ),
           ),
         );
       },
+    );
+  }
+}
+
+int _localAvatarId(String value) {
+  return int.tryParse(value.replaceFirst('local-avatar-', '')) ?? 1;
+}
+
+class _LocalAvatar extends StatelessWidget {
+  const _LocalAvatar({
+    required this.avatarId,
+    required this.initial,
+    required this.inverted,
+  });
+
+  final int avatarId;
+  final String initial;
+  final bool inverted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/avatars/avatar-$avatarId.png',
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _AvatarFallback(
+        avatarId: avatarId,
+        initial: initial,
+        inverted: inverted,
+      ),
     );
   }
 }
@@ -572,9 +808,10 @@ class _AvatarChoiceDialogContentState
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(15),
-                              child: _RemoteAvatarImage(
-                                url: avatar,
-                                fallback: const _AvatarPlaceholder(),
+                              child: _LocalAvatar(
+                                avatarId: _localAvatarId(avatar),
+                                initial: accountInitial(''),
+                                inverted: false,
                               ),
                             ),
                           ),

@@ -5,7 +5,7 @@ import { handlePremium } from './premium.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma, Authorization',
   'Access-Control-Max-Age': '86400',
   'Cache-Control': 'no-store',

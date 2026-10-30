@@ -8,7 +8,7 @@
 
 const AUTH_CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma, Authorization',
   'Access-Control-Max-Age': '86400',
   'Cache-Control': 'no-store',
@@ -33,6 +33,9 @@ export async function handleAuth(request, env, url) {
     }
     if (url.pathname === '/api/auth/me' && request.method === 'GET') {
       return currentUser(request, env);
+    }
+    if (url.pathname === '/api/auth/profile' && request.method === 'PUT') {
+      return updateProfile(request, env);
     }
     if (url.pathname === '/api/auth/logout' && request.method === 'POST') {
       return logout(request, env);
@@ -345,6 +348,51 @@ async function logout(request, env) {
     await db.prepare('DELETE FROM sessions WHERE id = ?').bind(sessionId).run();
   }
   return authJson({ ok: true }, 200);
+}
+
+async function updateProfile(request, env) {
+  const user = await userFromRequest(request, env);
+  if (!user) return authJson({ error: 'unauthorized' }, 401);
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return authJson({ error: 'invalid' }, 400);
+  }
+  const givenName = textOrNull(body && body.givenName);
+  const familyName = textOrNull(body && body.familyName);
+  const faculty = clip(textOrNull(body && body.faculty), 120);
+  const phoneInput = textOrNull(body && body.phone);
+  const phone = phoneInput ? tunisianPhone(phoneInput) : null;
+  if (!givenName || !familyName) return authJson({ error: 'name' }, 400);
+  if (phoneInput && !phone) return authJson({ error: 'phone' }, 400);
+  const name = `${givenName} ${familyName}`.trim();
+  await env.iloveprepa_db
+    .prepare(
+      `UPDATE users
+       SET name = ?, given_name = ?, family_name = ?, faculty = ?, phone = ?,
+           updated_at = ?
+       WHERE id = ?`,
+    )
+    .bind(
+      name,
+      givenName,
+      familyName,
+      faculty,
+      phone,
+      new Date().toISOString(),
+      user.id,
+    )
+    .run();
+  const row = await env.iloveprepa_db
+    .prepare(
+      `SELECT id, email, email_verified, name, given_name, family_name, picture, locale,
+              faculty, phone, role, created_at, last_login_at
+       FROM users WHERE id = ?`,
+    )
+    .bind(user.id)
+    .first();
+  return authJson({ user: await hydrateUser(env.iloveprepa_db, row) }, 200);
 }
 
 export async function userFromRequest(request, env) {
