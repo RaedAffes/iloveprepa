@@ -9,8 +9,20 @@
       "bucket_name": "iloveprepa"
     },
     {
-      "binding": "premium",
-      "bucket_name": "premium"
+      "binding": "mp1_s1",
+      "bucket_name": "mp1-s1"
+    },
+    {
+      "binding": "mp1_s2",
+      "bucket_name": "mp1-s2"
+    },
+    {
+      "binding": "mp2_s1",
+      "bucket_name": "mp2-s1"
+    },
+    {
+      "binding": "mp2_s2",
+      "bucket_name": "mp2-s2"
     }
   ],
   "kv_namespaces": [

@@ -27,10 +27,9 @@ class CourseOrder {
   final String? name;
 
   String get statusLabel => switch (status) {
-        'pending_payment' => 'En attente de paiement',
-        'payment_claimed' => 'Paiement déclaré',
-        'validated' => 'Validée',
-        'rejected' => 'Refusée',
+        'in_progress' => 'Commande en cours',
+        'validated' => 'Commande validée',
+        'cancelled' => 'Commande annulée',
         _ => status,
       };
 
@@ -51,8 +50,10 @@ class CourseOrder {
 class OrderService {
   Future<List<CourseOrder>> mine() => _list('/api/orders');
 
-  Future<List<CourseOrder>> adminOrders(String status) =>
-      _list('/api/admin/orders?status=$status');
+  Future<List<CourseOrder>> adminOrders(String status, {String query = ''}) {
+    final q = Uri.encodeQueryComponent(query.trim());
+    return _list('/api/admin/orders?status=$status&q=$q');
+  }
 
   Future<CourseOrder> create({
     required String planCode,
@@ -69,6 +70,10 @@ class OrderService {
     return CourseOrder.fromJson(body['order'] as Map<String, dynamic>);
   }
 
+  Future<void> cancel(String orderId) async {
+    await _send('/api/orders/cancel', {'orderId': orderId});
+  }
+
   Future<void> claimPaid(String orderId) async {
     await _send('/api/orders/claim', {'orderId': orderId});
   }
@@ -81,8 +86,8 @@ class OrderService {
     await _send('/api/admin/orders/reject', {'orderId': orderId});
   }
 
-  Future<void> unclaim(String orderId) async {
-    await _send('/api/admin/orders/unclaim', {'orderId': orderId});
+  Future<void> reopen(String orderId) async {
+    await _send('/api/admin/orders/reopen', {'orderId': orderId});
   }
 
   Future<void> unvalidate(String orderId) async {
@@ -132,6 +137,9 @@ class OrderService {
     } catch (_) {}
     if (code == 'phone') {
       throw ApiException('Entrez un numéro tunisien valide, par exemple 20 123 456.');
+    }
+    if (code.isNotEmpty && code != 'invalid' && code != 'not_found') {
+      throw ApiException(code);
     }
     throw ApiException('Le serveur a répondu avec le code ${response.statusCode}');
   }

@@ -3,7 +3,7 @@
 // whose `role` is 'admin' — checked on every request, never cached.
 
 import { userFromRequest } from './auth.js';
-import { grantOrder, publicOrder, rejectOrder, unclaimOrder, unvalidateOrder } from './orders.js';
+import { grantOrder, publicOrder, rejectOrder, reopenOrder, unvalidateOrder } from './orders.js';
 
 const ADMIN_CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -34,10 +34,10 @@ export async function handleAdmin(request, env, url) {
       return validateOrder(request, env, admin.user);
     }
     if (url.pathname === '/api/admin/orders/reject' && request.method === 'POST') {
-      return rejectAdminOrder(request, env);
+      return rejectAdminOrder(request, env, admin.user);
     }
-    if (url.pathname === '/api/admin/orders/unclaim' && request.method === 'POST') {
-      return unclaimAdminOrder(request, env);
+    if (url.pathname === '/api/admin/orders/reopen' && request.method === 'POST') {
+      return reopenAdminOrder(request, env);
     }
     if (url.pathname === '/api/admin/orders/unvalidate' && request.method === 'POST') {
       return unvalidateAdminOrder(request, env, admin.user);
@@ -61,7 +61,7 @@ async function listUsers(env, url) {
   const db = env.iloveprepa_db;
   const q = (url.searchParams.get('q') || '').trim().toLowerCase();
   const limit = Math.min(
-    Math.max(parseInt(url.searchParams.get('limit') || '30', 10) || 30, 1),
+    Math.max(parseInt(url.searchParams.get('limit') || '100', 10) || 100, 1),
     100,
   );
 
@@ -71,7 +71,8 @@ async function listUsers(env, url) {
   const rows = q
     ? await db
         .prepare(
-          `SELECT id, email, name, phone, role, created_at, last_login_at FROM users
+          `SELECT id, email, email_verified, name, given_name, family_name, faculty,
+                  phone, role, created_at, last_login_at FROM users
            WHERE lower(email) LIKE ? OR lower(name) LIKE ?
               OR lower(COALESCE(phone, '')) LIKE ?
               OR (? != '' AND replace(COALESCE(phone, ''), '+', '') LIKE ?)
@@ -81,7 +82,8 @@ async function listUsers(env, url) {
         .all()
     : await db
         .prepare(
-          `SELECT id, email, name, phone, role, created_at, last_login_at FROM users
+          `SELECT id, email, email_verified, name, given_name, family_name, faculty,
+                  phone, role, created_at, last_login_at FROM users
            ORDER BY created_at DESC LIMIT ?`,
         )
         .bind(limit)
@@ -98,7 +100,11 @@ async function listUsers(env, url) {
       users: users.map((u) => ({
         id: u.id,
         email: u.email,
+        emailVerified: u.email_verified === 1,
         name: u.name,
+        givenName: u.given_name,
+        familyName: u.family_name,
+        faculty: u.faculty,
         phone: u.phone,
         role: u.role || 'free',
         createdAt: u.created_at,
@@ -177,18 +183,42 @@ async function setEntitlement(request, env, admin) {
   return adminJson({ ok: true, entitlements: entitlements[userId] || [] }, 200);
 }
 
-const ORDER_STATUSES = new Set(['pending_payment', 'payment_claimed', 'validated', 'rejected', 'all']);
+const ORDER_STATUSES = new Set(['in_progress', 'validated', 'cancelled', 'all']);
 
 async function listOrders(env, url) {
-  const status = url.searchParams.get('status') || 'payment_claimed';
-  if (!ORDER_STATUSES.has(status)) return adminJson({ error: 'invalid' }, 400);
+  const raw = (url.searchParams.get('status') || 'in_progress').trim().toLowerCase();
+  const aliases = {
+    payment_claimed: 'in_progress',
+    pending_payment: 'in_progress',
+    pending: 'in_progress',
+    en_cours: 'in_progress',
+    rejected: 'cancelled',
+  };
+  const status = ORDER_STATUSES.has(aliases[raw] || raw) ? aliases[raw] || raw : 'in_progress';
+  const q = (url.searchParams.get('q') || '').trim().toLowerCase();
+  const digits = q.replace(/\D/g, '');
+  const where = [];
+  const binds = [];
+  if (status !== 'all') {
+    where.push('o.status = ?');
+    binds.push(status);
+  }
+  if (q) {
+    where.push(`(
+      lower(COALESCE(u.name, '')) LIKE ? OR
+      lower(o.id) LIKE ? OR
+      (? != '' AND replace(o.payer_phone, '+', '') LIKE ?)
+    )`);
+    const like = `%${q}%`;
+    binds.push(like, like, digits, `%${digits}%`);
+  }
   const sql = `SELECT o.id, o.plan_code, o.product_codes, o.amount_dt, o.payer_phone, o.status,
               o.created_at, u.email, u.name
        FROM orders o JOIN users u ON u.id = o.user_id
-       ${status === 'all' ? '' : 'WHERE o.status = ?'}
+       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
        ORDER BY o.created_at DESC LIMIT 100`;
   const statement = env.iloveprepa_db.prepare(sql);
-  const rows = status === 'all' ? await statement.all() : await statement.bind(status).all();
+  const rows = binds.length ? await statement.bind(...binds).all() : await statement.all();
   return adminJson({ orders: (rows.results || []).map(publicOrder) }, 200);
 }
 
@@ -204,25 +234,25 @@ async function validateOrder(request, env, admin) {
     .prepare('SELECT * FROM orders WHERE id = ?')
     .bind(id)
     .first();
-  if (!order || (order.status !== 'pending_payment' && order.status !== 'payment_claimed')) {
+  if (!order || (order.status !== 'in_progress' && order.status !== 'cancelled')) {
     return adminJson({ error: 'not_found' }, 404);
   }
   await grantOrder(env.iloveprepa_db, order, admin.id);
   return adminJson({ ok: true }, 200);
 }
 
-async function rejectAdminOrder(request, env) {
+async function reopenAdminOrder(request, env) {
   const order = await loadOrder(request, env);
   if (!order) return adminJson({ error: 'not_found' }, 404);
-  const ok = await rejectOrder(env.iloveprepa_db, order);
+  const ok = await reopenOrder(env.iloveprepa_db, order);
   if (!ok) return adminJson({ error: 'not_found' }, 404);
   return adminJson({ ok: true }, 200);
 }
 
-async function unclaimAdminOrder(request, env) {
+async function rejectAdminOrder(request, env, admin) {
   const order = await loadOrder(request, env);
   if (!order) return adminJson({ error: 'not_found' }, 404);
-  const ok = await unclaimOrder(env.iloveprepa_db, order);
+  const ok = await rejectOrder(env.iloveprepa_db, order, admin.id);
   if (!ok) return adminJson({ error: 'not_found' }, 404);
   return adminJson({ ok: true }, 200);
 }

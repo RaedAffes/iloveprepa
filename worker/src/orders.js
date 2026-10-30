@@ -13,16 +13,16 @@ const ORDER_CORS = {
 };
 
 const SEMESTERS = {
-  y1_s1: 'MP — Semestre 1',
-  y1_s2: 'MP — Semestre 2',
-  y2_s1: 'Année 2 — Semestre 1',
-  y2_s2: 'Année 2 — Semestre 2',
+  y1_s1: 'MP1 Semestre 1',
+  y1_s2: 'MP1 Semestre 2',
+  y2_s1: 'MP2 Semestre 1',
+  y2_s2: 'MP2 Semestre 2',
 };
 
 const PLANS = {
   semester: { amount: 19, label: null },
-  year1: { amount: 29, products: ['y1_s1', 'y1_s2'], label: 'Année 1' },
-  year2: { amount: 29, products: ['y2_s1', 'y2_s2'], label: 'Année 2' },
+  year1: { amount: 29, products: ['y1_s1', 'y1_s2'], label: 'MP Année 1' },
+  year2: { amount: 29, products: ['y2_s1', 'y2_s2'], label: 'MP Année 2' },
   full: { amount: 50, products: ['y1_s1', 'y1_s2', 'y2_s1', 'y2_s2'], label: 'Accès complet' },
 };
 
@@ -40,6 +40,9 @@ export async function handleOrders(request, env, url) {
     }
     if (url.pathname === '/api/orders/claim' && request.method === 'POST') {
       return claimPaid(request, env, user);
+    }
+    if (url.pathname === '/api/orders/cancel' && request.method === 'POST') {
+      return cancelMine(request, env, user);
     }
     return orderJson({ error: 'Not found' }, 404);
   } catch (err) {
@@ -82,7 +85,33 @@ async function createOrder(request, env, user) {
   const phone = tunisianPhone(body && body.payerPhone);
   if (!phone) return orderJson({ error: 'phone' }, 400);
 
-  const payNow = body && body.payNow === true;
+  const pending = await env.iloveprepa_db
+    .prepare(`SELECT id FROM orders WHERE user_id = ? AND status = 'in_progress' LIMIT 1`)
+    .bind(user.id)
+    .first();
+  if (pending) {
+    return orderJson(
+      {
+        error:
+          'Vous avez déjà une commande en cours. Annulez-la ou attendez qu’elle soit validée avant d’en passer une autre.',
+      },
+      409,
+    );
+  }
+
+  const owned = new Set(user.entitlements || []);
+  const overlap = products.filter((code) => owned.has(code));
+  if (overlap.length) {
+    const names = overlap.map((code) => SEMESTERS[code] || code);
+    const list =
+      names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}`;
+    const error =
+      names.length === 1
+        ? `Vous avez déjà l’accès ${list}. Cette commande n’est pas possible.`
+        : `Vous avez déjà les accès ${list}. Cette commande n’est pas possible.`;
+    return orderJson({ error }, 409);
+  }
+
   const now = new Date().toISOString();
   const id = randomId();
   await env.iloveprepa_db
@@ -98,7 +127,7 @@ async function createOrder(request, env, user) {
       JSON.stringify(products),
       plan.amount,
       phone,
-      payNow ? 'payment_claimed' : 'pending_payment',
+      'in_progress',
       now,
       now,
     )
@@ -114,6 +143,31 @@ async function createOrder(request, env, user) {
   return orderJson({ order: publicOrder(row) }, 201);
 }
 
+async function cancelMine(request, env, user) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return orderJson({ error: 'invalid' }, 400);
+  }
+  const id = String((body && body.orderId) || '');
+  const current = await env.iloveprepa_db
+    .prepare('SELECT status FROM orders WHERE id = ? AND user_id = ?')
+    .bind(id, user.id)
+    .first();
+  if (!current || current.status !== 'in_progress') {
+    return orderJson({ error: 'not_found' }, 404);
+  }
+  await env.iloveprepa_db
+    .prepare(
+      `UPDATE orders SET status = 'cancelled', updated_at = ?
+       WHERE id = ? AND user_id = ? AND status = 'in_progress'`,
+    )
+    .bind(new Date().toISOString(), id, user.id)
+    .run();
+  return orderJson({ ok: true }, 200);
+}
+
 async function claimPaid(request, env, user) {
   let body;
   try {
@@ -126,13 +180,9 @@ async function claimPaid(request, env, user) {
     .prepare('SELECT status FROM orders WHERE id = ? AND user_id = ?')
     .bind(id, user.id)
     .first();
-  if (!current || current.status !== 'pending_payment') {
+  if (!current || current.status !== 'in_progress') {
     return orderJson({ error: 'not_found' }, 404);
   }
-  await env.iloveprepa_db
-    .prepare(`UPDATE orders SET status = 'payment_claimed', updated_at = ? WHERE id = ?`)
-    .bind(new Date().toISOString(), id)
-    .run();
   return orderJson({ ok: true }, 200);
 }
 
@@ -155,52 +205,42 @@ export function publicOrder(row) {
   };
 }
 
-/// The student declared a payment that was not received. The order goes back
-/// to "en attente de paiement" so they can declare it again.
-export async function unclaimOrder(db, order) {
-  if (order.status !== 'payment_claimed') return false;
+/// Puts a cancelled order back in progress. Access is not granted.
+export async function reopenOrder(db, order) {
+  if (order.status !== 'cancelled') return false;
   await db
     .prepare(
-      `UPDATE orders SET status = 'pending_payment', updated_at = ?
-       WHERE id = ? AND status = 'payment_claimed'`,
+      `UPDATE orders SET status = 'in_progress', updated_at = ?
+       WHERE id = ? AND status = 'cancelled'`,
     )
     .bind(new Date().toISOString(), order.id)
     .run();
   return true;
 }
 
-export async function rejectOrder(db, order) {
-  if (order.status !== 'pending_payment' && order.status !== 'payment_claimed') return false;
+export async function rejectOrder(db, order, adminId) {
+  if (order.status !== 'in_progress' && order.status !== 'validated') return false;
+  const now = new Date().toISOString();
+  if (order.status === 'validated') await revokeOrderAccess(db, order, adminId, now);
   await db
     .prepare(
-      `UPDATE orders SET status = 'rejected', updated_at = ?
-       WHERE id = ? AND status IN ('pending_payment', 'payment_claimed')`,
+      `UPDATE orders SET status = 'cancelled', validated_by = NULL, updated_at = ?
+       WHERE id = ? AND status = ?`,
     )
-    .bind(new Date().toISOString(), order.id)
+    .bind(now, order.id, order.status)
     .run();
   return true;
 }
 
-/// Undoes a validation: access granted by that validation is revoked, and the
-/// order returns to "en attente de paiement". The student must declare payment again.
+/// Undoes a validation: access from that order is revoked, and the order
+/// returns to "en cours".
 export async function unvalidateOrder(db, order, adminId) {
   if (order.status !== 'validated') return false;
-  const products = JSON.parse(order.product_codes);
   const now = new Date().toISOString();
-  for (const code of products) {
-    await db
-      .prepare(
-        `UPDATE entitlement_grants
-         SET revoked_at = ?, revoked_by = ?
-         WHERE user_id = ? AND product_code = ? AND granted_by = ?
-           AND granted_at = ? AND revoked_at IS NULL`,
-      )
-      .bind(now, adminId, order.user_id, code, order.validated_by, order.updated_at)
-      .run();
-  }
+  await revokeOrderAccess(db, order, adminId, now);
   await db
     .prepare(
-      `UPDATE orders SET status = 'pending_payment', validated_by = NULL, updated_at = ?
+      `UPDATE orders SET status = 'in_progress', validated_by = NULL, updated_at = ?
        WHERE id = ? AND status = 'validated'`,
     )
     .bind(now, order.id)
@@ -208,8 +248,42 @@ export async function unvalidateOrder(db, order, adminId) {
   return true;
 }
 
+/// Removes the semesters of this order. A semester stays if another validated
+/// order for the same client still includes it.
+async function revokeOrderAccess(db, order, adminId, now) {
+  const products = orderProducts(order);
+  const others = await db
+    .prepare(
+      `SELECT product_codes FROM orders
+       WHERE user_id = ? AND status = 'validated' AND id != ?`,
+    )
+    .bind(order.user_id, order.id)
+    .all();
+  const covered = new Set();
+  for (const row of others.results || []) {
+    for (const code of JSON.parse(row.product_codes)) covered.add(code);
+  }
+  for (const code of products) {
+    if (covered.has(code)) continue;
+    await db
+      .prepare(
+        `UPDATE entitlement_grants
+         SET revoked_at = ?, revoked_by = ?
+         WHERE user_id = ? AND product_code = ? AND revoked_at IS NULL`,
+      )
+      .bind(now, adminId, order.user_id, code)
+      .run();
+  }
+}
+
+function orderProducts(order) {
+  if (order.plan_code === 'semester') return JSON.parse(order.product_codes);
+  const plan = PLANS[order.plan_code];
+  return plan && plan.products ? plan.products : JSON.parse(order.product_codes);
+}
+
 export async function grantOrder(db, order, adminId) {
-  const products = JSON.parse(order.product_codes);
+  const products = orderProducts(order);
   const now = new Date().toISOString();
   for (const code of products) {
     const existing = await db
@@ -232,7 +306,7 @@ export async function grantOrder(db, order, adminId) {
   await db
     .prepare(
       `UPDATE orders SET status = 'validated', validated_by = ?, updated_at = ?
-       WHERE id = ? AND status IN ('pending_payment', 'payment_claimed')`,
+       WHERE id = ? AND status IN ('in_progress', 'cancelled')`,
     )
     .bind(adminId, now, order.id)
     .run();

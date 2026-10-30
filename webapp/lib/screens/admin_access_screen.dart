@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
 import '../services/admin_service.dart';
+import '../services/auth_service.dart';
 import '../services/auth_user.dart';
+import '../widgets/auth_button.dart';
 
 /// Admin-only screen: search for a user and grant/revoke premium access per
 /// semester product. Shown in the main content area in place of the library.
@@ -77,6 +79,9 @@ class _AdminAccessScreenState extends State<AdminAccessScreen> {
         productCode: product.code,
         grant: grant,
       );
+      if (AuthSession.instance.user?.id == user.id) {
+        AuthSession.instance.setUser(await AuthService.currentUser());
+      }
       if (!mounted) return;
       setState(() {
         _users = _users
@@ -85,7 +90,13 @@ class _AdminAccessScreenState extends State<AdminAccessScreen> {
                     id: u.id,
                     email: u.email,
                     name: u.name,
+                    givenName: u.givenName,
+                    familyName: u.familyName,
+                    faculty: u.faculty,
                     phone: u.phone,
+                    emailVerified: u.emailVerified,
+                    createdAt: u.createdAt,
+                    lastLoginAt: u.lastLoginAt,
                     role: u.role,
                     entitlements: entitlements,
                   )
@@ -123,7 +134,7 @@ class _AdminAccessScreenState extends State<AdminAccessScreen> {
               const SizedBox(width: AppSpacing.sm),
               const Expanded(
                 child: Text(
-                  'Gérer les accès',
+                  'Gérer les users',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                 ),
               ),
@@ -215,11 +226,15 @@ class _UserCard extends StatelessWidget {
                       user.label,
                       style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                     ),
+                    const SizedBox(height: 2),
                     Text(
-                      user.phone == null || user.phone!.isEmpty
-                          ? user.email
-                          : '${user.email}  ·  ${user.phone}',
-                      style: const TextStyle(color: Colors.black54, fontSize: 13),
+                      user.email,
+                      style: const TextStyle(color: Colors.black54, fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _details(user),
+                      style: const TextStyle(color: Colors.black87, fontSize: 12, height: 1.35),
                     ),
                   ],
                 ),
@@ -253,6 +268,31 @@ class _UserCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _details(AdminUser user) {
+  final bits = <String>[
+    if (_filled(user.givenName)) 'Prénom ${user.givenName}',
+    if (_filled(user.familyName)) 'Nom ${user.familyName}',
+    if (_filled(user.faculty)) user.faculty!,
+    if (_filled(user.phone)) user.phone!,
+    if (!user.emailVerified) 'E-mail non vérifié',
+    'Inscrit ${_when(user.createdAt)}',
+    'Connexion ${_when(user.lastLoginAt)}',
+  ];
+  return bits.join(' · ');
+}
+
+bool _filled(String? value) => value != null && value.trim().isNotEmpty;
+
+String _when(String? iso) {
+  final date = DateTime.tryParse(iso ?? '')?.toLocal();
+  if (date == null) return '—';
+  final day = date.day.toString().padLeft(2, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  return '$day/$month/${date.year} $hour:$minute';
 }
 
 class _ProductChip extends StatelessWidget {

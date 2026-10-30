@@ -7,6 +7,7 @@ import '../models/document_item.dart';
 import '../models/library_folder.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../widgets/auth_button.dart';
 import '../utils/pdf_blob.dart';
 import '../utils/web_download.dart';
 import '../widgets/document_viewer.dart';
@@ -47,6 +48,13 @@ class _PremiumLibraryPageState extends State<PremiumLibraryPage> {
       final token = await AuthService.authToken();
       if (token == null) {
         throw ApiException('Connectez-vous pour ouvrir l’espace premium.');
+      }
+      final fresh = await AuthService.currentUser();
+      if (!mounted) return;
+      AuthSession.instance.setUser(fresh);
+      if (fresh == null || !fresh.isPremium) {
+        widget.onBack();
+        return;
       }
       final docs = await _api.fetchPremiumDocuments(token);
       if (!mounted) return;
