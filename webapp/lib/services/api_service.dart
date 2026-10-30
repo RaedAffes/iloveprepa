@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -73,6 +74,46 @@ class ApiService {
   Uri downloadUri(DocumentItem item) => Uri.parse(
     '$apiBase/api/download?file=${Uri.encodeComponent(item.name)}&download=1',
   );
+
+  /// Documents from the premium bucket the signed-in user is allowed to see.
+  Future<List<DocumentItem>> fetchPremiumDocuments(String token) async {
+    final response = await http
+        .get(
+          Uri.parse('$apiBase/api/premium/files'),
+          headers: {'Authorization': 'Bearer $token'},
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode == 401) {
+      throw ApiException('Connectez-vous pour ouvrir l’espace premium.');
+    }
+    if (response.statusCode != 200) {
+      throw ApiException('Le serveur a répondu avec le code ${response.statusCode}');
+    }
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return (body['files'] as List<dynamic>? ?? [])
+        .map((e) => DocumentItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Premium file bytes. The request carries the session; there is no link to share.
+  Future<Uint8List> premiumFile(String token, String key) async {
+    final response = await http
+        .get(
+          Uri.parse('$apiBase/api/premium/file?file=${Uri.encodeQueryComponent(key)}'),
+          headers: {'Authorization': 'Bearer $token'},
+        )
+        .timeout(const Duration(seconds: 30));
+    if (response.statusCode == 401) {
+      throw ApiException('Connectez-vous pour ouvrir ce document.');
+    }
+    if (response.statusCode == 403) {
+      throw ApiException('Ce document ne fait pas partie de votre accès.');
+    }
+    if (response.statusCode != 200) {
+      throw ApiException('Impossible d’ouvrir le document.');
+    }
+    return response.bodyBytes;
+  }
 
   /// Sends a contact-form message to ilovepreparatoire@gmail.com via EmailJS.
   /// The template (Contact Us) maps {name, email, message} placeholders and

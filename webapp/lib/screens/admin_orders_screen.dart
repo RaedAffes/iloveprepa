@@ -17,10 +17,19 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   static const _muted = Color(0xFF5C6578);
 
   final _orders = OrderService();
+  static const _filters = <String, String>{
+    'payment_claimed': 'Paiement déclaré',
+    'pending_payment': 'En attente de paiement',
+    'validated': 'Validées',
+    'rejected': 'Annulées',
+    'all': 'Toutes',
+  };
+
   List<CourseOrder> _items = const [];
+  String _filter = 'payment_claimed';
   bool _loading = true;
   String? _error;
-  String? _validating;
+  String? _busyId;
 
   @override
   void initState() {
@@ -34,7 +43,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
       _error = null;
     });
     try {
-      final items = await _orders.pendingForAdmin();
+      final items = await _orders.adminOrders(_filter);
       if (!mounted) return;
       setState(() {
         _items = items;
@@ -75,9 +84,93 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    setState(() => _validating = order.id);
+    await _run(order, () => _orders.validate(order.id));
+  }
+
+  Future<void> _reject(CourseOrder order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Annuler cette commande'),
+        content: Text(
+          'Annuler la commande de ${order.name ?? order.email} ?\n\nAucun accès ne sera activé.',
+          style: const TextStyle(height: 1.4, color: _ink),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Retour')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFB42318)),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Annuler la commande'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _run(order, () => _orders.reject(order.id));
+  }
+
+  Future<void> _unclaim(CourseOrder order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Paiement non reçu'),
+        content: Text(
+          'Le paiement de ${order.name ?? order.email} n’est pas arrivé ?\n\n'
+          'La déclaration est retirée. La commande repasse en attente de paiement.',
+          style: const TextStyle(height: 1.4, color: _ink),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Retour')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: _ink,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remettre en attente'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _run(order, () => _orders.unclaim(order.id));
+  }
+
+  Future<void> _unvalidate(CourseOrder order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Dévalider cette commande'),
+        content: Text(
+          'Retirer « ${order.label} » à ${order.name ?? order.email} ?\n\n'
+          'L’accès est retiré. La commande repasse en attente de paiement.',
+          style: const TextStyle(height: 1.4, color: _ink),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Retour')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFB42318)),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Dévalider'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _run(order, () => _orders.unvalidate(order.id));
+  }
+
+  Future<void> _run(CourseOrder order, Future<void> Function() action) async {
+    setState(() => _busyId = order.id);
     try {
-      await _orders.validate(order.id);
+      await action();
       await _load();
     } catch (e) {
       if (!mounted) return;
@@ -85,7 +178,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
         SnackBar(content: Text('$e'.replaceFirst('ApiException: ', ''))),
       );
     } finally {
-      if (mounted) setState(() => _validating = null);
+      if (mounted) setState(() => _busyId = null);
     }
   }
 
@@ -104,20 +197,32 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                   onPressed: widget.onBack,
                   icon: const Icon(Icons.arrow_back_rounded, color: _ink),
                 ),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Gérer les commandes',
                         style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _ink),
                       ),
                       Text(
-                        'Paiements en attente de validation',
-                        style: TextStyle(color: _muted, fontSize: 13),
+                        _filters[_filter] ?? '',
+                        style: const TextStyle(color: _muted, fontSize: 13),
                       ),
                     ],
                   ),
+                ),
+                _FilterMenu(
+                  value: _filter,
+                  labels: _filters,
+                  onChanged: (value) {
+                    setState(() {
+                      _filter = value;
+                      _items = const [];
+                      _loading = true;
+                    });
+                    _load();
+                  },
                 ),
                 IconButton(
                   tooltip: 'Actualiser',
@@ -153,7 +258,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     if (_error != null && _items.isEmpty) return Center(child: Text(_error!));
     return LayoutBuilder(
       builder: (context, constraints) {
-        const minWidth = 980.0;
+        const minWidth = 1080.0;
         final wide = constraints.maxWidth >= minWidth;
         final table = Column(
           children: [
@@ -175,8 +280,13 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
 
   Widget _rows() {
     if (_items.isEmpty) {
-      return const Center(
-        child: Text('Aucune commande à valider.', style: TextStyle(color: _muted, fontSize: 13)),
+      return Center(
+        child: Text(
+          _filter == 'payment_claimed'
+              ? 'Aucun paiement déclaré.'
+              : 'Aucune commande dans ce filtre.',
+          style: const TextStyle(color: _muted, fontSize: 13),
+        ),
       );
     }
     return ListView.separated(
@@ -186,8 +296,11 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
         final order = _items[index];
         return _OrderRow(
           order: order,
-          busy: _validating == order.id,
+          busy: _busyId == order.id,
           onValidate: () => _validate(order),
+          onReject: () => _reject(order),
+          onUnclaim: () => _unclaim(order),
+          onUnvalidate: () => _unvalidate(order),
         );
       },
     );
@@ -211,7 +324,7 @@ class _Header extends StatelessWidget {
             _Cell('Commande', flex: 22, header: true),
             _Cell('Montant', flex: 10, header: true),
             _Cell('Statut', flex: 16, header: true),
-            SizedBox(width: 112),
+            SizedBox(width: 268),
           ],
         ),
       ),
@@ -219,12 +332,63 @@ class _Header extends StatelessWidget {
   }
 }
 
+class _FilterMenu extends StatelessWidget {
+  const _FilterMenu({required this.value, required this.labels, required this.onChanged});
+
+  final String value;
+  final Map<String, String> labels;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE6E8EF)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            isDense: true,
+            borderRadius: BorderRadius.circular(10),
+            style: const TextStyle(
+              color: _AdminOrdersScreenState._ink,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+            items: [
+              for (final entry in labels.entries)
+                DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+            ],
+            onChanged: (next) {
+              if (next != null && next != value) onChanged(next);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _OrderRow extends StatelessWidget {
-  const _OrderRow({required this.order, required this.busy, required this.onValidate});
+  const _OrderRow({
+    required this.order,
+    required this.busy,
+    required this.onValidate,
+    required this.onReject,
+    required this.onUnclaim,
+    required this.onUnvalidate,
+  });
 
   final CourseOrder order;
   final bool busy;
   final VoidCallback onValidate;
+  final VoidCallback onReject;
+  final VoidCallback onUnclaim;
+  final VoidCallback onUnvalidate;
 
   @override
   Widget build(BuildContext context) {
@@ -250,26 +414,71 @@ class _OrderRow extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 112,
+            width: 268,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                onPressed: busy ? null : onValidate,
-                style: FilledButton.styleFrom(
-                  backgroundColor: landing.AppColors.orange,
-                  foregroundColor: _AdminOrdersScreenState._ink,
-                  visualDensity: VisualDensity.compact,
-                  minimumSize: const Size(88, 32),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                child: Text(busy ? '…' : 'Valider'),
-              ),
+              child: _actions(),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _actions() {
+    final open = order.status == 'pending_payment' || order.status == 'payment_claimed';
+    if (order.status == 'validated') {
+      return TextButton(
+        onPressed: busy ? null : onUnvalidate,
+        style: TextButton.styleFrom(
+          foregroundColor: const Color(0xFFB42318),
+          visualDensity: VisualDensity.compact,
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        ),
+        child: Text(busy ? '…' : 'Dévalider'),
+      );
+    }
+    if (!open) return const SizedBox.shrink();
+    return Row(
+      children: [
+        FilledButton(
+          onPressed: busy ? null : onValidate,
+          style: FilledButton.styleFrom(
+            backgroundColor: landing.AppColors.orange,
+            foregroundColor: _AdminOrdersScreenState._ink,
+            visualDensity: VisualDensity.compact,
+            minimumSize: const Size(72, 32),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+          child: Text(busy ? '…' : 'Valider'),
+        ),
+        if (order.status == 'payment_claimed') ...[
+          const SizedBox(width: 4),
+          TextButton(
+            onPressed: busy ? null : onUnclaim,
+            style: TextButton.styleFrom(
+              foregroundColor: _AdminOrdersScreenState._ink,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+            child: const Text('Non reçu'),
+          ),
+        ],
+        const SizedBox(width: 4),
+        TextButton(
+          onPressed: busy ? null : onReject,
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFFB42318),
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+          child: const Text('Annuler'),
+        ),
+      ],
     );
   }
 }

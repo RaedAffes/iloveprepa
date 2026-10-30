@@ -3,7 +3,7 @@
 // whose `role` is 'admin' — checked on every request, never cached.
 
 import { userFromRequest } from './auth.js';
-import { grantOrder, publicOrder } from './orders.js';
+import { grantOrder, publicOrder, rejectOrder, unclaimOrder, unvalidateOrder } from './orders.js';
 
 const ADMIN_CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -28,10 +28,19 @@ export async function handleAdmin(request, env, url) {
       return setEntitlement(request, env, admin.user);
     }
     if (url.pathname === '/api/admin/orders' && request.method === 'GET') {
-      return listOrders(env);
+      return listOrders(env, url);
     }
     if (url.pathname === '/api/admin/orders/validate' && request.method === 'POST') {
       return validateOrder(request, env, admin.user);
+    }
+    if (url.pathname === '/api/admin/orders/reject' && request.method === 'POST') {
+      return rejectAdminOrder(request, env);
+    }
+    if (url.pathname === '/api/admin/orders/unclaim' && request.method === 'POST') {
+      return unclaimAdminOrder(request, env);
+    }
+    if (url.pathname === '/api/admin/orders/unvalidate' && request.method === 'POST') {
+      return unvalidateAdminOrder(request, env, admin.user);
     }
     return adminJson({ error: 'Not found' }, 404);
   } catch (err) {
@@ -168,16 +177,18 @@ async function setEntitlement(request, env, admin) {
   return adminJson({ ok: true, entitlements: entitlements[userId] || [] }, 200);
 }
 
-async function listOrders(env) {
-  const rows = await env.iloveprepa_db
-    .prepare(
-      `SELECT o.id, o.plan_code, o.product_codes, o.amount_dt, o.payer_phone, o.status,
+const ORDER_STATUSES = new Set(['pending_payment', 'payment_claimed', 'validated', 'rejected', 'all']);
+
+async function listOrders(env, url) {
+  const status = url.searchParams.get('status') || 'payment_claimed';
+  if (!ORDER_STATUSES.has(status)) return adminJson({ error: 'invalid' }, 400);
+  const sql = `SELECT o.id, o.plan_code, o.product_codes, o.amount_dt, o.payer_phone, o.status,
               o.created_at, u.email, u.name
        FROM orders o JOIN users u ON u.id = o.user_id
-       WHERE o.status IN ('pending_payment', 'payment_claimed')
-       ORDER BY o.created_at DESC LIMIT 50`,
-    )
-    .all();
+       ${status === 'all' ? '' : 'WHERE o.status = ?'}
+       ORDER BY o.created_at DESC LIMIT 100`;
+  const statement = env.iloveprepa_db.prepare(sql);
+  const rows = status === 'all' ? await statement.all() : await statement.bind(status).all();
   return adminJson({ orders: (rows.results || []).map(publicOrder) }, 200);
 }
 
@@ -198,6 +209,42 @@ async function validateOrder(request, env, admin) {
   }
   await grantOrder(env.iloveprepa_db, order, admin.id);
   return adminJson({ ok: true }, 200);
+}
+
+async function rejectAdminOrder(request, env) {
+  const order = await loadOrder(request, env);
+  if (!order) return adminJson({ error: 'not_found' }, 404);
+  const ok = await rejectOrder(env.iloveprepa_db, order);
+  if (!ok) return adminJson({ error: 'not_found' }, 404);
+  return adminJson({ ok: true }, 200);
+}
+
+async function unclaimAdminOrder(request, env) {
+  const order = await loadOrder(request, env);
+  if (!order) return adminJson({ error: 'not_found' }, 404);
+  const ok = await unclaimOrder(env.iloveprepa_db, order);
+  if (!ok) return adminJson({ error: 'not_found' }, 404);
+  return adminJson({ ok: true }, 200);
+}
+
+async function unvalidateAdminOrder(request, env, admin) {
+  const order = await loadOrder(request, env);
+  if (!order) return adminJson({ error: 'not_found' }, 404);
+  const ok = await unvalidateOrder(env.iloveprepa_db, order, admin.id);
+  if (!ok) return adminJson({ error: 'not_found' }, 404);
+  return adminJson({ ok: true }, 200);
+}
+
+async function loadOrder(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return null;
+  }
+  const id = String((body && body.orderId) || '');
+  if (!id) return null;
+  return env.iloveprepa_db.prepare('SELECT * FROM orders WHERE id = ?').bind(id).first();
 }
 
 function adminJson(payload, status) {

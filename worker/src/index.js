@@ -1,6 +1,7 @@
 import { handleAuth } from './auth.js';
 import { handleAdmin } from './admin.js';
 import { handleOrders } from './orders.js';
+import { handlePremium } from './premium.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -114,6 +115,10 @@ export default {
     }
 
     try {
+      if (url.pathname.startsWith('/api/premium/')) {
+        return handlePremium(request, env, url);
+      }
+
       if (url.pathname === '/api/files') {
         const files = await listFilesCached(env, ctx);
         // Cache on the browser/CDN for 5 minutes (max-age / s-maxage). On the

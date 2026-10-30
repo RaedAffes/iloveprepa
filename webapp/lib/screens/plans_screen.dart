@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../services/auth_service.dart';
+import '../widgets/auth_button.dart';
 import '../services/order_service.dart';
 import '../widgets/don_view.dart';
 import '../widgets/landing/landing_colors.dart' as landing;
@@ -61,13 +62,12 @@ class _PlansScreenState extends State<PlansScreen> {
   }
 
   Future<void> _start(_Checkout checkout) async {
-    final user = await AuthService.currentUser();
+    var user = AuthSession.instance.user ?? await AuthService.currentUser();
     if (!mounted) return;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connectez-vous pour commander.')),
-      );
-      return;
+      user = await showSignInDialog(context);
+      if (!mounted || user == null) return;
+      AuthSession.instance.setUser(user);
     }
     setState(() => _checkout = checkout);
   }
