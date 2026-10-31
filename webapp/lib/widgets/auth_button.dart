@@ -669,7 +669,7 @@ class _SignInDialogState extends State<_SignInDialog> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Un lien a été envoyé à $_pendingEmail. Ouvrez-le pour confirmer votre adresse, puis revenez ici. Pensez à vérifier les courriers indésirables.',
+                    'Un nouveau lien a été envoyé à $_pendingEmail. Ouvrez le plus récent, puis revenez ici. Un ancien lien ne sert plus. Pensez à vérifier les courriers indésirables.',
                     style: const TextStyle(color: Color(0xFF1B1B1B), height: 1.4),
                   ),
                   if (_error != null) ...[

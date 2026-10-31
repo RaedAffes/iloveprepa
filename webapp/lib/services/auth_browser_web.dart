@@ -100,6 +100,39 @@ Future<AuthResult> signInWithEmail(
     }
     return result;
   } on FirebaseAuthException catch (err) {
+    if (createAccount && err.code == 'email-already-in-use') {
+      return _resumeExistingAccount(email, password);
+    }
+    return AuthResult(error: _firebaseError(err.code));
+  } catch (_) {
+    return const AuthResult(error: 'La connexion a échoué. Réessayez.');
+  }
+}
+
+/// The address is already registered. The same password continues the account
+/// and sends a fresh verification link. The old link is not reused.
+Future<AuthResult> _resumeExistingAccount(String email, String password) async {
+  try {
+    final auth = FirebaseAuth.instance;
+    final credential = await auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    final result = await _openSession(credential.user);
+    if (result.needsVerification && credential.user != null) {
+      final sent = await _sendVerification(auth, credential.user!);
+      return sent ?? result;
+    }
+    return result;
+  } on FirebaseAuthException catch (err) {
+    if (err.code == 'wrong-password' ||
+        err.code == 'invalid-credential' ||
+        err.code == 'user-not-found') {
+      return const AuthResult(
+        error:
+            'Un compte existe déjà avec cet e-mail. Ouvrez « J’ai déjà un compte » et connectez-vous : un nouveau lien de confirmation sera envoyé. Si le mot de passe est oublié, utilisez « Mot de passe oublié ».',
+      );
+    }
     return AuthResult(error: _firebaseError(err.code));
   } catch (_) {
     return const AuthResult(error: 'La connexion a échoué. Réessayez.');

@@ -21,11 +21,19 @@ class AdminAccessScreen extends StatefulWidget {
 }
 
 class _AdminAccessScreenState extends State<AdminAccessScreen> {
+  static const _filters = <String, String>{
+    'all': 'Toutes',
+    'admin': 'Admins',
+    'active': 'Actifs',
+    'inactive': 'Non actifs',
+  };
+
   final _admin = AdminService();
   final _searchController = TextEditingController();
   Timer? _debounce;
 
   List<AdminUser> _users = const [];
+  String _filter = 'all';
   bool _loading = true;
   String? _error;
 
@@ -132,11 +140,25 @@ class _AdminAccessScreenState extends State<AdminAccessScreen> {
                 icon: const Icon(Icons.arrow_back_rounded),
               ),
               const SizedBox(width: AppSpacing.sm),
-              const Expanded(
-                child: Text(
-                  'Gérer les users',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Gérer les users',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      _filterHint,
+                      style: const TextStyle(fontSize: 12, color: AppColors.secondary),
+                    ),
+                  ],
                 ),
+              ),
+              _FilterMenu(
+                value: _filter,
+                labels: _filters,
+                onChanged: (value) => setState(() => _filter = value),
               ),
               IconButton(
                 tooltip: 'Actualiser',
@@ -176,8 +198,9 @@ class _AdminAccessScreenState extends State<AdminAccessScreen> {
     if (_error != null) {
       return Center(child: Text(_error!));
     }
-    if (_users.isEmpty) {
-      return const Center(child: Text('Aucun utilisateur trouvé.'));
+    final users = _visible;
+    if (users.isEmpty) {
+      return Center(child: Text(_emptyLabel));
     }
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(
@@ -186,12 +209,74 @@ class _AdminAccessScreenState extends State<AdminAccessScreen> {
         AppSpacing.lg,
         AppSpacing.lg,
       ),
-      itemCount: _users.length,
+      itemCount: users.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) => _UserCard(
-        user: _users[index],
-        busy: _updating == _users[index].id,
+        user: users[index],
+        busy: _updating == users[index].id,
         onToggle: _toggle,
+      ),
+    );
+  }
+
+  List<AdminUser> get _visible => switch (_filter) {
+        'admin' => _users.where((user) => user.role == 'admin').toList(),
+        'active' => _users.where((user) => user.emailVerified).toList(),
+        'inactive' => _users.where((user) => !user.emailVerified).toList(),
+        _ => _users,
+      };
+
+  String get _filterHint => switch (_filter) {
+        'admin' => 'Comptes administrateur',
+        'active' => 'E-mail vérifié',
+        'inactive' => 'E-mail non vérifié',
+        _ => 'Tous les comptes',
+      };
+
+  String get _emptyLabel => switch (_filter) {
+        'admin' => 'Aucun administrateur.',
+        'active' => 'Aucun utilisateur actif.',
+        'inactive' => 'Aucun utilisateur non actif.',
+        _ => 'Aucun utilisateur trouvé.',
+      };
+}
+
+class _FilterMenu extends StatelessWidget {
+  const _FilterMenu({required this.value, required this.labels, required this.onChanged});
+
+  final String value;
+  final Map<String, String> labels;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            isDense: true,
+            borderRadius: BorderRadius.circular(10),
+            style: const TextStyle(
+              color: AppColors.ink,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+            items: [
+              for (final entry in labels.entries)
+                DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+            ],
+            onChanged: (next) {
+              if (next != null && next != value) onChanged(next);
+            },
+          ),
+        ),
       ),
     );
   }
