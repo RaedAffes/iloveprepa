@@ -530,6 +530,8 @@ class _SignInDialogState extends State<_SignInDialog> {
   bool _busy = false;
   String? _error;
   String? _pendingEmail;
+  String? _pendingNotice;
+  bool _canConfirm = true;
 
   @override
   void dispose() {
@@ -552,10 +554,21 @@ class _SignInDialogState extends State<_SignInDialog> {
       Navigator.of(context).pop(result.user);
       return;
     }
-    if (result.needsVerification) {
+    if (result.openSignIn) {
+      setState(() {
+        _busy = false;
+        _create = false;
+        _pendingEmail = null;
+        _error = result.error;
+      });
+      return;
+    }
+    if (result.needsVerification || result.checkInbox) {
       setState(() {
         _busy = false;
         _pendingEmail = _email.text.trim();
+        _pendingNotice = result.notice;
+        _canConfirm = result.needsVerification;
         _error = result.error;
       });
       return;
@@ -658,7 +671,7 @@ class _SignInDialogState extends State<_SignInDialog> {
       backgroundColor: Colors.white,
       title: Text(
         _pendingEmail != null
-            ? 'Confirmez votre e-mail'
+            ? 'Consultez votre e-mail'
             : (_create ? 'Créer un compte' : 'Connexion'),
       ),
       content: _pendingEmail != null
@@ -669,7 +682,8 @@ class _SignInDialogState extends State<_SignInDialog> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Un nouveau lien a été envoyé à $_pendingEmail. Ouvrez le plus récent, puis revenez ici. Un ancien lien ne sert plus. Pensez à vérifier les courriers indésirables.',
+                    _pendingNotice ??
+                        'Un lien de vérification a été envoyé à $_pendingEmail. Merci de vérifier votre boîte mail, y compris les courriers indésirables.',
                     style: const TextStyle(color: Color(0xFF1B1B1B), height: 1.4),
                   ),
                   if (_error != null) ...[
@@ -780,17 +794,32 @@ class _SignInDialogState extends State<_SignInDialog> {
         ),
       ),
       actions: _pendingEmail != null
-          ? [
-              TextButton(
-                onPressed: _busy ? null : _resendEmail,
-                child: const Text('Renvoyer l’e-mail'),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1B3FA0)),
-                onPressed: _busy ? null : _confirmEmail,
-                child: Text(_busy ? 'Patientez…' : 'J’ai confirmé'),
-              ),
-            ]
+          ? _canConfirm
+              ? [
+                  TextButton(
+                    onPressed: _busy ? null : _resendEmail,
+                    child: const Text('Renvoyer l’e-mail'),
+                  ),
+                  FilledButton(
+                    style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1B3FA0)),
+                    onPressed: _busy ? null : _confirmEmail,
+                    child: Text(_busy ? 'Patientez…' : 'J’ai confirmé'),
+                  ),
+                ]
+              : [
+                  FilledButton(
+                    style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1B3FA0)),
+                    onPressed: _busy
+                        ? null
+                        : () => setState(() {
+                              _pendingEmail = null;
+                              _pendingNotice = null;
+                              _create = false;
+                              _error = null;
+                            }),
+                    child: const Text('Se connecter'),
+                  ),
+                ]
           : [
         TextButton(
           onPressed: _busy

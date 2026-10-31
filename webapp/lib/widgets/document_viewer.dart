@@ -13,6 +13,7 @@ Future<void> showDocumentViewer({
   required String url,
   String? downloadUrl,
   String? fileName,
+  bool allowExport = true,
 }) {
   return showGeneralDialog<void>(
     context: context,
@@ -20,8 +21,12 @@ Future<void> showDocumentViewer({
     barrierLabel: 'Fermer l’aperçu',
     barrierColor: Colors.black.withValues(alpha: 0.35),
     transitionDuration: AppMotion.normal,
-    pageBuilder: (context, _, _) =>
-        _FullscreenViewer(url: url, downloadUrl: downloadUrl, fileName: fileName),
+    pageBuilder: (context, _, _) => _FullscreenViewer(
+      url: url,
+      downloadUrl: downloadUrl,
+      fileName: fileName,
+      allowExport: allowExport,
+    ),
     transitionBuilder: (context, animation, _, child) {
       final curved = CurvedAnimation(
         parent: animation,
@@ -39,11 +44,17 @@ Future<void> showDocumentViewer({
 }
 
 class _FullscreenViewer extends StatelessWidget {
-  const _FullscreenViewer({required this.url, this.downloadUrl, this.fileName});
+  const _FullscreenViewer({
+    required this.url,
+    this.downloadUrl,
+    this.fileName,
+    this.allowExport = true,
+  });
 
   final String url;
   final String? downloadUrl;
   final String? fileName;
+  final bool allowExport;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +74,12 @@ class _FullscreenViewer extends StatelessWidget {
             Expanded(
               child: ColoredBox(
                 color: AppColors.surfaceSecondary,
-                child: PdfEmbed(url: url, downloadUrl: downloadUrl, fileName: fileName),
+                child: PdfEmbed(
+                  url: url,
+                  downloadUrl: downloadUrl,
+                  fileName: fileName,
+                  allowExport: allowExport,
+                ),
               ),
             ),
           ],
