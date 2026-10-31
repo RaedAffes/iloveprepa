@@ -6,6 +6,8 @@
 // to the site host or to third parties via Referer). The app keeps that token
 // and sends it as Authorization: Bearer.
 
+import { lookupUserByEmail, updateUnverifiedUser } from './firebaseAdmin.js';
+
 const AUTH_CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
@@ -30,6 +32,9 @@ export async function handleAuth(request, env, url) {
     }
     if (url.pathname === '/api/auth/firebase' && request.method === 'POST') {
       return signInWithFirebase(request, env);
+    }
+    if (url.pathname === '/api/auth/restart-unverified' && request.method === 'POST') {
+      return restartUnverified(request, env);
     }
     if (url.pathname === '/api/auth/me' && request.method === 'GET') {
       return currentUser(request, env);
@@ -161,6 +166,63 @@ async function finishGoogle(request, env, url) {
   return new Response(null, { status: 302, headers });
 }
 
+async function restartUnverified(request, env) {
+  if (!env.FIREBASE_SERVICE_ACCOUNT || !env.iloveprepa_db) {
+    return authJson({ error: 'not_configured' }, 503);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return authJson({ error: 'invalid' }, 400);
+  }
+  const email = String((body && body.email) || '').trim().toLowerCase();
+  const password = String((body && body.password) || '');
+  if (!email || password.length < 6) return authJson({ error: 'invalid' }, 400);
+
+  const givenName = textOrNull(body.givenName);
+  const familyName = textOrNull(body.familyName);
+  const faculty = clip(textOrNull(body.faculty), 120);
+  const phoneInput = textOrNull(body.phone);
+  const phone = phoneInput ? tunisianPhone(body.phone) : null;
+  const displayName = [givenName, familyName].filter(Boolean).join(' ') || null;
+
+  try {
+    const user = await lookupUserByEmail(env.FIREBASE_SERVICE_ACCOUNT, email);
+    if (!user) return authJson({ missing: true }, 200);
+    if (user.emailVerified) return authJson({ active: true }, 200);
+    await updateUnverifiedUser(env.FIREBASE_SERVICE_ACCOUNT, user.localId, {
+      password,
+      displayName,
+    });
+    await env.iloveprepa_db
+      .prepare(
+        `UPDATE users SET
+           name = COALESCE(?, name),
+           given_name = COALESCE(?, given_name),
+           family_name = COALESCE(?, family_name),
+           faculty = COALESCE(?, faculty),
+           phone = COALESCE(?, phone),
+           updated_at = ?
+         WHERE id = ? AND email_verified = 0`,
+      )
+      .bind(
+        displayName,
+        givenName,
+        familyName,
+        faculty,
+        phone,
+        new Date().toISOString(),
+        user.localId,
+      )
+      .run();
+    return authJson({ ok: true }, 200);
+  } catch (err) {
+    console.error('restart unverified failed:', err && err.message ? err.message : err);
+    return authJson({ error: 'restart_failed' }, 500);
+  }
+}
+
 async function signInWithFirebase(request, env) {
   if (!env.FIREBASE_API_KEY || !env.iloveprepa_db) {
     return authJson({ error: 'not_configured' }, 503);
@@ -229,6 +291,24 @@ async function saveUserAndSession(env, profile, options = {}) {
   const db = env.iloveprepa_db;
   const now = new Date();
   const nowIso = now.toISOString();
+  // An unverified signup is not an account yet. A new attempt with the same
+  // address replaces that row so the fresh Firebase user can be saved.
+  const existing = await db
+    .prepare('SELECT id, email_verified FROM users WHERE email = ?')
+    .bind(profile.email)
+    .first();
+  if (existing && existing.id !== profile.id) {
+    if (existing.email_verified === 1) {
+      const error = new Error('email_in_use');
+      error.code = 'email_in_use';
+      throw error;
+    }
+    await db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(existing.id).run();
+    await db
+      .prepare('DELETE FROM users WHERE id = ? AND email_verified = 0')
+      .bind(existing.id)
+      .run();
+  }
   await db
     .prepare(
       `INSERT INTO users (

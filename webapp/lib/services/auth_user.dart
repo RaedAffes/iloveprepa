@@ -94,10 +94,24 @@ extension PremiumProductCode on PremiumProduct {
 }
 
 class AuthResult {
-  const AuthResult({this.user, this.error, this.notice, this.needsVerification = false});
+  const AuthResult({
+    this.user,
+    this.error,
+    this.notice,
+    this.needsVerification = false,
+    this.openSignIn = false,
+    this.checkInbox = false,
+  });
 
   final AuthUser? user;
   final String? error;
   final String? notice;
   final bool needsVerification;
+
+  /// The address already has an account and the password did not open it.
+  /// The form should switch to sign-in instead of asking the user to find it.
+  final bool openSignIn;
+
+  /// An e-mail was sent. The screen only asks the person to open it.
+  final bool checkInbox;
 }

@@ -15,7 +15,13 @@ const String _pdfJsBase = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38';
 /// page navigation, zoom controls, fullscreen and download. A Flutter spinner
 /// covers the view until the viewer signals it is ready.
 class PdfEmbed extends StatefulWidget {
-  const PdfEmbed({super.key, required this.url, this.downloadUrl, this.fileName});
+  const PdfEmbed({
+    super.key,
+    required this.url,
+    this.downloadUrl,
+    this.fileName,
+    this.allowExport = true,
+  });
 
   final String url;
 
@@ -26,6 +32,9 @@ class PdfEmbed extends StatefulWidget {
   /// Saved file name for the toolbar download. Used when [url] is a local blob.
   final String? fileName;
 
+  /// Premium documents stay on screen: no download, copy, or print.
+  final bool allowExport;
+
   @override
   State<PdfEmbed> createState() => _PdfEmbedState();
 }
@@ -35,14 +44,18 @@ class _PdfEmbedState extends State<PdfEmbed> {
 
   late final String _viewType;
   late final String _readySignal;
+  late final String _protectStyleId;
   final ValueNotifier<bool> _loading = ValueNotifier<bool>(true);
+  web.EventListener? _exportGuard;
 
   @override
   void initState() {
     super.initState();
     _viewType = 'pdf-embed-$_counter';
     _readySignal = '__pdfEmbedReady$_counter';
+    _protectStyleId = 'pdf-protect-$_counter';
     _counter++;
+    if (!widget.allowExport) _lockExport();
 
     js.globalContext[_readySignal] = (() => _loading.value = false).toJS;
 
@@ -66,6 +79,7 @@ class _PdfEmbedState extends State<PdfEmbed> {
           fileName: fileName,
           pdfJsBase: _pdfJsBase,
           readySignal: _readySignal,
+          allowExport: widget.allowExport,
         );
       container.append(script);
 
@@ -73,8 +87,49 @@ class _PdfEmbedState extends State<PdfEmbed> {
     });
   }
 
+  void _lockExport() {
+    final style = web.HTMLStyleElement()
+      ..id = _protectStyleId
+      ..textContent = '@media print { html, body { display: none !important; } }';
+    web.document.head?.append(style);
+    _exportGuard = ((web.Event event) {
+      if (event.type == 'beforeprint' ||
+          event.type == 'copy' ||
+          event.type == 'cut' ||
+          event.type == 'contextmenu') {
+        event.preventDefault();
+        return;
+      }
+      if (event.type != 'keydown') return;
+      final key = event as web.KeyboardEvent;
+      final name = key.key.toLowerCase();
+      if ((key.ctrlKey || key.metaKey) && (name == 'p' || name == 's' || name == 'c')) {
+        key.preventDefault();
+      }
+    }).toJS;
+    web.window.addEventListener('keydown', _exportGuard);
+    web.window.addEventListener('beforeprint', _exportGuard);
+    web.document.addEventListener('copy', _exportGuard);
+    web.document.addEventListener('cut', _exportGuard);
+    web.document.addEventListener('contextmenu', _exportGuard);
+  }
+
+  void _unlockExport() {
+    final guard = _exportGuard;
+    if (guard != null) {
+      web.window.removeEventListener('keydown', guard);
+      web.window.removeEventListener('beforeprint', guard);
+      web.document.removeEventListener('copy', guard);
+      web.document.removeEventListener('cut', guard);
+      web.document.removeEventListener('contextmenu', guard);
+      _exportGuard = null;
+    }
+    web.document.getElementById(_protectStyleId)?.remove();
+  }
+
   @override
   void dispose() {
+    _unlockExport();
     js.globalContext.delete(_readySignal.toJS);
     _loading.dispose();
     super.dispose();
@@ -149,6 +204,7 @@ String _viewerScript({
   required String fileName,
   required String pdfJsBase,
   required String readySignal,
+  required bool allowExport,
 }) {
   return '''
 (async () => {
@@ -157,6 +213,7 @@ const FILE_URL = '${_js(url)}';
 const DL_URL = '${_js(downloadUrl)}';
 const FILE_NAME = '${_js(fileName)}';
 const READY = '${_js(readySignal)}';
+const ALLOW_EXPORT = ${allowExport ? 'true' : 'false'};
 
 function signalReady() {
   try { window[READY] && window[READY](); } catch (_) {}
@@ -175,6 +232,18 @@ const zoomOut = document.getElementById('z-');
 const zoomReset = document.getElementById('zr');
 const fullBtn = document.getElementById('f');
 const dlBtn = document.getElementById('d');
+if (!ALLOW_EXPORT) {
+  dlBtn.remove();
+  const root = document.getElementById('root');
+  root.style.userSelect = 'none';
+  root.style.webkitUserSelect = 'none';
+  const block = (e) => { e.preventDefault(); e.stopPropagation(); };
+  root.addEventListener('contextmenu', block);
+  root.addEventListener('copy', block);
+  root.addEventListener('cut', block);
+  root.addEventListener('dragstart', block);
+  root.addEventListener('selectstart', block);
+}
 
 let pdfjs;
 try {
@@ -429,7 +498,7 @@ fullBtn.onclick = () => {
   if (document.fullscreenElement) document.exitFullscreen();
   else if (root.requestFullscreen) root.requestFullscreen();
 };
-dlBtn.onclick = () => {
+if (ALLOW_EXPORT) dlBtn.onclick = () => {
   const a = document.createElement('a');
   a.href = DL_URL;
   a.download = FILE_NAME;

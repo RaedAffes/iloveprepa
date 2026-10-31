@@ -2,6 +2,7 @@
 // order is what grants the semesters.
 
 import { userFromRequest } from './auth.js';
+import { sendOrderConfirmation } from './mail.js';
 
 const ORDER_CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -140,7 +141,10 @@ async function createOrder(request, env, user) {
     )
     .bind(id)
     .first();
-  return orderJson({ order: publicOrder(row) }, 201);
+  const order = publicOrder(row);
+  // Mail failure must not block the order.
+  await sendOrderConfirmation(env, { order, user });
+  return orderJson({ order }, 201);
 }
 
 async function cancelMine(request, env, user) {

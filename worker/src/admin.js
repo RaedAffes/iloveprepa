@@ -4,6 +4,7 @@
 
 import { userFromRequest } from './auth.js';
 import { grantOrder, publicOrder, rejectOrder, reopenOrder, unvalidateOrder } from './orders.js';
+import { sendOrderConfirmation } from './mail.js';
 
 const ADMIN_CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -41,6 +42,9 @@ export async function handleAdmin(request, env, url) {
     }
     if (url.pathname === '/api/admin/orders/unvalidate' && request.method === 'POST') {
       return unvalidateAdminOrder(request, env, admin.user);
+    }
+    if (url.pathname === '/api/admin/orders/resend-mail' && request.method === 'POST') {
+      return resendOrderMail(request, env);
     }
     return adminJson({ error: 'Not found' }, 404);
   } catch (err) {
@@ -206,11 +210,12 @@ async function listOrders(env, url) {
   if (q) {
     where.push(`(
       lower(COALESCE(u.name, '')) LIKE ? OR
+      lower(COALESCE(u.email, '')) LIKE ? OR
       lower(o.id) LIKE ? OR
       (? != '' AND replace(o.payer_phone, '+', '') LIKE ?)
     )`);
     const like = `%${q}%`;
-    binds.push(like, like, digits, `%${digits}%`);
+    binds.push(like, like, like, digits, `%${digits}%`);
   }
   const sql = `SELECT o.id, o.plan_code, o.product_codes, o.amount_dt, o.payer_phone, o.status,
               o.created_at, u.email, u.name
@@ -263,6 +268,32 @@ async function unvalidateAdminOrder(request, env, admin) {
   const ok = await unvalidateOrder(env.iloveprepa_db, order, admin.id);
   if (!ok) return adminJson({ error: 'not_found' }, 404);
   return adminJson({ ok: true }, 200);
+}
+
+async function resendOrderMail(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return adminJson({ error: 'invalid' }, 400);
+  }
+  const id = String((body && body.orderId) || '');
+  const row = await env.iloveprepa_db
+    .prepare(
+      `SELECT o.*, u.email, u.name, u.given_name
+       FROM orders o JOIN users u ON u.id = o.user_id
+       WHERE o.id = ?`,
+    )
+    .bind(id)
+    .first();
+  if (!row) return adminJson({ error: 'not_found' }, 404);
+  const order = publicOrder(row);
+  const result = await sendOrderConfirmation(env, {
+    order,
+    user: { email: row.email, name: row.name, givenName: row.given_name },
+    force: true,
+  });
+  return adminJson(result, result.ok ? 200 : 502);
 }
 
 async function loadOrder(request, env) {

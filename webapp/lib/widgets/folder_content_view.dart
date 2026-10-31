@@ -34,7 +34,7 @@ class FolderContentView extends StatelessWidget {
     required this.expanded,
     required this.busy,
     required this.onView,
-    required this.onDownload,
+    this.onDownload,
     required this.onToggle,
   });
 
@@ -43,7 +43,7 @@ class FolderContentView extends StatelessWidget {
   final Set<String> expanded;
   final String? busy;
   final void Function(DocumentItem doc) onView;
-  final void Function(DocumentItem doc) onDownload;
+  final void Function(DocumentItem doc)? onDownload;
   final void Function(List<String> path) onToggle;
 
   @override
@@ -89,7 +89,7 @@ class _MainFolderSection extends StatelessWidget {
     required this.expanded,
     required this.busy,
     required this.onView,
-    required this.onDownload,
+    this.onDownload,
     required this.onToggle,
   });
 
@@ -98,7 +98,7 @@ class _MainFolderSection extends StatelessWidget {
   final Set<String> expanded;
   final String? busy;
   final void Function(DocumentItem doc) onView;
-  final void Function(DocumentItem doc) onDownload;
+  final void Function(DocumentItem doc)? onDownload;
   final void Function(List<String> path) onToggle;
 
   String get pathKey => path.join('/');
@@ -236,13 +236,13 @@ class _DocumentsWindow extends StatelessWidget {
     required this.files,
     required this.busy,
     required this.onView,
-    required this.onDownload,
+    this.onDownload,
   });
 
   final List<DocumentItem> files;
   final String? busy;
   final void Function(DocumentItem doc) onView;
-  final void Function(DocumentItem doc) onDownload;
+  final void Function(DocumentItem doc)? onDownload;
 
   @override
   Widget build(BuildContext context) {
@@ -263,7 +263,7 @@ class _DocumentsWindow extends StatelessWidget {
               isLast: identical(doc, files.last),
               busy: busy == doc.name,
               onView: () => onView(doc),
-              onDownload: () => onDownload(doc),
+              onDownload: onDownload == null ? null : () => onDownload!(doc),
             ),
         ],
       ),
@@ -278,14 +278,14 @@ class _FileRow extends StatelessWidget {
     required this.isLast,
     required this.busy,
     required this.onView,
-    required this.onDownload,
+    this.onDownload,
   });
 
   final DocumentItem doc;
   final bool isLast;
   final bool busy;
   final VoidCallback onView;
-  final VoidCallback onDownload;
+  final VoidCallback? onDownload;
 
   @override
   Widget build(BuildContext context) {
@@ -314,6 +314,14 @@ class _FileRow extends StatelessWidget {
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 560;
 
+              final spinner = SizedBox(
+                width: compact ? 16 : 14,
+                height: compact ? 16 : 14,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: landing.AppColors.orange,
+                ),
+              );
               final actions = compact
                   ? Row(
                       mainAxisSize: MainAxisSize.min,
@@ -321,24 +329,20 @@ class _FileRow extends StatelessWidget {
                         IconButton(
                           onPressed: busy ? null : onView,
                           tooltip: 'Voir',
-                          icon: const Icon(Icons.visibility_outlined, size: 18),
+                          icon: busy && onDownload == null
+                              ? spinner
+                              : const Icon(Icons.visibility_outlined, size: 18),
                           color: _ink,
                         ),
-                        IconButton(
-                          onPressed: busy ? null : onDownload,
-                          tooltip: 'Télécharger',
-                          icon: busy
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: landing.AppColors.orange,
-                                  ),
-                                )
-                              : const Icon(Icons.download_rounded, size: 18),
-                          color: landing.AppColors.orange,
-                        ),
+                        if (onDownload != null)
+                          IconButton(
+                            onPressed: busy ? null : onDownload,
+                            tooltip: 'Télécharger',
+                            icon: busy
+                                ? spinner
+                                : const Icon(Icons.download_rounded, size: 18),
+                            color: landing.AppColors.orange,
+                          ),
                       ],
                     )
                   : Row(
@@ -351,28 +355,25 @@ class _FileRow extends StatelessWidget {
                             backgroundColor: Colors.white,
                             side: const BorderSide(color: _ink, width: 1.2),
                           ),
-                          icon: const Icon(Icons.visibility_outlined, size: 16),
-                          label: const Text('Voir'),
+                          icon: busy && onDownload == null
+                              ? spinner
+                              : const Icon(Icons.visibility_outlined, size: 16),
+                          label: Text(busy && onDownload == null ? '…' : 'Voir'),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        FilledButton.icon(
-                          onPressed: busy ? null : onDownload,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: landing.AppColors.orange,
-                            foregroundColor: _ink,
+                        if (onDownload != null) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          FilledButton.icon(
+                            onPressed: busy ? null : onDownload,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: landing.AppColors.orange,
+                              foregroundColor: _ink,
+                            ),
+                            icon: busy
+                                ? spinner
+                                : const Icon(Icons.download_rounded, size: 16),
+                            label: Text(busy ? '…' : 'Télécharger'),
                           ),
-                          icon: busy
-                              ? const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: _ink,
-                                  ),
-                                )
-                              : const Icon(Icons.download_rounded, size: 16),
-                          label: Text(busy ? '…' : 'Télécharger'),
-                        ),
+                        ],
                       ],
                     );
 

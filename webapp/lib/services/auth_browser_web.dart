@@ -91,7 +91,7 @@ Future<AuthResult> signInWithEmail(
     );
     if (result.needsVerification && account != null) {
       final sent = await _sendVerification(auth, account);
-      return sent ?? result;
+      return sent ?? _verificationPending(email.trim());
     }
     if (createAccount && result.user == null && account != null) {
       try {
@@ -101,7 +101,14 @@ Future<AuthResult> signInWithEmail(
     return result;
   } on FirebaseAuthException catch (err) {
     if (createAccount && err.code == 'email-already-in-use') {
-      return _resumeExistingAccount(email, password);
+      return _restartUnverified(
+        email,
+        password,
+        givenName,
+        familyName,
+        faculty,
+        phone,
+      );
     }
     return AuthResult(error: _firebaseError(err.code));
   } catch (_) {
@@ -109,34 +116,122 @@ Future<AuthResult> signInWithEmail(
   }
 }
 
-/// The address is already registered. The same password continues the account
-/// and sends a fresh verification link. The old link is not reused.
-Future<AuthResult> _resumeExistingAccount(String email, String password) async {
+/// An unverified signup is not an account. The latest password and profile
+/// replace it, then a fresh verification link is sent.
+Future<AuthResult> _restartUnverified(
+  String email,
+  String password,
+  String? givenName,
+  String? familyName,
+  String? faculty,
+  String? phone,
+) async {
+  final address = email.trim();
+  final replaced = await _replaceUnverifiedAccount(
+    address,
+    password,
+    givenName,
+    familyName,
+    faculty,
+    phone,
+  );
+  if (replaced == 'active') {
+    return const AuthResult(
+      openSignIn: true,
+      error: 'Un compte existe déjà avec cet e-mail. Connectez-vous.',
+    );
+  }
+  if (replaced != 'ok') {
+    return const AuthResult(error: 'La connexion a échoué. Réessayez.');
+  }
   try {
     final auth = FirebaseAuth.instance;
     final credential = await auth.signInWithEmailAndPassword(
-      email: email,
+      email: address,
       password: password,
     );
-    final result = await _openSession(credential.user);
-    if (result.needsVerification && credential.user != null) {
-      final sent = await _sendVerification(auth, credential.user!);
-      return sent ?? result;
+    final account = credential.user;
+    final displayName = [
+      givenName?.trim(),
+      familyName?.trim(),
+    ].whereType<String>().where((part) => part.isNotEmpty).join(' ');
+    if (account != null && displayName.isNotEmpty) {
+      await account.updateDisplayName(displayName);
+    }
+    final result = await _openSession(
+      account,
+      signup: true,
+      givenName: givenName,
+      familyName: familyName,
+      faculty: faculty,
+      phone: phone,
+    );
+    if (result.needsVerification && account != null) {
+      final sent = await _sendVerification(auth, account);
+      return sent ?? _verificationPending(address);
     }
     return result;
   } on FirebaseAuthException catch (err) {
-    if (err.code == 'wrong-password' ||
-        err.code == 'invalid-credential' ||
-        err.code == 'user-not-found') {
-      return const AuthResult(
-        error:
-            'Un compte existe déjà avec cet e-mail. Ouvrez « J’ai déjà un compte » et connectez-vous : un nouveau lien de confirmation sera envoyé. Si le mot de passe est oublié, utilisez « Mot de passe oublié ».',
-      );
-    }
     return AuthResult(error: _firebaseError(err.code));
   } catch (_) {
     return const AuthResult(error: 'La connexion a échoué. Réessayez.');
   }
+}
+
+Future<String> _replaceUnverifiedAccount(
+  String email,
+  String password,
+  String? givenName,
+  String? familyName,
+  String? faculty,
+  String? phone,
+) async {
+  try {
+    final response = await web.window
+        .fetch(
+          '${ApiService.apiBase}/api/auth/restart-unverified'.toJS,
+          web.RequestInit(
+            method: 'POST',
+            headers: _jsonHeaders(),
+            credentials: 'omit',
+            body: jsonEncode({
+              'email': email,
+              'password': password,
+              'givenName': givenName,
+              'familyName': familyName,
+              'faculty': faculty,
+              'phone': phone,
+            }).toJS,
+          ),
+        )
+        .toDart;
+    final text = (await response.text().toDart).toDart;
+    final code = _errorCode(text);
+    if (code == 'active' || _jsonFlag(text, 'active')) return 'active';
+    if (response.ok && _jsonFlag(text, 'ok')) return 'ok';
+    if (response.ok && _jsonFlag(text, 'missing')) return 'ok';
+    return 'failed';
+  } catch (_) {
+    return 'failed';
+  }
+}
+
+bool _jsonFlag(String body, String key) {
+  try {
+    final decoded = jsonDecode(body);
+    return decoded is Map && decoded[key] == true;
+  } catch (_) {
+    return false;
+  }
+}
+
+AuthResult _verificationPending(String email) {
+  final address = email.isEmpty ? 'votre adresse' : email;
+  return AuthResult(
+    needsVerification: true,
+    notice:
+        'Un lien de vérification a été envoyé à $address. Merci de vérifier votre boîte mail, y compris les courriers indésirables.',
+  );
 }
 
 AuthResult _firebaseNotConfigured() {

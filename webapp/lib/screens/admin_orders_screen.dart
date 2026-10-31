@@ -257,7 +257,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
               },
               style: const TextStyle(color: _ink, fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Nom, référence ou téléphone',
+                hintText: 'Nom, e-mail, référence ou téléphone',
                 hintStyle: const TextStyle(color: _muted, fontSize: 14),
                 prefixIcon: const Icon(Icons.search_rounded, color: _muted),
                 isDense: true,

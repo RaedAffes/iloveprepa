@@ -9,7 +9,6 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/auth_button.dart';
 import '../utils/pdf_blob.dart';
-import '../utils/web_download.dart';
 import '../widgets/document_viewer.dart';
 import '../widgets/folder_content_view.dart';
 import '../widgets/overview_view.dart';
@@ -86,8 +85,8 @@ class _PremiumLibraryPageState extends State<PremiumLibraryPage> {
         await showDocumentViewer(
           context: context,
           url: url,
-          downloadUrl: url,
           fileName: name,
+          allowExport: false,
         );
       } finally {
         revokePdfBlobUrl(url);
@@ -96,31 +95,6 @@ class _PremiumLibraryPageState extends State<PremiumLibraryPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e is ApiException ? e.message : 'Impossible d’ouvrir le document.')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = null);
-    }
-  }
-
-  Future<void> _download(DocumentItem item) async {
-    final token = await AuthService.authToken();
-    if (token == null || !mounted) return;
-    setState(() => _busy = item.name);
-    try {
-      final bytes = await _api.premiumFile(token, item.name);
-      final url = createPdfBlobUrl(bytes);
-      final ok = await triggerWebDownload(url, fileName: item.name.split('/').last);
-      revokePdfBlobUrl(url);
-      if (!ok && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible de télécharger le document.')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Impossible de télécharger le document.')),
         );
       }
     } finally {
@@ -185,7 +159,6 @@ class _PremiumLibraryPageState extends State<PremiumLibraryPage> {
             expanded: _expanded,
             busy: _busy,
             onView: _open,
-            onDownload: _download,
             onToggle: _toggle,
           ),
       ],
